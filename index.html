@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /><title>WebRTC Mesh Voice Chat</title></head>
+<body>
+  <button onclick="start()">Start Voice Chat</button>
+  <script>
+    const peers = {};
+    const myId = Math.random().toString(36).substring(2, 9);
+    const ws = new WebSocket("ws://localhost:8080/ws");
+
+    let localStream;
+
+    ws.onmessage = async ({ data }) => {
+      const msg = JSON.parse(data);
+      const from = msg.from;
+
+      if (msg.type === "peer-list") {
+        for (const peerId of msg.peers) {
+          await createPeerConnection(peerId, true);
+        }
+      } else if (msg.type === "new-peer") {
+        const peerId = msg.id;
+        await createPeerConnection(peerId, true);
+      } else if (msg.type === "peer-disconnect") {
+        if (peers[msg.id]) {
+          peers[msg.id].close();
+          delete peers[msg.id];
+        }
+      } else if (msg.type === "offer") {
+        const pc = await createPeerConnection(from, false);
+        await pc.setRemoteDescription(new RTCSessionDescription(msg));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        ws.send(JSON.stringify({ ...answer, from: myId, to: from }));
+      } else if (msg.type === "answer") {
+        await peers[from].setRemoteDescription(new RTCSessionDescription(msg));
+      } else if (msg.type === "candidate") {
+        await peers[from].addIceCandidate(new RTCIceCandidate(msg.candidate));
+      }
+    };
+
+    async function start() {
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: "hello", id: myId }));
+      };
+    }
+
+    async function createPeerConnection(peerId, initiator = true) {
+      if (peers[peerId]) return peers[peerId];
+
+      const pc = new RTCPeerConnection({
+        iceServers: [
+          { urls: "stun:stun.l.google.com:19302" }
+        ]
+      });
+
+      pc.onicecandidate = ({ candidate }) => {
+        if (candidate) {
+          ws.send(JSON.stringify({ type: "candidate", candidate, from: myId, to: peerId }));
+        }
+      };
+
+      pc.ontrack = ({ streams }) => {
+        const audio = new Audio();
+        audio.srcObject = streams[0];
+        audio.autoplay = true;
+        document.body.appendChild(audio);
+      };
+
+      localStream.getTracks().forEach((track) => {
+        pc.addTrack(track, localStream);
+      });
+
+      peers[peerId] = pc;
+
+      if (initiator) {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        ws.send(JSON.stringify({ ...offer, from: myId, to: peerId }));
+      }
+
+      return pc;
+    }
+  </script>
+</body>
+</html>
