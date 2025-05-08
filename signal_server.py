@@ -8,6 +8,9 @@ async def websocket_handler(request):
     ws = web.WebSocketResponse()
     await ws.prepare(request)
 
+    # Allow all origins (optional: validate request.headers['Origin'])
+    print("WebSocket connected from:", request.remote)
+
     # Wait for the client to send its ID
     msg = await ws.receive()
     client_info = json.loads(msg.data)
