@@ -13,6 +13,7 @@
 
   <script>
     const peers = {};
+    const pendingCandidates = {};
     const myId = "client-" + Math.floor(Math.random() * 10000);
     let localStream;
     let ws;
@@ -66,6 +67,15 @@
           if (!peers[from]) {
             const pc = await createPeerConnection(from, false);
             await pc.setRemoteDescription(new RTCSessionDescription(msg));
+
+            // Flush any queued candidates
+            if (pendingCandidates[from]) {
+              for (const candidate of pendingCandidates[from]) {
+                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+              }
+              delete pendingCandidates[from];
+            }
+
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
             ws.send(JSON.stringify({ ...answer, from: myId, to: from }));
@@ -78,6 +88,14 @@
           const pc = peers[from];
           if (pc && pc.signalingState === "have-local-offer") {
             await pc.setRemoteDescription(new RTCSessionDescription(msg));
+
+            // Flush any queued candidates
+            if (pendingCandidates[from]) {
+              for (const candidate of pendingCandidates[from]) {
+                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+              }
+              delete pendingCandidates[from];
+            }
           } else {
             console.warn("Ignored answer: unexpected signaling state", pc?.signalingState);
           }
@@ -85,8 +103,12 @@
 
         else if (msg.type === "candidate") {
           const pc = peers[from];
-          if (pc) {
+          if (pc && pc.remoteDescription && pc.remoteDescription.type) {
             await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
+          } else {
+            console.log("⚠️ Queuing ICE candidate from", from);
+            if (!pendingCandidates[from]) pendingCandidates[from] = [];
+            pendingCandidates[from].push(msg.candidate);
           }
         }
       };
@@ -101,6 +123,8 @@
       const pc = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
       });
+
+      pendingCandidates[peerId] = [];
 
       pc.onicecandidate = ({ candidate }) => {
         if (candidate) {
