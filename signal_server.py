@@ -70,6 +70,7 @@ app = web.Application()
 app.router.add_get('/', index_handler)
 app.router.add_get('/ws', websocket_handler)
 app.router.add_static('/audio/', path='./audio', name='audio')
+app.router.add_static('/scripts/', path='./scripts', name='scripts')
 # app.router.add_static('/static/', path='./static', name='static')  # Optional: CSS/JS files
 
 web.run_app(app, port=8080)
