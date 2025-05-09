@@ -98,6 +98,23 @@ function monitorMicActivity(stream) {
   detect();
 }
 
+function monitorRemoteMicActivity(peerId, stream) {
+  const ctx = new AudioContext();
+  const analyser = ctx.createAnalyser();
+  const source = ctx.createMediaStreamSource(stream);
+  source.connect(analyser);
+  const data = new Uint8Array(analyser.frequencyBinCount);
+
+  function detect() {
+    analyser.getByteFrequencyData(data);
+    const vol = data.reduce((a, b) => a + b, 0) / data.length;
+    const el = document.getElementById(`mic-${peerId}`);
+    if (el) el.classList.toggle("active", vol > 10);
+    requestAnimationFrame(detect);
+  }
+  detect();
+}
+
 function trackStats(peerId, pc) {
   setInterval(async () => {
     const stats = await pc.getStats();
@@ -122,11 +139,13 @@ async function createPeerConnection(peerId, initiator = true) {
   };
 
   pc.ontrack = ({ streams }) => {
+    const stream = streams[0];
     const audio = new Audio();
-    audio.srcObject = streams[0];
+    audio.srcObject = stream;
     audio.autoplay = true;
     audio.id = `audio-${peerId}`;
     document.body.appendChild(audio);
+    monitorRemoteMicActivity(peerId, stream);
     updatePeerListUI();
   };
 
