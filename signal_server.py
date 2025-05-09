@@ -1,8 +1,8 @@
-import asyncio
 import json
 from aiohttp import web, WSMsgType
 
 clients = {}  # {id: websocket}
+
 
 async def websocket_handler(request):
     ws = web.WebSocketResponse()
@@ -10,13 +10,9 @@ async def websocket_handler(request):
 
     print("WebSocket connected from:", request.remote)
 
-    # Default to None
     client_id = None
 
-    # Wait for initial message (must be valid JSON with 'id')
     msg = await ws.receive()
-    print("message received:", msg.data)
-
     if msg.type == WSMsgType.TEXT:
         try:
             client_info = json.loads(msg.data)
@@ -32,7 +28,7 @@ async def websocket_handler(request):
 
     clients[client_id] = ws
 
-    # Notify other clients about new peer
+    # Notify others
     for other_id, other_ws in clients.items():
         if other_ws != ws:
             await other_ws.send_str(json.dumps({
@@ -40,7 +36,6 @@ async def websocket_handler(request):
                 "id": client_id
             }))
 
-    # Send list of existing peers to new client
     await ws.send_str(json.dumps({
         "type": "peer-list",
         "peers": [pid for pid in clients if pid != client_id]
@@ -57,7 +52,6 @@ async def websocket_handler(request):
                 except Exception as e:
                     print("Error parsing message:", msg.data, e)
     finally:
-        # Cleanup on disconnect
         if client_id in clients:
             del clients[client_id]
             for other_ws in clients.values():
@@ -68,7 +62,13 @@ async def websocket_handler(request):
 
     return ws
 
-# Aiohttp app setup
+
+async def index_handler(request):
+    return web.FileResponse('./index.html')
+
 app = web.Application()
+app.router.add_get('/', index_handler)
 app.router.add_get('/ws', websocket_handler)
-web.run_app(app, host='localhost', port=8080)
+app.router.add_static('/static/', path='./static', name='static')  # Optional: CSS/JS files
+
+web.run_app(app, port=8080)
