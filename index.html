@@ -11,6 +11,7 @@
   <button onclick="start()">🎙️ Start Voice Chat</button>
   <audio id="ding" src="audio/dingdong.mp3" preload="auto"></audio>
 
+  <script src="env.js"></script>
   <script>
     const peers = {};
     const pendingCandidates = {};
@@ -28,7 +29,7 @@
     async function start() {
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      ws = new WebSocket("wss://signal-server-eo-7uq.fly.dev/ws");
+      const ws = new WebSocket(window.APP_CONFIG.wsUrl);
 
       ws.onopen = () => {
         console.log("✅ WebSocket connected");
