@@ -89,17 +89,20 @@
         }
 
         else if (msg.type === "offer" && wsReady) {
-          if (!peers[from]) {
-            const pc = await createPeerConnection(from, false);
-            await pc.setRemoteDescription(new RTCSessionDescription(msg));
-            await flushPendingCandidates(from, pc);
+          const pc = peers[from] || await createPeerConnection(from, false);
 
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            safeSend({ ...answer, from: myId, to: from });
-          } else {
-            console.warn("Ignored offer: connection already exists with", from);
+          if (pc.signalingState === "have-remote-offer" || pc.signalingState === "have-local-offer") {
+            console.warn("❗ Ignoring offer: already negotiating with", from, "(state:", pc.signalingState, ")");
+            return;
           }
+
+          console.log(`📥 Received offer from ${from}, setting remote description`);
+          await pc.setRemoteDescription(new RTCSessionDescription(msg));
+          await flushPendingCandidates(from, pc);
+
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          safeSend({ ...answer, from: myId, to: from });
         }
 
         else if (msg.type === "answer") {
