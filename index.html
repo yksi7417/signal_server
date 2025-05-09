@@ -4,84 +4,110 @@
 <body>
   <button onclick="start()">Start Voice Chat</button>
   <script>
-    const peers = {};
-    const myId = Math.random().toString(36).substring(2, 9);
-    const ws = new WebSocket("ws://localhost:8080/ws");
+  let localStream;
+  let ws;
+  const peers = {};
+  const myId = "client-" + Math.floor(Math.random() * 10000);
 
-    let localStream;
+  async function start() {
+    console.log(`🎙️ Starting voice chat... myId: ${myId}`);
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log("🎤 Microphone access granted.");
 
-    ws.onmessage = async ({ data }) => {
-      const msg = JSON.parse(data);
-      const from = msg.from;
+      ws = new WebSocket("ws://localhost:8080/ws");
 
-      if (msg.type === "peer-list") {
-        for (const peerId of msg.peers) {
+      ws.onopen = () => {
+        console.log("✅ WebSocket connected");
+        ws.send(JSON.stringify({ type: "hello", id: myId }));
+      };
+
+      ws.onmessage = async ({ data }) => {
+        const msg = JSON.parse(data);
+        const from = msg.from;
+
+        if (msg.type === "peer-list") {
+          console.log("📨 Peer list received:", msg.peers);
+          for (const peerId of msg.peers) {
+            await createPeerConnection(peerId, true);
+          }
+        } else if (msg.type === "new-peer") {
+          console.log("🆕 New peer:", msg.id);
+          const peerId = msg.id;
           await createPeerConnection(peerId, true);
+        } else if (msg.type === "peer-disconnect") {
+          if (peers[msg.id]) {
+            peers[msg.id].close();
+            delete peers[msg.id];
+            console.log("❌ Peer disconnected:", msg.id);
+          }
+        } else if (msg.type === "offer") {
+          const pc = await createPeerConnection(from, false);
+          await pc.setRemoteDescription(new RTCSessionDescription(msg));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          ws.send(JSON.stringify({ ...answer, from: myId, to: from }));
+        } else if (msg.type === "answer") {
+          await peers[from].setRemoteDescription(new RTCSessionDescription(msg));
+        } else if (msg.type === "candidate") {
+          await peers[from].addIceCandidate(new RTCIceCandidate(msg.candidate));
         }
-      } else if (msg.type === "new-peer") {
-        const peerId = msg.id;
-        await createPeerConnection(peerId, true);
-      } else if (msg.type === "peer-disconnect") {
-        if (peers[msg.id]) {
-          peers[msg.id].close();
-          delete peers[msg.id];
-        }
-      } else if (msg.type === "offer") {
-        const pc = await createPeerConnection(from, false);
-        await pc.setRemoteDescription(new RTCSessionDescription(msg));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        ws.send(JSON.stringify({ ...answer, from: myId, to: from }));
-      } else if (msg.type === "answer") {
-        await peers[from].setRemoteDescription(new RTCSessionDescription(msg));
-      } else if (msg.type === "candidate") {
-        await peers[from].addIceCandidate(new RTCIceCandidate(msg.candidate));
+      };
+
+      ws.onerror = (err) => {
+        console.error("❌ WebSocket error:", err);
+      };
+
+      ws.onclose = () => {
+        console.warn("🔌 WebSocket closed");
+      };
+    } catch (err) {
+      console.error("🚫 Error accessing microphone:", err);
+    }
+  }
+
+  async function createPeerConnection(peerId, initiator = true) {
+    if (peers[peerId]) return peers[peerId];
+
+    console.log(`📞 Creating peer connection: ${peerId}, initiator: ${initiator}`);
+    const pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" }
+      ]
+    });
+
+    pc.onicecandidate = ({ candidate }) => {
+      if (candidate) {
+        ws.send(JSON.stringify({ type: "candidate", candidate, from: myId, to: peerId }));
       }
     };
 
-    async function start() {
-      localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      ws.onopen = () => {
-        ws.send(JSON.stringify({ type: "hello", id: myId }));
-      };
-    }
+    pc.ontrack = ({ streams }) => {
+      console.log(`🔈 Track received from ${peerId}`);
+      const audio = new Audio();
+      audio.srcObject = streams[0];
+      audio.autoplay = true;
+      document.body.appendChild(audio);
+    };
 
-    async function createPeerConnection(peerId, initiator = true) {
-      if (peers[peerId]) return peers[peerId];
-
-      const pc = new RTCPeerConnection({
-        iceServers: [
-          { urls: "stun:stun.l.google.com:19302" }
-        ]
-      });
-
-      pc.onicecandidate = ({ candidate }) => {
-        if (candidate) {
-          ws.send(JSON.stringify({ type: "candidate", candidate, from: myId, to: peerId }));
-        }
-      };
-
-      pc.ontrack = ({ streams }) => {
-        const audio = new Audio();
-        audio.srcObject = streams[0];
-        audio.autoplay = true;
-        document.body.appendChild(audio);
-      };
-
+    if (localStream) {
       localStream.getTracks().forEach((track) => {
         pc.addTrack(track, localStream);
       });
-
-      peers[peerId] = pc;
-
-      if (initiator) {
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        ws.send(JSON.stringify({ ...offer, from: myId, to: peerId }));
-      }
-
-      return pc;
+    } else {
+      console.warn("⚠️ localStream is not initialized.");
     }
+
+    peers[peerId] = pc;
+
+    if (initiator) {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      ws.send(JSON.stringify({ ...offer, from: myId, to: peerId }));
+    }
+
+    return pc;
+  }
   </script>
 </body>
 </html>
