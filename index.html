@@ -27,8 +27,8 @@
     async function start() {
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      //ws = new WebSocket("wss://oracle-free-instance-20230330-1941.tail356fe.ts.net/ws");
-      ws = new WebSocket("wss://signal-server-eo-7uq.fly.dev/ws");      
+      ws = new WebSocket("wss://signal-server-eo-7uq.fly.dev/ws");
+
       ws.onopen = () => {
         console.log("✅ WebSocket connected");
         ws.send(JSON.stringify({ type: "hello", id: myId }));
@@ -43,29 +43,51 @@
             await createPeerConnection(peerId, true);
           }
           updatePeerList();
-        } else if (msg.type === "new-peer") {
+        }
+
+        else if (msg.type === "new-peer") {
           const peerId = msg.id;
           if (!peers[peerId]) {
             await createPeerConnection(peerId, true);
-            dingSound.play();  // 🔔 Play sound when new peer joins
+            dingSound.play();
             updatePeerList();
           }
-        } else if (msg.type === "peer-disconnect") {
+        }
+
+        else if (msg.type === "peer-disconnect") {
           if (peers[msg.id]) {
             peers[msg.id].close();
             delete peers[msg.id];
             updatePeerList();
           }
-        } else if (msg.type === "offer") {
-          const pc = await createPeerConnection(from, false);
-          await pc.setRemoteDescription(new RTCSessionDescription(msg));
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          ws.send(JSON.stringify({ ...answer, from: myId, to: from }));
-        } else if (msg.type === "answer") {
-          await peers[from].setRemoteDescription(new RTCSessionDescription(msg));
-        } else if (msg.type === "candidate") {
-          await peers[from].addIceCandidate(new RTCIceCandidate(msg.candidate));
+        }
+
+        else if (msg.type === "offer") {
+          if (!peers[from]) {
+            const pc = await createPeerConnection(from, false);
+            await pc.setRemoteDescription(new RTCSessionDescription(msg));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            ws.send(JSON.stringify({ ...answer, from: myId, to: from }));
+          } else {
+            console.warn("Ignored offer: connection already exists with", from);
+          }
+        }
+
+        else if (msg.type === "answer") {
+          const pc = peers[from];
+          if (pc && pc.signalingState === "have-local-offer") {
+            await pc.setRemoteDescription(new RTCSessionDescription(msg));
+          } else {
+            console.warn("Ignored answer: unexpected signaling state", pc?.signalingState);
+          }
+        }
+
+        else if (msg.type === "candidate") {
+          const pc = peers[from];
+          if (pc) {
+            await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
+          }
         }
       };
 
