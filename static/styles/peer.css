@@ -1,0 +1,56 @@
+/* peer.css */
+body {
+  font-family: sans-serif;
+  margin: 2rem;
+  background: #f4f4f4;
+}
+
+h2 {
+  margin-bottom: 1rem;
+}
+
+ul#peerList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem 0;
+}
+
+.peer-entry {
+  background: #fff;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.mic-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: gray;
+  transition: background 0.2s ease-in-out;
+}
+
+.mic-indicator.active {
+  background: limegreen;
+}
+
+button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #0056b3;
+}
+
+input[type="range"] {
+  vertical-align: middle;
+}

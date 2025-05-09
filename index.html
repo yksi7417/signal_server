@@ -4,30 +4,14 @@
   <meta charset="utf-8" />
   <title>WebRTC Mesh Voice Chat</title>
   <link rel="icon" href="/static/icons/favicon.ico" type="image/x-icon">
-  <style>
-    .peer-entry {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.5rem;
-    }
-    .mic-indicator {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: gray;
-    }
-    .mic-indicator.active {
-      background: green;
-    }
-  </style>
+  <link rel="stylesheet" href="/static/styles/peer.css">
 </head>
 <body>
   <h2>👥 Connected Peers</h2>
   <ul id="peerList"></ul>
   <button onclick="start()">🎙️ Start Voice Chat</button>
-  <audio id="ding" src="audio/dingdong.mp3" preload="auto"></audio>
-  <script src="scripts/env.js"></script>
-  <script src="scripts/signaling.js" type="module"></script>
+  <audio id="ding" src="/static/audio/dingdong.mp3" preload="auto"></audio>
+  <script src="/static/scripts/env.js"></script>
+  <script src="/static/scripts/signaling.js" type="module"></script>
 </body>
 </html>
