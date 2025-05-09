@@ -15,6 +15,7 @@ async def websocket_handler(request):
 
     # Wait for initial message (must be valid JSON with 'id')
     msg = await ws.receive()
+    print("message received:", msg.data)
 
     if msg.type == WSMsgType.TEXT:
         try:
