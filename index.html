@@ -15,8 +15,9 @@
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       console.log("🎤 Microphone access granted.");
 
-      ws = new WebSocket("wss://oracle-free-instance-20230330-1941.tail356fe.ts.net/ws");
-
+      // ws = new WebSocket("wss://oracle-free-instance-20230330-1941.tail356fe.ts.net/ws");
+      ws = new WebSocket("wss://signal-server-eo-7uq.fly.dev/ws");
+      
       ws.onopen = () => {
         console.log("✅ WebSocket connected");
         ws.send(JSON.stringify({ type: "hello", id: myId }));

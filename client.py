@@ -11,7 +11,7 @@ def random_id(prefix="client", length=4):
 
 
 async def test():
-    uri = "wss://oracle-free-instance-20230330-1941.tail356fe.ts.net/ws"  # Change to wss://yourdomain if needed
+    uri = "wss://oracle-free-instance-20230330-1941.tail356fe.ts.net/ws"
     async with websockets.connect(uri) as websocket:
         # Send handshake message
         my_id = random_id()
