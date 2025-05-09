@@ -7,6 +7,6 @@ COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-EXPOSE 8080
+EXPOSE 80
 
 CMD ["python", "signal_server.py"]
