@@ -28,38 +28,51 @@
       peerList.innerHTML = Object.keys(peers).map(id => `<li>${id}</li>`).join("");
     }
 
+    function safeSend(payload) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(payload));
+      } else {
+        console.warn("⚠️ Tried to send over closed WebSocket", payload);
+      }
+    }
+
+    async function flushPendingCandidates(peerId, pc) {
+      if (pendingCandidates[peerId]) {
+        for (const candidate of pendingCandidates[peerId]) {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        }
+        delete pendingCandidates[peerId];
+      }
+    }
+
     async function start() {
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      const ws = new WebSocket(window.APP_CONFIG.wsUrl);
+      ws = new WebSocket(window.APP_CONFIG.wsUrl);
 
       ws.onopen = () => {
         console.log("✅ WebSocket connected");
         wsReady = true;
-        ws.send(JSON.stringify({ type: "hello", id: myId }));
+        safeSend({ type: "hello", id: myId });
       };
 
       ws.onmessage = async ({ data }) => {
         const msg = JSON.parse(data);
         const from = msg.from;
 
-        if (msg.type === "peer-list") {
-          if (wsReady) {
-            for (const peerId of msg.peers) {
-              await createPeerConnection(peerId, true);
-            }
-            updatePeerList();
+        if (msg.type === "peer-list" && wsReady) {
+          for (const peerId of msg.peers) {
+            await createPeerConnection(peerId, true);
           }
+          updatePeerList();
         }
 
-        else if (msg.type === "new-peer") {
+        else if (msg.type === "new-peer" && wsReady) {
           const peerId = msg.id;
-          if (wsReady) {
-            if (!peers[peerId]) {
-              await createPeerConnection(peerId, true);
-              dingSound.play();
-              updatePeerList();
-            }
+          if (!peers[peerId]) {
+            await createPeerConnection(peerId, true);
+            dingSound.play();
+            updatePeerList();
           }
         }
 
@@ -71,26 +84,17 @@
           }
         }
 
-        else if (msg.type === "offer") {
-          if (wsReady) {
-            if (!peers[from]) {
-              const pc = await createPeerConnection(from, false);
-              await pc.setRemoteDescription(new RTCSessionDescription(msg));
+        else if (msg.type === "offer" && wsReady) {
+          if (!peers[from]) {
+            const pc = await createPeerConnection(from, false);
+            await pc.setRemoteDescription(new RTCSessionDescription(msg));
+            await flushPendingCandidates(from, pc);
 
-              // Flush any queued candidates
-              if (pendingCandidates[from]) {
-                for (const candidate of pendingCandidates[from]) {
-                  await pc.addIceCandidate(new RTCIceCandidate(candidate));
-                }
-                delete pendingCandidates[from];
-              }
-
-              const answer = await pc.createAnswer();
-              await pc.setLocalDescription(answer);
-              ws.send(JSON.stringify({ ...answer, from: myId, to: from }));
-            } else {
-              console.warn("Ignored offer: connection already exists with", from);
-            }
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            safeSend({ ...answer, from: myId, to: from });
+          } else {
+            console.warn("Ignored offer: connection already exists with", from);
           }
         }
 
@@ -98,14 +102,7 @@
           const pc = peers[from];
           if (pc && pc.signalingState === "have-local-offer") {
             await pc.setRemoteDescription(new RTCSessionDescription(msg));
-
-            // Flush any queued candidates
-            if (pendingCandidates[from]) {
-              for (const candidate of pendingCandidates[from]) {
-                await pc.addIceCandidate(new RTCIceCandidate(candidate));
-              }
-              delete pendingCandidates[from];
-            }
+            await flushPendingCandidates(from, pc);
           } else {
             console.warn("Ignored answer: unexpected signaling state", pc?.signalingState);
           }
@@ -138,7 +135,7 @@
 
       pc.onicecandidate = ({ candidate }) => {
         if (candidate) {
-          ws.send(JSON.stringify({ type: "candidate", candidate, from: myId, to: peerId }));
+          safeSend({ type: "candidate", candidate, from: myId, to: peerId });
         }
       };
 
@@ -158,7 +155,7 @@
       if (initiator) {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
-        ws.send(JSON.stringify({ ...offer, from: myId, to: peerId }));
+        safeSend({ ...offer, from: myId, to: peerId });
       }
 
       updatePeerList();
