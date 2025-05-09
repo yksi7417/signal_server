@@ -24,6 +24,15 @@ ul#peerList {
   align-items: center;
   gap: 1rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: background 0.2s ease-in-out;
+}
+
+.peer-entry.muted {
+  background: #f8d7da !important; /* red tone */
+}
+
+.peer-entry.unmuted {
+  background: #d4edda !important; /* green tone */
 }
 
 .mic-indicator {
@@ -53,4 +62,10 @@ button:hover {
 
 input[type="range"] {
   vertical-align: middle;
+}
+
+.peer-entry.self::before {
+  content: "(you) ";
+  color: #555;
+  font-style: italic;
 }

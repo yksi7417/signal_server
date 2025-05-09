@@ -1,3 +1,4 @@
+// signaling.js
 const peers = {};
 const pendingCandidates = {};
 const peerJoinTimes = {};
@@ -5,16 +6,35 @@ let myId = "client-" + Math.floor(Math.random() * 10000);
 let localStream;
 let ws;
 let wsReady = false;
+let isMuted = false;
 
 const peerList = document.getElementById("peerList");
 const dingSound = document.getElementById("ding");
 
 function updatePeerListUI() {
   peerList.innerHTML = "";
+
+  // Add self first
+  const li = document.createElement("li");
+  li.className = `peer-entry self ${isMuted ? "muted" : "unmuted"}`;
+  li.innerHTML = `
+    <div class="mic-indicator" id="mic-${myId}"></div>
+    <strong>${myId}</strong>
+    <span>🕒 ${new Date().toLocaleTimeString()}</span>
+    <span id="latency-${myId}">⏱️ --</span>
+    <button onclick="toggleMuteSelf()">${isMuted ? "🔈" : "🔇"}</button>
+    <input type="range" min="0" max="1" step="0.01" value="1" onchange="setVolume('${myId}', this.value)">
+  `;
+  peerList.appendChild(li);
+
+  // Add remote peers
   for (const [id, pc] of Object.entries(peers)) {
-    const li = document.createElement("li");
-    li.className = "peer-entry";
-    li.innerHTML = `
+    const peerLi = document.createElement("li");
+    const audio = document.getElementById(`audio-${id}`);
+    const isPeerMuted = audio?.muted;
+
+    peerLi.className = `peer-entry ${isPeerMuted ? "muted" : "unmuted"}`;
+    peerLi.innerHTML = `
       <div class="mic-indicator" id="mic-${id}"></div>
       <strong>${id}</strong>
       <span>🕒 ${peerJoinTimes[id]?.toLocaleTimeString() || ""}</span>
@@ -22,7 +42,16 @@ function updatePeerListUI() {
       <button onclick="mutePeer('${id}')">🔇</button>
       <input type="range" min="0" max="1" step="0.01" value="1" onchange="setVolume('${id}', this.value)">
     `;
-    peerList.appendChild(li);
+    peerList.appendChild(peerLi);
+  }
+}
+
+function toggleMuteSelf() {
+  const track = localStream.getAudioTracks()[0];
+  if (track) {
+    track.enabled = !track.enabled;
+    isMuted = !track.enabled;
+    updatePeerListUI();
   }
 }
 
@@ -44,6 +73,7 @@ async function flushPendingCandidates(peerId, pc) {
 function mutePeer(id) {
   const audio = document.getElementById(`audio-${id}`);
   if (audio) audio.muted = !audio.muted;
+  updatePeerListUI();
 }
 
 function setVolume(id, level) {
@@ -97,6 +127,7 @@ async function createPeerConnection(peerId, initiator = true) {
     audio.autoplay = true;
     audio.id = `audio-${peerId}`;
     document.body.appendChild(audio);
+    updatePeerListUI();
   };
 
   localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
@@ -117,6 +148,7 @@ async function createPeerConnection(peerId, initiator = true) {
 async function start() {
   localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
   monitorMicActivity(localStream);
+  updatePeerListUI();
 
   ws = new WebSocket(window.APP_CONFIG.wsUrl);
 
@@ -176,3 +208,4 @@ async function start() {
 window.start = start;
 window.mutePeer = mutePeer;
 window.setVolume = setVolume;
+window.toggleMuteSelf = toggleMuteSelf;
