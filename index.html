@@ -1,23 +1,34 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8" /><title>WebRTC Mesh Voice Chat</title></head>
+<head>
+  <meta charset="utf-8" />
+  <title>WebRTC Mesh Voice Chat</title>
+</head>
 <body>
-  <button onclick="start()">Start Voice Chat</button>
+  <h2>👥 Connected Peers</h2>
+  <ul id="peerList"></ul>
+
+  <button onclick="start()">🎙️ Start Voice Chat</button>
+  <audio id="ding" src="audio/dingdong.mp3" preload="auto"></audio>
+
   <script>
-  let localStream;
-  let ws;
-  const peers = {};
-  const myId = "client-" + Math.floor(Math.random() * 10000);
+    const peers = {};
+    const myId = "client-" + Math.floor(Math.random() * 10000);
+    let localStream;
+    let ws;
 
-  async function start() {
-    console.log(`🎙️ Starting voice chat... myId: ${myId}`);
-    try {
+    const peerList = document.getElementById("peerList");
+    const dingSound = document.getElementById("ding");
+
+    function updatePeerList() {
+      peerList.innerHTML = Object.keys(peers).map(id => `<li>${id}</li>`).join("");
+    }
+
+    async function start() {
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log("🎤 Microphone access granted.");
 
-      // ws = new WebSocket("wss://oracle-free-instance-20230330-1941.tail356fe.ts.net/ws");
-      ws = new WebSocket("wss://signal-server-eo-7uq.fly.dev/ws");
-      
+      //ws = new WebSocket("wss://oracle-free-instance-20230330-1941.tail356fe.ts.net/ws");
+      ws = new WebSocket("wss://signal-server-eo-7uq.fly.dev/ws");      
       ws.onopen = () => {
         console.log("✅ WebSocket connected");
         ws.send(JSON.stringify({ type: "hello", id: myId }));
@@ -28,19 +39,22 @@
         const from = msg.from;
 
         if (msg.type === "peer-list") {
-          console.log("📨 Peer list received:", msg.peers);
           for (const peerId of msg.peers) {
             await createPeerConnection(peerId, true);
           }
+          updatePeerList();
         } else if (msg.type === "new-peer") {
-          console.log("🆕 New peer:", msg.id);
           const peerId = msg.id;
-          await createPeerConnection(peerId, true);
+          if (!peers[peerId]) {
+            await createPeerConnection(peerId, true);
+            dingSound.play();  // 🔔 Play sound when new peer joins
+            updatePeerList();
+          }
         } else if (msg.type === "peer-disconnect") {
           if (peers[msg.id]) {
             peers[msg.id].close();
             delete peers[msg.id];
-            console.log("❌ Peer disconnected:", msg.id);
+            updatePeerList();
           }
         } else if (msg.type === "offer") {
           const pc = await createPeerConnection(from, false);
@@ -55,60 +69,45 @@
         }
       };
 
-      ws.onerror = (err) => {
-        console.error("❌ WebSocket error:", err);
-      };
-
-      ws.onclose = () => {
-        console.warn("🔌 WebSocket closed");
-      };
-    } catch (err) {
-      console.error("🚫 Error accessing microphone:", err);
+      ws.onerror = (err) => console.error("WebSocket error:", err);
+      ws.onclose = () => console.warn("WebSocket closed");
     }
-  }
 
-  async function createPeerConnection(peerId, initiator = true) {
-    if (peers[peerId]) return peers[peerId];
+    async function createPeerConnection(peerId, initiator = true) {
+      if (peers[peerId]) return peers[peerId];
 
-    console.log(`📞 Creating peer connection: ${peerId}, initiator: ${initiator}`);
-    const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" }
-      ]
-    });
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+      });
 
-    pc.onicecandidate = ({ candidate }) => {
-      if (candidate) {
-        ws.send(JSON.stringify({ type: "candidate", candidate, from: myId, to: peerId }));
-      }
-    };
+      pc.onicecandidate = ({ candidate }) => {
+        if (candidate) {
+          ws.send(JSON.stringify({ type: "candidate", candidate, from: myId, to: peerId }));
+        }
+      };
 
-    pc.ontrack = ({ streams }) => {
-      console.log(`🔈 Track received from ${peerId}`);
-      const audio = new Audio();
-      audio.srcObject = streams[0];
-      audio.autoplay = true;
-      document.body.appendChild(audio);
-    };
+      pc.ontrack = ({ streams }) => {
+        const audio = new Audio();
+        audio.srcObject = streams[0];
+        audio.autoplay = true;
+        document.body.appendChild(audio);
+      };
 
-    if (localStream) {
       localStream.getTracks().forEach((track) => {
         pc.addTrack(track, localStream);
       });
-    } else {
-      console.warn("⚠️ localStream is not initialized.");
+
+      peers[peerId] = pc;
+
+      if (initiator) {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        ws.send(JSON.stringify({ ...offer, from: myId, to: peerId }));
+      }
+
+      updatePeerList();
+      return pc;
     }
-
-    peers[peerId] = pc;
-
-    if (initiator) {
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      ws.send(JSON.stringify({ ...offer, from: myId, to: peerId }));
-    }
-
-    return pc;
-  }
   </script>
 </body>
 </html>
