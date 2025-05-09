@@ -62,7 +62,9 @@
 
         if (msg.type === "peer-list" && wsReady) {
           for (const peerId of msg.peers) {
-            await createPeerConnection(peerId, true);
+            const initiator = myId < peerId;
+            console.log(`🔌 Connecting to ${peerId} as ${initiator ? "initiator" : "responder"}`);
+            await createPeerConnection(peerId, initiator);
           }
           updatePeerList();
         }
@@ -70,7 +72,9 @@
         else if (msg.type === "new-peer" && wsReady) {
           const peerId = msg.id;
           if (!peers[peerId]) {
-            await createPeerConnection(peerId, true);
+            const initiator = myId < peerId;
+            console.log(`🆕 New peer ${peerId}, connecting as ${initiator ? "initiator" : "responder"}`);
+            await createPeerConnection(peerId, initiator);
             dingSound.play();
             updatePeerList();
           }
