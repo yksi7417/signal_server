@@ -70,4 +70,4 @@ async def websocket_handler(request):
 # Aiohttp app setup
 app = web.Application()
 app.router.add_get('/ws', websocket_handler)
-web.run_app(app, port=80)
+web.run_app(app, port=8080)
