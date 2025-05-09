@@ -4,170 +4,30 @@
   <meta charset="utf-8" />
   <title>WebRTC Mesh Voice Chat</title>
   <link rel="icon" href="/static/icons/favicon.ico" type="image/x-icon">
+  <style>
+    .peer-entry {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .mic-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: gray;
+    }
+    .mic-indicator.active {
+      background: green;
+    }
+  </style>
 </head>
 <body>
   <h2>👥 Connected Peers</h2>
   <ul id="peerList"></ul>
-
   <button onclick="start()">🎙️ Start Voice Chat</button>
   <audio id="ding" src="audio/dingdong.mp3" preload="auto"></audio>
-
   <script src="scripts/env.js"></script>
-  <script>
-    const peers = {};
-    const pendingCandidates = {};
-    const myId = "client-" + Math.floor(Math.random() * 10000);
-    let localStream;
-    let ws;
-    let wsReady = false;
-
-    const peerList = document.getElementById("peerList");
-    const dingSound = document.getElementById("ding");
-
-    function updatePeerList() {
-      peerList.innerHTML = Object.keys(peers).map(id => `<li>${id}</li>`).join("");
-    }
-
-    function safeSend(payload) {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify(payload));
-      } else {
-        console.warn("⚠️ Tried to send over closed WebSocket", payload);
-      }
-    }
-
-    async function flushPendingCandidates(peerId, pc) {
-      if (pendingCandidates[peerId]) {
-        for (const candidate of pendingCandidates[peerId]) {
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
-        }
-        delete pendingCandidates[peerId];
-      }
-    }
-
-    async function start() {
-      localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      ws = new WebSocket(window.APP_CONFIG.wsUrl);
-
-      ws.onopen = () => {
-        console.log("✅ WebSocket connected");
-        wsReady = true;
-        safeSend({ type: "hello", id: myId });
-      };
-
-      ws.onmessage = async ({ data }) => {
-        const msg = JSON.parse(data);
-        const from = msg.from;
-
-        if (msg.type === "peer-list" && wsReady) {
-          for (const peerId of msg.peers) {
-            const initiator = myId < peerId;
-            console.log(`🔌 Connecting to ${peerId} as ${initiator ? "initiator" : "responder"}`);
-            await createPeerConnection(peerId, initiator);
-          }
-          updatePeerList();
-        }
-
-        else if (msg.type === "new-peer" && wsReady) {
-          const peerId = msg.id;
-          if (!peers[peerId]) {
-            const initiator = myId < peerId;
-            console.log(`🆕 New peer ${peerId}, connecting as ${initiator ? "initiator" : "responder"}`);
-            await createPeerConnection(peerId, initiator);
-            dingSound.play();
-            updatePeerList();
-          }
-        }
-
-        else if (msg.type === "peer-disconnect") {
-          if (peers[msg.id]) {
-            peers[msg.id].close();
-            delete peers[msg.id];
-            updatePeerList();
-          }
-        }
-
-        else if (msg.type === "offer" && wsReady) {
-          const pc = peers[from] || await createPeerConnection(from, false);
-
-          if (pc.signalingState === "have-remote-offer" || pc.signalingState === "have-local-offer") {
-            console.warn("❗ Ignoring offer: already negotiating with", from, "(state:", pc.signalingState, ")");
-            return;
-          }
-
-          console.log(`📥 Received offer from ${from}, setting remote description`);
-          await pc.setRemoteDescription(new RTCSessionDescription(msg));
-          await flushPendingCandidates(from, pc);
-
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          safeSend({ ...answer, from: myId, to: from });
-        }
-
-        else if (msg.type === "answer") {
-          const pc = peers[from];
-          if (pc && pc.signalingState === "have-local-offer") {
-            await pc.setRemoteDescription(new RTCSessionDescription(msg));
-            await flushPendingCandidates(from, pc);
-          } else {
-            console.warn("Ignored answer: unexpected signaling state", pc?.signalingState);
-          }
-        }
-
-        else if (msg.type === "candidate") {
-          const pc = peers[from];
-          if (pc && pc.remoteDescription && pc.remoteDescription.type) {
-            await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
-          } else {
-            console.log("⚠️ Queuing ICE candidate from", from);
-            if (!pendingCandidates[from]) pendingCandidates[from] = [];
-            pendingCandidates[from].push(msg.candidate);
-          }
-        }
-      };
-
-      ws.onerror = (err) => console.error("WebSocket error:", err);
-      ws.onclose = () => console.warn("WebSocket closed");
-    }
-
-    async function createPeerConnection(peerId, initiator = true) {
-      if (peers[peerId]) return peers[peerId];
-
-      const pc = new RTCPeerConnection({
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-      });
-
-      pendingCandidates[peerId] = [];
-
-      pc.onicecandidate = ({ candidate }) => {
-        if (candidate) {
-          safeSend({ type: "candidate", candidate, from: myId, to: peerId });
-        }
-      };
-
-      pc.ontrack = ({ streams }) => {
-        const audio = new Audio();
-        audio.srcObject = streams[0];
-        audio.autoplay = true;
-        document.body.appendChild(audio);
-      };
-
-      localStream.getTracks().forEach((track) => {
-        pc.addTrack(track, localStream);
-      });
-
-      peers[peerId] = pc;
-
-      if (initiator) {
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        safeSend({ ...offer, from: myId, to: peerId });
-      }
-
-      updatePeerList();
-      return pc;
-    }
-  </script>
+  <script src="scripts/signaling.js" type="module"></script>
 </body>
 </html>
