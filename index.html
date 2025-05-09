@@ -15,7 +15,7 @@
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       console.log("🎤 Microphone access granted.");
 
-      ws = new WebSocket("ws://localhost:8080/ws");
+      ws = new WebSocket("wss://oracle-free-instance-20230330-1941.tail356fe.ts.net/ws");
 
       ws.onopen = () => {
         console.log("✅ WebSocket connected");
