@@ -9,14 +9,17 @@
 <body>
   <h2>👥 Connected Peers</h2>
 
-<div style="display: flex; align-items: center; gap: 16px;">
-  <label for="clientIdInput">Your Name:</label>
-  <input id="clientIdInput" value="" />
-  <button id="startButton">init...</button>
-  <label id="serverLocation"></label>
-</div>
+  <div style="display: flex; align-items: center; gap: 16px;">
+    <label for="clientIdInput">Your Name:</label>
+    <input id="clientIdInput" value="" />
+    <button id="startButton">init...</button>
+    <label id="serverLocation"></label>
+  </div>
 
   <ul id="peerList"></ul>
+
+  <label for="logArea">Logs:</label><br>
+  <textarea id="logArea" readonly></textarea>
 
   <audio id="ding" src="/static/audio/dingdong.mp3" preload="auto"></audio>
 

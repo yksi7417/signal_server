@@ -1,8 +1,32 @@
 /* peer.css */
-body {
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   font-family: sans-serif;
-  margin: 2rem;
-  background: #f4f4f4;
+}
+
+serverLocation {
+  display: none;
+}
+
+logArea {
+  flex: 1; /* take remaining vertical space */
+  width: 100%;
+  padding: 10px;
+  font-family: monospace;
+  white-space: pre;
+  overflow-y: auto;
+  resize: none;
+  border: none;
+  box-sizing: border-box;
+}
+
+#controls {
+  padding: 10px;
+  background-color: #f0f0f0;
 }
 
 h2 {
@@ -67,8 +91,4 @@ input[type="range"] {
 .peer-entry.self::before {
   color: #555;
   font-style: italic;
-}
-
-#serverLocation {
-  display: none;
 }
