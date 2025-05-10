@@ -53,9 +53,11 @@ async function handleStartOrEnd() {
   if (!connected) {
     startBtn.disabled = true;
     startBtn.textContent = "🔄 Connecting...";
+    await new Promise(r => setTimeout(r));
     await start();
     startBtn.disabled = false;
     startBtn.textContent = "End Call";
+    await new Promise(r => setTimeout(r));
     connected = true;
   } else {
     // End call
