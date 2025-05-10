@@ -21,8 +21,12 @@
   <script type="module">
     import * as signal from '/static/scripts/signaling.js';
     document.getElementById('clientIdInput').value = localStorage.getItem('clientId') || signal.myId;
-    document.getElementById('startButton').onclick = signal.handleStartOrEnd;
-    document.getElementById('startButton').textContent = "Starting...";
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById('clientIdInput').value = localStorage.getItem('clientId') || signal.myId;
+      const startButton = document.getElementById('startButton');
+      startButton.onclick = signal.handleStartOrEnd;
+      startButton.textContent = "🎙️ Starting Call";
+    });
   </script>
 </body>
 </html>
