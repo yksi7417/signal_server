@@ -1,8 +1,11 @@
 import json
 import os
-from pprint import pprint
+import logging
 import aiohttp_cors
 from aiohttp import web, WSMsgType
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 WS_ENDPOINTS = {
     "dev": "ws://localhost:8080/ws",
@@ -32,8 +35,8 @@ async def websocket_handler(request):
     ws = web.WebSocketResponse()
     await ws.prepare(request)
 
-    print("Websocket from:", request.remote)
-    pprint(dict(request.headers))
+    logger.info("Websocket from: %s", request.remote)
+    logger.debug("Headers: %s", dict(request.headers))
     print("Cookies:", request.cookies)
 
     client_id = None
@@ -69,14 +72,14 @@ async def websocket_handler(request):
 
     try:
         async for msg in ws:
-            if msg.type == WSMsgType.TEXT:
-                try:
+            try:
+                if msg.type == WSMsgType.TEXT:
                     data = json.loads(msg.data)
                     to_id = data.get("to")
                     if to_id in clients:
                         await clients[to_id].send_str(msg.data)
-                except Exception as e:
-                    print("Error parsing message:", msg.data, e)
+            except Exception as e:
+                print("Error handling WebSocket message:", e)
     finally:
         if client_id in clients:
             del clients[client_id]
@@ -94,7 +97,6 @@ async def cors_headers_middleware(request, handler):
     response = await handler(request)
     response.headers['Cross-Origin-Opener-Policy'] = 'same-origin'
     response.headers['Cross-Origin-Embedder-Policy'] = 'require-corp'
-    response.headers['Access-Control-Allow-Origin'] = '*'
     return response
 
 
@@ -110,7 +112,7 @@ app.router.add_get('/', index_handler)
 app.router.add_get('/voice.html', voice_handler)
 app.router.add_get('/ws', websocket_handler)
 app.router.add_get('/env.js', env_js_handler)
-app.router.add_static('/static/', path='./static', name='static', show_index=True)
+app.router.add_static('/static/', path='./static', name='static')
 
 cors = aiohttp_cors.setup(app, defaults={
     "*": aiohttp_cors.ResourceOptions(

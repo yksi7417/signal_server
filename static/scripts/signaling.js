@@ -1,3 +1,5 @@
+import { initializeAudio } from './audioManager.js';
+
 const peers = {};
 const pendingCandidates = {};
 const peerJoinTimes = {};
@@ -9,6 +11,7 @@ let wsReady = false;
 let isMuted = false;
 let connected = false;
 
+let sharedAudioContext;
 
 const peerList = document.getElementById("peerList");
 const dingSound = document.getElementById("ding");
@@ -113,7 +116,12 @@ function setVolume(id, level) {
 }
 
 function monitorMicActivity(stream) {
-  const ctx = new AudioContext();
+  if (!sharedAudioContext) {
+    console.error("AudioContext is not initialized.");
+    return;
+  }
+
+  const ctx = sharedAudioContext;
   const analyser = ctx.createAnalyser();
   const mic = ctx.createMediaStreamSource(stream);
   mic.connect(analyser);
@@ -130,7 +138,7 @@ function monitorMicActivity(stream) {
 }
 
 function monitorRemoteMicActivity(peerId, stream) {
-  const ctx = new AudioContext();
+  const ctx = sharedAudioContext;
   const analyser = ctx.createAnalyser();
   const source = ctx.createMediaStreamSource(stream);
   source.connect(analyser);
@@ -196,31 +204,9 @@ async function createPeerConnection(peerId, initiator = true) {
 }
 
 async function start() {
-  if (nameInput && nameInput.value.trim()) {
-    const newId = nameInput.value.trim();
-    if (newId && newId !== myId) {
-      // Disconnect current identity
-      if (wsReady) {
-        safeSend({ type: "peer-disconnect", id: myId });
-      }
-      myId = newId;
-      localStorage.setItem("clientId", myId);
-      if (wsReady) {
-        safeSend({ type: "hello", id: myId });
-      }
-      updatePeerListUI();
-    }
-    myId = newId;
-    localStorage.setItem("clientId", myId);
-    if (wsReady) {
-      safeSend({ type: "hello", id: myId });
-    }
-    updatePeerListUI();
-    }
-    localStorage.setItem("clientId", myId);
-  }
-
-  localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const { sharedAudioContext: ctx, sharedMediaStream } = await initializeAudio();
+  sharedAudioContext = ctx; // Ensure sharedAudioContext is set
+  localStream = sharedMediaStream;
   monitorMicActivity(localStream);
   updatePeerListUI();
 
@@ -284,7 +270,7 @@ async function start() {
   ws.onclose = () => {
     connected = false;
     updatePeerListUI();
-    
+
     console.warn("WebSocket closed, refreshing in 20 seconds...");
     const banner = document.createElement("div");
     banner.id = "reconnect-banner";
@@ -311,6 +297,7 @@ async function start() {
 
     setTimeout(() => location.reload(), 20000);
   };
+}
 
 window.handleStartOrEnd = handleStartOrEnd;
 window.mutePeer = mutePeer;
@@ -326,4 +313,4 @@ export function setClientId(newId) {
   }
 }
 
-export { myId };
+export { myId, handleStartOrEnd };
