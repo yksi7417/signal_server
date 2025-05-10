@@ -315,10 +315,6 @@ window.setVolume = setVolume;
 window.toggleMuteSelf = toggleMuteSelf;
 
 window.addEventListener("DOMContentLoaded", async () => {
-  if (startBtn) {
-    startBtn.textContent = "🎙️ Start Call";
-  }
-  startBtn.onclick = handleStartOrEnd;
   await handleStartOrEnd();
 });
 

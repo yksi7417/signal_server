@@ -21,6 +21,7 @@
   <script type="module">
     import * as signal from '/static/scripts/signaling.js';
     document.getElementById('clientIdInput').value = localStorage.getItem('clientId') || signal.myId;
+    document.getElementById('startButton').onclick = signal.handleStartOrEnd;
   </script>
 </body>
 </html>
