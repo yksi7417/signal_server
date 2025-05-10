@@ -63,6 +63,7 @@ async function handleStartOrEnd() {
     if (ws && ws.readyState === WebSocket.OPEN) {
       safeSend({ type: "peer-disconnect", id: myId });
       ws.close();
+      connected = false;
     }
     Object.values(peers).forEach(pc => pc.close());
     Object.keys(peers).forEach(id => delete peers[id]);
@@ -70,7 +71,6 @@ async function handleStartOrEnd() {
     if (localStream) {
       localStream.getTracks().forEach(t => t.stop());
     }
-    connected = false;
   }
 }
 
