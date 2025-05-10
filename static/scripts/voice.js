@@ -1,4 +1,5 @@
 import { initializeAudio } from './audioManager.js';
+import { myId } from './signaling.js';
 
 async function start() {
   const { sharedAudioContext, sharedMediaStream } = await initializeAudio();
@@ -13,20 +14,18 @@ async function start() {
 
   // Listen for result and partial result
   recognizer.addEventListener("result", ev => {
-    console.log("Result: ", ev.detail);
-    const logArea = document.getElementById("logArea");
-    if (logArea) {
-      logArea.value += `Result: ${JSON.stringify(ev.detail)}\n`;
-      logArea.scrollTop = logArea.scrollHeight;
+    const resultElement = document.getElementById(`full-result-${myId}`);
+    if (resultElement) {
+      const resultData = JSON.parse(ev.detail); 
+      resultElement.textContent = `Full: ${resultData.text}`;
     }
   });
 
   recognizer.addEventListener("partialResult", ev => {
-    console.log("Partial result: ", ev.detail);
-    const logArea = document.getElementById("logArea");
-    if (logArea) {
-      logArea.value += `Partial result: ${JSON.stringify(ev.detail)}\n`;
-      logArea.scrollTop = logArea.scrollHeight;
+    const partialResultElement = document.getElementById(`partial-result-${myId}`);
+    if (partialResultElement) {
+        const resultData = JSON.parse(ev.detail); 
+        partialResultElement.textContent = `Partial: ${resultData.partial}`;
     }
   });
 

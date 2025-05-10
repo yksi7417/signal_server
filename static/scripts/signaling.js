@@ -38,6 +38,10 @@ function updatePeerListUI() {
     <button onclick="toggleMuteSelf()">${isMuted ? "🔈" : "🔇"}</button>
     <input type="range" min="0" max="1" step="0.01" value="1" onchange="setVolume('${myId}', this.value)">
     <em>(you)</em>
+    <div class="speech-results">
+      <div id="partial-result-${myId}" class="partial-result">Partial: --</div>
+      <div id="full-result-${myId}" class="full-result">Full: --</div>
+    </div>
   `;
   peerList.appendChild(li);
 
@@ -55,6 +59,10 @@ function updatePeerListUI() {
       <span id="latency-${id}">⏱️ --</span>
       <button onclick="mutePeer('${id}')">🔇</button>
       <input type="range" min="0" max="1" step="0.01" value="1" onchange="setVolume('${id}', this.value)">
+      <div class="speech-results">
+        <div id="partial-result-${id}" class="partial-result">Partial: --</div>
+        <div id="full-result-${id}" class="full-result">Full: --</div>
+      </div>
     `;
     peerList.appendChild(peerLi);
   }
