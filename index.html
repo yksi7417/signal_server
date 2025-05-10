@@ -11,25 +11,18 @@
 
   <label for="clientIdInput">Your Name:</label>
   <input id="clientIdInput" value="" />
-  <button onclick="applyClientId()">Update Name</button>
 
   <ul id="peerList"></ul>
-  <button onclick="start()">🎙️ Start Voice Chat</button>
+
+  <!-- Single button for both actions -->
+  <button onclick="start()">🎙️ Start Call</button>
+
   <audio id="ding" src="/static/audio/dingdong.mp3" preload="auto"></audio>
 
   <script src="/static/scripts/env.js"></script>
   <script type="module">
-    import * as signal from './static/scripts/signaling.js';
-
+    import * as signal from '/static/scripts/signaling.js';
     document.getElementById('clientIdInput').value = localStorage.getItem('clientId') || signal.myId;
-
-    window.applyClientId = function () {
-      const newId = document.getElementById('clientIdInput').value.trim();
-      if (newId) {
-        localStorage.setItem("clientId", newId);
-        signal.setClientId(newId);
-      }
-    };
   </script>
 </body>
 </html>

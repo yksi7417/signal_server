@@ -2,7 +2,8 @@
 const peers = {};
 const pendingCandidates = {};
 const peerJoinTimes = {};
-let myId = "client-" + Math.floor(Math.random() * 10000);
+let myId = localStorage.getItem("clientId") || "client-" + Math.floor(Math.random() * 10000);
+localStorage.setItem("clientId", myId);
 let localStream;
 let ws;
 let wsReady = false;
@@ -10,18 +11,6 @@ let isMuted = false;
 
 const peerList = document.getElementById("peerList");
 const dingSound = document.getElementById("ding");
-
-function applyClientId() {
-  const newId = document.getElementById("clientIdInput").value.trim();
-  if (newId) {
-    myId = newId;
-    localStorage.setItem("clientId", myId);
-    updatePeerListUI();
-    if (wsReady) {
-      safeSend({ type: "hello", id: myId });
-    }
-  }
-}
 
 function updatePeerListUI() {
   peerList.innerHTML = "";
@@ -178,6 +167,12 @@ async function createPeerConnection(peerId, initiator = true) {
 }
 
 async function start() {
+  const nameInput = document.getElementById("clientIdInput");
+  if (nameInput && nameInput.value.trim()) {
+    myId = nameInput.value.trim();
+    localStorage.setItem("clientId", myId);
+  }
+
   localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
   monitorMicActivity(localStream);
   updatePeerListUI();
@@ -251,7 +246,16 @@ async function start() {
     banner.style.borderRadius = "5px";
     banner.style.boxShadow = "0 0 6px rgba(0,0,0,0.2)";
     banner.style.zIndex = "1000";
+    banner.style.fontWeight = "bold";
     document.body.appendChild(banner);
+
+    let countdown = 20;
+    const interval = setInterval(() => {
+      countdown--;
+      banner.textContent = `🔌 Disconnected. Reconnecting in ${countdown} seconds...`;
+      if (countdown <= 0) clearInterval(interval);
+    }, 1000);
+
     setTimeout(() => location.reload(), 20000);
   };
 }
@@ -260,3 +264,14 @@ window.start = start;
 window.mutePeer = mutePeer;
 window.setVolume = setVolume;
 window.toggleMuteSelf = toggleMuteSelf;
+
+export function setClientId(newId) {
+  myId = newId;
+  localStorage.setItem("clientId", myId);
+  updatePeerListUI();
+  if (wsReady) {
+    safeSend({ type: "hello", id: myId });
+  }
+}
+
+export { myId };
