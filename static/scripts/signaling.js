@@ -169,7 +169,20 @@ async function createPeerConnection(peerId, initiator = true) {
 async function start() {
   const nameInput = document.getElementById("clientIdInput");
   if (nameInput && nameInput.value.trim()) {
-    myId = nameInput.value.trim();
+    const newId = nameInput.value.trim();
+    if (newId && newId !== myId) {
+      // Disconnect current identity
+      if (wsReady) {
+        safeSend({ type: "peer-disconnect", id: myId });
+      }
+      myId = newId;
+      localStorage.setItem("clientId", myId);
+      if (wsReady) {
+        safeSend({ type: "hello", id: myId });
+      }
+      updatePeerListUI();
+    });
+    }
     localStorage.setItem("clientId", myId);
   }
 
@@ -266,14 +279,17 @@ window.setVolume = setVolume;
 window.toggleMuteSelf = toggleMuteSelf;
 
 window.addEventListener("DOMContentLoaded", async () => {
-  const startBtn = document.querySelector("button[onclick='start()']") || document.getElementById("startButton");
-  if (startBtn) {
+  const startBtn = document.querySelector("#startButton");
+  const nameInput = document.getElementById("clientIdInput");
+  if (startBtn && nameInput) {
     startBtn.disabled = true;
     startBtn.textContent = "🔄 Connecting...";
-  }
-  await start();
-  if (startBtn) {
-    startBtn.textContent = "✅ Connected";
+    await start();
+    startBtn.disabled = false;
+    startBtn.textContent = "Update Name";
+    startBtn.onclick = () => start();
+  } else {
+    await start();
   }
 });
 
