@@ -11,6 +11,18 @@ let isMuted = false;
 const peerList = document.getElementById("peerList");
 const dingSound = document.getElementById("ding");
 
+function applyClientId() {
+  const newId = document.getElementById("clientIdInput").value.trim();
+  if (newId) {
+    myId = newId;
+    localStorage.setItem("clientId", myId);
+    updatePeerListUI();
+    if (wsReady) {
+      safeSend({ type: "hello", id: myId });
+    }
+  }
+}
+
 function updatePeerListUI() {
   peerList.innerHTML = "";
 
