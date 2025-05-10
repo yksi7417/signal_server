@@ -17,7 +17,9 @@ const nameInput = document.getElementById("clientIdInput");
 
 function updatePeerListUI() {
   startBtn.onclick = handleStartOrEnd;
-  startBtn.textContent = connected ? "End Call" : "Start Call";
+  setTimeout(() => {
+    startBtn.textContent = connected ? "End Call" : "Start Call";
+  }, 1000);
 
   peerList.innerHTML = "";
 
