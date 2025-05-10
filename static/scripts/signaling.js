@@ -53,12 +53,7 @@ async function handleStartOrEnd() {
   if (!connected) {
     startBtn.disabled = true;
     startBtn.textContent = "🔄 Connecting...";
-    await new Promise(r => setTimeout(r));
     await start();
-    startBtn.disabled = false;
-    startBtn.textContent = "End Call";
-    await new Promise(r => setTimeout(r));
-    connected = true;
   } else {
     // End call
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -218,6 +213,10 @@ async function start() {
     updatePeerListUI();
     }
     localStorage.setItem("clientId", myId);
+
+    startBtn.disabled = false;
+    startBtn.textContent = "End Call";
+    connected = true;
   }
 
   localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -253,6 +252,9 @@ async function start() {
         peers[msg.id].close();
         delete peers[msg.id];
         updatePeerListUI();
+        startBtn.disabled = false;
+        startBtn.textContent = "🎙️ Start Call";
+        connected = false;
       }
     } else if (msg.type === "offer") {
       const pc = peers[from] || await createPeerConnection(from, false);
@@ -314,11 +316,10 @@ window.toggleMuteSelf = toggleMuteSelf;
 window.addEventListener("DOMContentLoaded", async () => {
   const startBtn = document.querySelector("#startButton");
   const nameInput = document.getElementById("clientIdInput");
-  window.handleStartOrEnd = handleStartOrEnd;
   if (startBtn && nameInput) {
-    startBtn.textContent = "Start Call";
-    startBtn.onclick = handleStartOrEnd;
+    startBtn.textContent = "🎙️ Start Call";
   }
+  startBtn.onclick = handleStartOrEnd;
   await handleStartOrEnd();
 });
 
