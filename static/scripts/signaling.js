@@ -317,11 +317,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   if (startBtn && nameInput) {
     startBtn.textContent = "Start Call";
     startBtn.onclick = handleStartOrEnd;
-    await handleStartOrEnd();
   }
-  else {
-    await start();
-  }
+  await handleStartOrEnd();
 });
 
 export function setClientId(newId) {
