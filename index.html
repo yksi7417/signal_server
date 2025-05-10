@@ -22,6 +22,7 @@
     import * as signal from '/static/scripts/signaling.js';
     document.getElementById('clientIdInput').value = localStorage.getItem('clientId') || signal.myId;
     document.getElementById('startButton').onclick = signal.handleStartOrEnd;
+    document.getElementById('startButton').textContent = "Starting...";
   </script>
 </body>
 </html>
