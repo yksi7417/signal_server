@@ -1,4 +1,3 @@
-// signaling.js
 const peers = {};
 const pendingCandidates = {};
 const peerJoinTimes = {};
@@ -181,7 +180,14 @@ async function start() {
         safeSend({ type: "hello", id: myId });
       }
       updatePeerListUI();
-    }}
+    }
+    myId = newId;
+    localStorage.setItem("clientId", myId);
+    if (wsReady) {
+      safeSend({ type: "hello", id: myId });
+    }
+    updatePeerListUI();
+    }
     localStorage.setItem("clientId", myId);
   }
 
