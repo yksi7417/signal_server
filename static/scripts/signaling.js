@@ -265,6 +265,18 @@ window.mutePeer = mutePeer;
 window.setVolume = setVolume;
 window.toggleMuteSelf = toggleMuteSelf;
 
+window.addEventListener("DOMContentLoaded", async () => {
+  const startBtn = document.querySelector("button[onclick='start()']") || document.getElementById("startButton");
+  if (startBtn) {
+    startBtn.disabled = true;
+    startBtn.textContent = "🔄 Connecting...";
+  }
+  await start();
+  if (startBtn) {
+    startBtn.textContent = "✅ Connected";
+  }
+});
+
 export function setClientId(newId) {
   myId = newId;
   localStorage.setItem("clientId", myId);
