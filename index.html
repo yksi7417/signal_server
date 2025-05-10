@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <title>WebRTC Mesh Voice Chat</title>
   <link rel="icon" href="/static/icons/favicon.ico" type="image/x-icon">
-  <link rel="stylesheet" href="/statics/tyles/peer.css">
+  <link rel="stylesheet" href="/static/styles/peer.css">
 </head>
 <body>
   <h2>👥 Connected Peers</h2>
@@ -15,11 +15,11 @@
 
   <ul id="peerList"></ul>
   <button onclick="start()">🎙️ Start Voice Chat</button>
-  <audio id="ding" src="/statics/audio/dingdong.mp3" preload="auto"></audio>
+  <audio id="ding" src="/static/audio/dingdong.mp3" preload="auto"></audio>
 
-  <script src="/statics/scripts/env.js"></script>
+  <script src="/static/scripts/env.js"></script>
   <script type="module">
-    import * as signal from './statics/scripts/signaling.js';
+    import * as signal from './static/scripts/signaling.js';
 
     document.getElementById('clientIdInput').value = localStorage.getItem('clientId') || signal.myId;
 
