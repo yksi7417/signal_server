@@ -68,3 +68,7 @@ input[type="range"] {
   color: #555;
   font-style: italic;
 }
+
+#serverLocation {
+  display: none;
+}

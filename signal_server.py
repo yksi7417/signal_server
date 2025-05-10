@@ -1,5 +1,6 @@
 import json
 import os
+from pprint import pprint
 from aiohttp import web, WSMsgType
 
 WS_ENDPOINTS = {
@@ -10,7 +11,7 @@ WS_ENDPOINTS = {
 
 
 async def env_js_handler(request):
-    env = os.getenv("APP_ENV", "prod").lower()
+    env = os.getenv("APP_ENV", "prod").lower().strip()
     ws_url = WS_ENDPOINTS.get(env, WS_ENDPOINTS["prod"])
 
     js_code = f"""
@@ -30,7 +31,9 @@ async def websocket_handler(request):
     ws = web.WebSocketResponse()
     await ws.prepare(request)
 
-    print("WebSocket connected from:", request.remote)
+    print("Websocket from:", request.remote)
+    pprint(dict(request.headers))
+    print("Cookies:", request.cookies)
 
     client_id = None
 

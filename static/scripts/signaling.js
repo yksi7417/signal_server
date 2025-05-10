@@ -14,6 +14,7 @@ const peerList = document.getElementById("peerList");
 const dingSound = document.getElementById("ding");
 const startBtn = document.getElementById("startButton");
 const nameInput = document.getElementById("clientIdInput");
+const serverLocation = document.getElementById("serverLocation");
 
 function updatePeerListUI() {
   startBtn.onclick = handleStartOrEnd;
@@ -224,6 +225,7 @@ async function start() {
   updatePeerListUI();
 
   ws = new WebSocket(window.APP_CONFIG.wsUrl);
+  serverLocation.textContent = `serverLocation:${window.APP_CONFIG.env}:${window.APP_CONFIG.wsUrl}`;
 
   ws.onopen = () => {
     wsReady = true;
