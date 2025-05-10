@@ -181,8 +181,7 @@ async function start() {
         safeSend({ type: "hello", id: myId });
       }
       updatePeerListUI();
-    });
-    }
+    }}
     localStorage.setItem("clientId", myId);
   }
 
@@ -271,7 +270,6 @@ async function start() {
 
     setTimeout(() => location.reload(), 20000);
   };
-}
 
 window.start = start;
 window.mutePeer = mutePeer;
