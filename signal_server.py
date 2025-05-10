@@ -91,7 +91,7 @@ async def index_handler(request):
 app = web.Application()
 app.router.add_get('/', index_handler)
 app.router.add_get('/ws', websocket_handler)
-app.router.add_get('/env.js', websocket_handler)
+app.router.add_get('/env.js', env_js_handler)
 app.router.add_static('/static/', path='./static', name='static')
 
 web.run_app(app, port=8080)
