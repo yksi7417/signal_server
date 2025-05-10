@@ -306,7 +306,7 @@ async function start() {
     setTimeout(() => location.reload(), 20000);
   };
 
-window.start = handleStartOrEnd;
+window.handleStartOrEnd = handleStartOrEnd;
 window.mutePeer = mutePeer;
 window.setVolume = setVolume;
 window.toggleMuteSelf = toggleMuteSelf;
