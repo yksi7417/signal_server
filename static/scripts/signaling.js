@@ -253,9 +253,6 @@ async function start() {
         peers[msg.id].close();
         delete peers[msg.id];
         updatePeerListUI();
-        startBtn.disabled = false;
-        startBtn.textContent = "🎙️ Start Call";
-        connected = false;
       }
     } else if (msg.type === "offer") {
       const pc = peers[from] || await createPeerConnection(from, false);
@@ -309,14 +306,10 @@ async function start() {
     setTimeout(() => location.reload(), 20000);
   };
 
-window.start = start;
+window.start = handleStartOrEnd;
 window.mutePeer = mutePeer;
 window.setVolume = setVolume;
 window.toggleMuteSelf = toggleMuteSelf;
-
-window.addEventListener("DOMContentLoaded", async () => {
-  await handleStartOrEnd();
-});
 
 export function setClientId(newId) {
   myId = newId;
