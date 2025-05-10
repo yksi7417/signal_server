@@ -1,5 +1,27 @@
 import json
+import os
 from aiohttp import web, WSMsgType
+
+WS_ENDPOINTS = {
+    "dev": "ws://localhost:8080/ws",
+    "uat": "wss://oracle-free-instance-20230330-1941.tail356fe.ts.net/ws",
+    "prod": "wss://signal-server-eo-7uq.fly.dev/ws"
+}
+
+
+async def env_js_handler(request):
+    env = os.getenv("APP_ENV", "prod").lower()
+    ws_url = WS_ENDPOINTS.get(env, WS_ENDPOINTS["prod"])
+
+    js_code = f"""
+    window.APP_CONFIG = {{
+      env: "{env}",
+      wsUrl: "{ws_url}"
+    }};
+    """.strip()
+
+    return web.Response(text=js_code, content_type="application/javascript")
+
 
 clients = {}  # {id: websocket}
 
@@ -69,6 +91,7 @@ async def index_handler(request):
 app = web.Application()
 app.router.add_get('/', index_handler)
 app.router.add_get('/ws', websocket_handler)
+app.router.add_get('/env.js', websocket_handler)
 app.router.add_static('/static/', path='./static', name='static')
 
 web.run_app(app, port=8080)

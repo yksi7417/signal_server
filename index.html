@@ -17,7 +17,7 @@
 
   <audio id="ding" src="/static/audio/dingdong.mp3" preload="auto"></audio>
 
-  <script src="/static/scripts/env.js"></script>
+  <script src="/env.js"></script>
   <script type="module">
     import * as signal from '/static/scripts/signaling.js';
     document.getElementById('clientIdInput').value = localStorage.getItem('clientId') || signal.myId;
