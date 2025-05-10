@@ -12,6 +12,8 @@ let connected = false;
 
 const peerList = document.getElementById("peerList");
 const dingSound = document.getElementById("ding");
+const startBtn = document.getElementById("startButton");
+const nameInput = document.getElementById("clientIdInput");
 
 function updatePeerListUI() {
   peerList.innerHTML = "";
@@ -190,7 +192,6 @@ async function createPeerConnection(peerId, initiator = true) {
 }
 
 async function start() {
-  const nameInput = document.getElementById("clientIdInput");
   if (nameInput && nameInput.value.trim()) {
     const newId = nameInput.value.trim();
     if (newId && newId !== myId) {
@@ -314,9 +315,7 @@ window.setVolume = setVolume;
 window.toggleMuteSelf = toggleMuteSelf;
 
 window.addEventListener("DOMContentLoaded", async () => {
-  const startBtn = document.querySelector("#startButton");
-  const nameInput = document.getElementById("clientIdInput");
-  if (startBtn && nameInput) {
+  if (startBtn) {
     startBtn.textContent = "🎙️ Start Call";
   }
   startBtn.onclick = handleStartOrEnd;
