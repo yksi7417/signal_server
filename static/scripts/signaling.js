@@ -24,6 +24,7 @@ function updatePeerListUI() {
     <span id="latency-${myId}">⏱️ --</span>
     <button onclick="toggleMuteSelf()">${isMuted ? "🔈" : "🔇"}</button>
     <input type="range" min="0" max="1" step="0.01" value="1" onchange="setVolume('${myId}', this.value)">
+    <em>(you)</em>
   `;
   peerList.appendChild(li);
 
@@ -221,6 +222,11 @@ async function start() {
         pendingCandidates[from].push(msg.candidate);
       }
     }
+  };
+
+  ws.onclose = () => {
+    console.warn("WebSocket closed, refreshing in 20 seconds...");
+    setTimeout(() => location.reload(), 20000);
   };
 }
 
