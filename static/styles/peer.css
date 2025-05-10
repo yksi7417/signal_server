@@ -65,7 +65,6 @@ input[type="range"] {
 }
 
 .peer-entry.self::before {
-  content: "(you) ";
   color: #555;
   font-style: italic;
 }
