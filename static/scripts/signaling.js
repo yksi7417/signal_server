@@ -226,6 +226,20 @@ async function start() {
 
   ws.onclose = () => {
     console.warn("WebSocket closed, refreshing in 20 seconds...");
+    const banner = document.createElement("div");
+    banner.id = "reconnect-banner";
+    banner.textContent = "🔌 Disconnected. Reconnecting in 20 seconds...";
+    banner.style.position = "fixed";
+    banner.style.bottom = "10px";
+    banner.style.left = "50%";
+    banner.style.transform = "translateX(-50%)";
+    banner.style.background = "#ffcccc";
+    banner.style.color = "#333";
+    banner.style.padding = "0.5rem 1rem";
+    banner.style.borderRadius = "5px";
+    banner.style.boxShadow = "0 0 6px rgba(0,0,0,0.2)";
+    banner.style.zIndex = "1000";
+    document.body.appendChild(banner);
     setTimeout(() => location.reload(), 20000);
   };
 }
