@@ -7,6 +7,8 @@ let localStream;
 let ws;
 let wsReady = false;
 let isMuted = false;
+let connected = false;
+
 
 const peerList = document.getElementById("peerList");
 const dingSound = document.getElementById("ding");
@@ -44,6 +46,31 @@ function updatePeerListUI() {
       <input type="range" min="0" max="1" step="0.01" value="1" onchange="setVolume('${id}', this.value)">
     `;
     peerList.appendChild(peerLi);
+  }
+}
+
+async function handleStartOrEnd() {
+  if (!connected) {
+    startBtn.disabled = true;
+    startBtn.textContent = "🔄 Connecting...";
+    await start();
+    startBtn.disabled = false;
+    startBtn.textContent = "End Call";
+    connected = true;
+  } else {
+    // End call
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      safeSend({ type: "peer-disconnect", id: myId });
+      ws.close();
+    }
+    Object.values(peers).forEach(pc => pc.close());
+    Object.keys(peers).forEach(id => delete peers[id]);
+    updatePeerListUI();
+    if (localStream) {
+      localStream.getTracks().forEach(t => t.stop());
+    }
+    startBtn.textContent = "Start Call";
+    connected = false;
   }
 }
 
@@ -286,13 +313,11 @@ window.addEventListener("DOMContentLoaded", async () => {
   const startBtn = document.querySelector("#startButton");
   const nameInput = document.getElementById("clientIdInput");
   if (startBtn && nameInput) {
-    startBtn.disabled = true;
-    startBtn.textContent = "🔄 Connecting...";
-    await start();
-    startBtn.disabled = false;
-    startBtn.textContent = "Update Name";
-    startBtn.onclick = () => start();
-  } else {
+    startBtn.textContent = "Start Call";
+    startBtn.onclick = handleStartOrEnd;
+    await handleStartOrEnd();
+  }
+  else {
     await start();
   }
 });
