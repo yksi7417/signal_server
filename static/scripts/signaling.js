@@ -16,6 +16,9 @@ const startBtn = document.getElementById("startButton");
 const nameInput = document.getElementById("clientIdInput");
 
 function updatePeerListUI() {
+  startBtn.onclick = handleStartOrEnd;
+  startBtn.textContent = connected ? "End Call" : "Start Call";
+
   peerList.innerHTML = "";
 
   // Add self first
@@ -53,9 +56,8 @@ function updatePeerListUI() {
 
 async function handleStartOrEnd() {
   if (!connected) {
-    startBtn.disabled = true;
-    startBtn.textContent = "🔄 Connecting...";
     await start();
+    connected = true;
   } else {
     // End call
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -68,7 +70,6 @@ async function handleStartOrEnd() {
     if (localStream) {
       localStream.getTracks().forEach(t => t.stop());
     }
-    startBtn.textContent = "Start Call";
     connected = false;
   }
 }
@@ -214,10 +215,6 @@ async function start() {
     updatePeerListUI();
     }
     localStorage.setItem("clientId", myId);
-
-    startBtn.disabled = false;
-    startBtn.textContent = "End Call";
-    connected = true;
   }
 
   localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
