@@ -258,12 +258,14 @@ async function start() {
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       safeSend({ ...answer, from: myId, to: from });
+      connected = true;
     } else if (msg.type === "answer") {
       const pc = peers[from];
       if (pc && pc.signalingState === "have-local-offer") {
         await pc.setRemoteDescription(new RTCSessionDescription(msg));
         await flushPendingCandidates(from, pc);
       }
+      connected = true;
     } else if (msg.type === "candidate") {
       const pc = peers[from];
       if (pc && pc.remoteDescription && pc.remoteDescription.type) {
@@ -276,6 +278,9 @@ async function start() {
   };
 
   ws.onclose = () => {
+    connected = false;
+    updatePeerListUI();
+    
     console.warn("WebSocket closed, refreshing in 20 seconds...");
     const banner = document.createElement("div");
     banner.id = "reconnect-banner";
