@@ -314,6 +314,7 @@ window.toggleMuteSelf = toggleMuteSelf;
 window.addEventListener("DOMContentLoaded", async () => {
   const startBtn = document.querySelector("#startButton");
   const nameInput = document.getElementById("clientIdInput");
+  window.handleStartOrEnd = handleStartOrEnd;
   if (startBtn && nameInput) {
     startBtn.textContent = "Start Call";
     startBtn.onclick = handleStartOrEnd;
