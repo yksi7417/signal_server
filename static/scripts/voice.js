@@ -9,7 +9,7 @@ const modelMap  = {
 }
 
 async function createRecognizer(language){
-  const modleName = modelMap[language];
+  const modelName = modelMap[language];
   const module = await loadVosklet();
   const model = await module.createModel(`${modelPath}/${modelName}${modelExt}`, language, modelName);
 // const targetWords = [
