@@ -8,26 +8,23 @@ const modelMap  = {
   "English": "vosk-model-small-en-us-0.15",
 }
 
-async function createModel(language){
+async function createRecognizer(language){
   const modleName = modelMap[language];
-  return await module.createModel(`${modelPath}/${modelName}${modelExt}`, language, modelName);
-
+  const module = await loadVosklet();
+  const model = await module.createModel(`${modelPath}/${modelName}${modelExt}`, language, modelName);
+// const targetWords = [
+//   "Eat", "Bump", "Hit", "Throw", "Woo"
+// ];
+// const recognizer = await module.createRecognizerWithGrm(model, 16000,
+//   JSON.stringify(targetWords));
+  return await module.createRecognizer(model, sharedAudioContext.sampleRate);
 }
 
 async function start() {
   const { sharedAudioContext, sharedMediaStream } = await initializeAudio();
 
   let micNode = sharedAudioContext.createMediaStreamSource(sharedMediaStream);
-  let module = await loadVosklet();
-  const model = createModel("English");
-
-  // const targetWords = [
-  //   "Eat", "Bump", "Hit", "Throw", "Woo"
-  // ];
-  // const recognizer = await module.createRecognizerWithGrm(model, 16000,
-  //   JSON.stringify(targetWords));
-
-  let recognizer = await module.createRecognizer(model, sharedAudioContext.sampleRate);
+  let recognizer = await createRecognizer('English')
 
   recognizer.addEventListener("result", ev => {
     const resultElement = document.getElementById(`full-result-${myId}`);
