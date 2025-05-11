@@ -17,7 +17,7 @@ async function createRecognizer(language, sampleRate = 16000) {
 // ];
 // const recognizer = await module.createRecognizerWithGrm(model, 16000,
 //   JSON.stringify(targetWords));
-  return await module.createRecognizer(model, sharedAudioContext.sampleRate);
+  return await module.createRecognizer(model, sampleRate);
 }
 
 async function start() {
