@@ -8,7 +8,7 @@ const modelMap  = {
   "English": "vosk-model-small-en-us-0.15",
 }
 
-async function createRecognizer(language){
+async function createRecognizer(language, sampleRate = 16000) {
   const modelName = modelMap[language];
   const module = await loadVosklet();
   const model = await module.createModel(`${modelPath}/${modelName}${modelExt}`, language, modelName);
@@ -24,7 +24,7 @@ async function start() {
   const { sharedAudioContext, sharedMediaStream } = await initializeAudio();
 
   let micNode = sharedAudioContext.createMediaStreamSource(sharedMediaStream);
-  let recognizer = await createRecognizer('English')
+  let recognizer = await createRecognizer('English', sharedAudioContext.sampleRate)
 
   recognizer.addEventListener("result", ev => {
     const resultElement = document.getElementById(`full-result-${myId}`);
