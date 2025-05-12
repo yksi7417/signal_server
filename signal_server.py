@@ -103,13 +103,16 @@ async def cors_headers_middleware(request, handler):
 async def index_handler(request):
     return web.FileResponse('./index.html')
 
-
 async def voice_handler(request):
     return web.FileResponse('./voice.html')
+
+async def voice_command_handler(request):
+    return web.FileResponse('./voice_command.html')
 
 app = web.Application(middlewares=[cors_headers_middleware])
 app.router.add_get('/', index_handler)
 app.router.add_get('/voice.html', voice_handler)
+app.router.add_get('/voice_command.html', voice_command_handler)
 app.router.add_get('/ws', websocket_handler)
 app.router.add_get('/env.js', env_js_handler)
 app.router.add_static('/static/', path='./static', name='static')
