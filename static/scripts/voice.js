@@ -1,18 +1,32 @@
 import { initializeAudio } from './audioManager.js';
 import { myId } from './signaling.js';
 
+const modelPath = "/static/model"
+const modelExt  = ".tar.gz";
+const modelMap  = {
+  "Chinese": "vosk-model-small-cn-0.22",
+  "English": "vosk-model-small-en-us-0.15",
+}
+
+async function createModel(language){
+  const modleName = modelMap[language];
+  return await module.createModel(`${modelPath}/${modelName}${modelExt}`, language, modelName);
+
+}
+
 async function start() {
   const { sharedAudioContext, sharedMediaStream } = await initializeAudio();
 
   let micNode = sharedAudioContext.createMediaStreamSource(sharedMediaStream);
   let module = await loadVosklet();
-  // let model = await module.createModel("/static/model/vosk-model-small-cn-0.22.tar.gz", "Chinese", "vosk-model-small-cn-0.22");
-  let model = await module.createModel("/static/model/vosk-model-small-en-us-0.15.tar.gz", "English", "vosk-model-small-en-us-0.15");
+  const model = createModel("English");
+
   // const targetWords = [
   //   "Eat", "Bump", "Hit", "Throw", "Woo"
   // ];
   // const recognizer = await module.createRecognizerWithGrm(model, 16000,
   //   JSON.stringify(targetWords));
+
   let recognizer = await module.createRecognizer(model, sharedAudioContext.sampleRate);
 
   recognizer.addEventListener("result", ev => {
