@@ -3,10 +3,10 @@
 import numpy as np
 import resampy
 from pywhispercpp.model import Model
-from src.config import WHISPER_MODEL_PATH
+from src.config import WHISPER_MODEL
 
 # load once at startup
-_stt = Model(WHISPER_MODEL_PATH)
+_stt = Model(WHISPER_MODEL)
 
 def transcribe(pcm_bytes: bytes, sample_rate: int = 48000) -> str:
     # int16 PCM → float32 in [-1,1]

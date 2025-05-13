@@ -8,7 +8,7 @@ ROOM_NAME = "voice-room"
 VAD_AGGRESSIVENESS = 2
 
 # STT (Whisper.cpp via pywhispercpp)
-WHISPER_MODEL_PATH = "models/ggml-medium.bin"
+WHISPER_MODEL = "medium"         # or "medium.en" for English-only
 
 # Command parser (llama.cpp)
 COMMAND_MODEL_PATH = "models/command-parser.gguf"
