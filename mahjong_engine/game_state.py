@@ -176,22 +176,27 @@ class GameState:
             print(f"Error: Claiming player {claiming_player_id} not found.")
             return False
 
-        # Remove 2 matching tiles from player's hand
-        removed_count = 0
-        temp_hand = list(claiming_player.hand) # Iterate over a copy
-        for tile_in_hand in temp_hand:
-            # Need to compare Tile objects; ensure claimed_tile is a Tile object
-            # self.potential_claim_tile should be a Tile object
-            if tile_in_hand == claimed_tile and removed_count < 2:
-                claiming_player.hand.remove(tile_in_hand)
-                removed_count += 1
+        # Find 2 matching tiles to remove from player's hand
+        tiles_to_remove_for_pung = []
+        temp_hand_for_search = list(claiming_player.hand) # Search in a copy
+
+        for tile_in_hand in temp_hand_for_search:
+            if tile_in_hand == claimed_tile and len(tiles_to_remove_for_pung) < 2:
+                tiles_to_remove_for_pung.append(tile_in_hand)
         
-        if removed_count != 2:
-            # This should not happen if can_form_pung_with_discard was true
-            print(f"Error: Could not remove 2 matching tiles for Pung from player {claiming_player_id}'s hand. Found {removed_count}.")
-            # Attempt to restore hand if possible (complex, for now just error out)
-            # This indicates a state inconsistency or bug in can_form_pung_with_discard or hand state.
-            return False
+        if len(tiles_to_remove_for_pung) != 2:
+            # This check is crucial. It implies can_form_pung_with_discard might have been true,
+            # but the hand state changed, or there's a logic mismatch.
+            # For this specific failure case in the test (player_lacks_tiles),
+            # can_form_pung_with_discard would have returned False, so this path
+            # in process_pung_claim implies an issue if it's reached when it shouldn't be.
+            # However, the immediate fix is to ensure hand isn't modified if check fails.
+            print(f"Error: Could not identify 2 matching tiles for Pung from player {claiming_player_id}'s hand. Found {len(tiles_to_remove_for_pung)}.")
+            return False # Hand is not modified
+
+        # Now, actually remove the identified tiles from the player's hand
+        for tile_to_remove in tiles_to_remove_for_pung:
+            claiming_player.hand.remove(tile_to_remove)
 
         # Add the Pung to revealed_sets
         new_pung = Pung(tile=claimed_tile, revealed=True, claimed_from=discarding_player_original_index)
