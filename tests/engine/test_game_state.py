@@ -1,16 +1,17 @@
 import pytest
 import collections
-from unittest.mock import MagicMock # Added for mocking
+from unittest.mock import MagicMock
 from mahjong_engine.game_state import GameState
 from mahjong_engine.tile import Tile
 from mahjong_engine.player import Player
-from mahjong_engine.player_agent import HumanPlayerAgent, AIPlayerAgent
+from mahjong_engine.player_agent import AIPlayerAgent, HumanPlayerAgent # Corrected order for consistency
 from mahjong_engine.melds import Pung, MeldType
 from mahjong_engine.constants import (
     NUM_PLAYERS, INIT_HAND_SIZE, TILE_CATEGORIES_FOR_GENERATION,
-    NUM_COPIES_PER_TILE, WIND_EAST, SUIT_DOTS, SUIT_WINDS, WIND_NORTH,
+    NUM_COPIES_PER_TILE, WIND_EAST, SUIT_DOTS, SUIT_WINDS, WIND_NORTH, WIND_SOUTH, SUIT_DRAGONS, # Grouped winds
     SUIT_BAMBOO, SUIT_CHARACTERS
 )
+from mahjong_engine.hand_validator import can_form_pung_with_discard # Added this import
 
 @pytest.fixture
 def game():
@@ -393,64 +394,74 @@ def test_run_ai_turn_called_on_human_player(game):
     result = game.run_ai_turn()
     
     assert not result["success"]
+    assert not result["success"]
+    assert not result["success"]
     assert "Not an AI player" in result.get("error", "")
 
-def test_discard_tile_ai_hypothetically_claims_pung(game):
-    # Player 0 (Human) discards, Player 1 (AI) can claim Pung.
-    # We'll mock Player 1's AI to decide to claim.
+# In tests/engine/test_game_state.py
+# Ensure these imports are at the top of the file:
+# import pytest
+# from unittest.mock import MagicMock
+# from mahjong_engine.game_state import GameState
+# from mahjong_engine.tile import Tile
+# from mahjong_engine.player import Player
+# from mahjong_engine.player_agent import AIPlayerAgent, HumanPlayerAgent
+# from mahjong_engine.constants import SUIT_DOTS, SUIT_BAMBOO, SUIT_CHARACTERS, INIT_HAND_SIZE, NUM_PLAYERS
+# from mahjong_engine.hand_validator import can_form_pung_with_discard # Make sure this is imported
+
+def test_discard_tile_ai_hypothetically_claims_pung(game): # Use the game fixture
     human_player = game.players[0]
-    ai_player = game.players[1]
-    
-    # Ensure AIPlayerAgent is assigned to player 1
-    if not isinstance(ai_player.agent, AIPlayerAgent): # Should be true from fixture
-        ai_player.agent = AIPlayerAgent(player_id=1) 
+    # Get the AI agent instance that is actually part of the GameState
+    ai_agent_in_game = game.players[1].agent 
+    assert isinstance(ai_agent_in_game, AIPlayerAgent), "Player 1 is not an AI agent as expected in fixture."
 
-    # Setup AI player's hand to have two Dots '1'
-    ai_player.hand = [Tile(SUIT_DOTS, '1'), Tile(SUIT_DOTS, '1'), Tile(SUIT_BAMBOO, '2')] + [Tile(SUIT_DOTS, str(i)) for i in range(3, 14)]
-    ai_player.hand = ai_player.hand[:INIT_HAND_SIZE]
+    tile_to_be_discarded_by_human = Tile(SUIT_DOTS, '1')
 
+    # Setup AI player's (Player 1) hand to have two of the tile_to_be_discarded_by_human
+    game.players[1].hand = [
+        Tile(SUIT_DOTS, '1'), Tile(SUIT_DOTS, '1'), # Match the discard
+        Tile(SUIT_BAMBOO, '2'), Tile(SUIT_BAMBOO, '3'), Tile(SUIT_BAMBOO, '4'),
+        Tile(SUIT_BAMBOO, '5'), Tile(SUIT_BAMBOO, '6'), Tile(SUIT_BAMBOO, '7'),
+        Tile(SUIT_BAMBOO, '8'), Tile(SUIT_BAMBOO, '9'), 
+        Tile(SUIT_CHARACTERS, '1'), Tile(SUIT_CHARACTERS, '2'), Tile(SUIT_CHARACTERS, '3')
+    ]
+    assert len(game.players[1].hand) == INIT_HAND_SIZE # Should be 13
 
-    # Player 0 (Human) is current player
+    # Setup Human player (Player 0) to be the current player and discard the tile
     game.current_player_index = 0
-    # Human draws
-    # Ensure human has a tile to draw
-    if not game.wall: game.wall = [Tile(SUIT_BAMBOO, '5')]
-    game.draw_tile_for_current_player()
+    # Give human player a fresh hand, then draw, then force the discard
+    human_player.hand = [Tile(SUIT_BAMBOO, str(i)) for i in range(1, INIT_HAND_SIZE + 1)]
+    game.draw_tile_for_current_player() # Human draws, now has 14 tiles
     assert len(human_player.hand) == INIT_HAND_SIZE + 1
     
-    # Human discards Dots '1'
-    tile_human_discards = Tile(SUIT_DOTS, '1')
-    # Ensure human has this tile to discard
-    human_player.hand[0] = tile_human_discards 
-    discard_repr = {"suit": tile_human_discards.suit, "value": tile_human_discards.value}
+    human_player.hand[0] = tile_to_be_discarded_by_human # Force the specific tile to be discarded
+    discard_repr = {"suit": tile_to_be_discarded_by_human.suit, "value": tile_to_be_discarded_by_human.value}
 
-    # Mock AI's decide_claim to return "PUNG"
-    original_decide_claim = ai_player.agent.decide_claim
-    # The actual return value of decide_claim is not used by GameState for AI claims yet.
-    # GameState's discard_tile_for_current_player calls can_form_pung_with_discard.
-    # The current AIPlayerAgent.decide_claim returns None and GameState has a 'pass'
-    # for AI claims. This test primarily verifies the decide_claim method is called.
-    ai_player.agent.decide_claim = MagicMock(return_value="PUNG") 
-                                                                
-    game.discard_tile_for_current_player(discard_repr)
+    # Pre-assertion: Verify that the AI player can indeed form a Pung with the discarded tile
+    # Note: game.can_form_pung_with_discard is not a method on GameState. It's in hand_validator.
+    assert can_form_pung_with_discard(game.players[1].hand, tile_to_be_discarded_by_human), \
+        "Test setup error: AI hand cannot form Pung with the discard according to can_form_pung_with_discard."
+
+    # Mock the decide_claim method on the AI agent instance that is part of the game
+    original_decide_claim = ai_agent_in_game.decide_claim
+    ai_agent_in_game.decide_claim = MagicMock(return_value=None) # AI will "say no" after being called
+
+    # Action: Human (Player 0) discards the tile
+    discard_successful = game.discard_tile_for_current_player(discard_repr)
+    assert discard_successful, "Discard itself failed."
     
-    # Assert that the AI's decide_claim method was called
-    # The can_form_pung_with_discard check happens first. If true, then decide_claim is called.
-    # Note: The current logic in discard_tile_for_current_player for AIPlayerAgent is:
-    #   claim_decision = other_player.agent.decide_claim(self, self.potential_claim_tile, ["PUNG"])
-    #   pass # AI does nothing for now.
-    # So, decide_claim IS called. The 'pass' means no claim processing occurs for AI.
-    ai_player.agent.decide_claim.assert_called_once_with(game, tile_human_discards, ["PUNG"])
-
-    # Since current AI doesn't act on claim (due to 'pass'), game should proceed as if no AI claim.
-    # If Player 0 discarded, and Player 1 (AI) was checked (and decided_claim called but ignored),
-    # then Player 2 and Player 3 (AIs) would also be checked. If they don't claim, turn advances.
-    # Assuming Player 2 and 3 don't have tiles for Pung for this discard.
-    assert game.pending_claim_player_id is None # No human claim, AI claim ignored.
-    assert game.current_player_index == (0 + 1) % NUM_PLAYERS # Turn should advance past Player 0.
+    # Assertion: The mocked decide_claim on the AI's agent should have been called
+    try:
+        ai_agent_in_game.decide_claim.assert_called_once_with(game, tile_to_be_discarded_by_human, ["PUNG"])
+    finally:
+        # Restore the original method to avoid interference with other tests
+        ai_agent_in_game.decide_claim = original_decide_claim 
     
-    ai_player.agent.decide_claim = original_decide_claim # Restore
-
+    # Further assertions about game state:
+    # Since AI does not claim (mock returns None, and pass in GameState), no claim is pending for player 0.
+    assert game.pending_claim_player_id is None 
+    # Turn should advance to player 1 (the AI player whose claim opportunity was checked).
+    assert game.current_player_index == (0 + 1) % NUM_PLAYERS 
 
 # Test for run_ai_turn: AI hand empty after draw (very edge case)
 def test_run_ai_turn_ai_hand_empty_after_draw_failsafe(game):

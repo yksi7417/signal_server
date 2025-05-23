@@ -3,8 +3,8 @@ from .player import Player
 from .tile import Tile
 from .constants import TILE_CATEGORIES_FOR_GENERATION, NUM_COPIES_PER_TILE, NUM_PLAYERS, INIT_HAND_SIZE, WIND_EAST
 from .player_agent import HumanPlayerAgent, AIPlayerAgent
-from .hand_validator import can_form_pung_with_discard # Added import
-from .melds import Pung # Added import
+from .hand_validator import can_form_pung_with_discard, check_standard_win # Added check_standard_win
+from .melds import Pung
 
 class GameState:
     def _create_full_tile_set(self):
@@ -37,6 +37,10 @@ class GameState:
         self.pending_claim_player_id = None # Player who might claim
         self.potential_claim_tile = None # The tile that can be claimed
         self.claim_type_pending = None # E.g., "PUNG"
+        
+        self.winner_found = False
+        self.winning_player_id = None
+        # self.winning_hand_details = None # Optional for now
         # print(f"Initial wall size: {len(self.wall)}") # For debugging
         # for p in self.players: # For debugging
         #    print(f"Player {p.player_id} hand size: {len(p.hand)}")
@@ -72,6 +76,18 @@ class GameState:
 
         drawn_tile = self.wall.pop(0) # Take from the "front" of the wall
         player.hand.append(drawn_tile)
+        
+        if len(player.hand) == INIT_HAND_SIZE + 1: # Player has 14 tiles (13 + 1 drawn)
+            # Check for self-drawn win
+            # Note: player.revealed_sets would be used by check_standard_win
+            is_win = check_standard_win(player.hand, player.revealed_sets)
+            if is_win:
+                self.winner_found = True
+                self.winning_player_id = player.player_id
+                print(f"Player {player.player_id} has won by self-draw!")
+                # Further actions might be stopped, e.g., player doesn't discard.
+                # For now, just setting flags. Game loop needs to respect these flags.
+        
         # print(f"Player {player.player_id} drew {drawn_tile}. Hand size: {len(player.hand)}")
         return drawn_tile
 
@@ -239,13 +255,27 @@ class GameState:
             return {"success": False, "error": "Not an AI player."}
 
         # 1. AI Draws a tile
-        drawn_tile = self.draw_tile_for_current_player()
+        drawn_tile = self.draw_tile_for_current_player() # This now checks for win internally
         if drawn_tile is None:
-            # print(f"AI Player {ai_player.player_id} could not draw (wall empty?).")
-            # This might indicate end of game (draw/exhaustion)
-            # TODO: Handle wall empty scenario (game ends in a draw if no one wins)
-            return {"success": False, "error": "Wall empty, AI cannot draw."} # Or a specific "game_over_draw" status
+            return {"success": False, "error": "Wall empty, AI cannot draw."}
 
+        # Check if the draw resulted in a win for the AI
+        if self.winner_found and self.winning_player_id == ai_player.player_id:
+            print(f"AI Player {ai_player.player_id} has won by self-draw after drawing {drawn_tile}!")
+            return {
+                "success": True,
+                "ai_player_id": ai_player.player_id,
+                "action": "win", # New action type
+                "winner_found": True,
+                "winning_player_id": self.winning_player_id,
+                "drawn_tile_for_win": {"suit": drawn_tile.suit, "value": drawn_tile.value}, # Include the winning tile
+                "discarded_tile": None, # No discard if win
+                "next_player_id": self.winning_player_id, 
+                "human_can_claim_pung": False, # Game ends
+                "claimable_tile": None
+            }
+        
+        # If not a win, proceed to AI discard:
         # print(f"AI Player {ai_player.player_id} drew {drawn_tile}. Hand size: {len(ai_player.hand)}")
 
         # 2. AI Chooses a tile to discard

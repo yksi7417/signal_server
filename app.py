@@ -43,7 +43,8 @@ def start_new_game():
     game_info = {
         "player_hand": player0_hand_serializable,
         "game_wind": current_game_state.game_wind,
-        "current_player_id": current_game_state.players[current_game_state.current_player_index].player_id
+        "current_player_id": current_game_state.players[current_game_state.current_player_index].player_id,
+        "winner_found": False # Added
     }
     # print(f"Starting new game. Player 0 hand: {player0_hand_serializable}") # For debugging
     return game_info
@@ -81,10 +82,12 @@ def eel_player_claims_pung(confirm_claim): # confirm_claim is boolean
                 "player_hand": hand_serializable,
                 "revealed_sets": revealed_sets_serializable,
                 "current_player_id": current_game_state.current_player_index,
-                "action": "discard_after_pung" # Signal to UI
+                "action": "discard_after_pung", # Signal to UI
+                "winner_found": current_game_state.winner_found # Added (likely False here)
             }
         else:
             response["message"] = "Backend failed to process Pung claim."
+            response["winner_found"] = current_game_state.winner_found
     else: # Player declined the Pung
         # The current_player_index in GameState is still the player who discarded.
         # We need to advance the turn from that player.
@@ -104,7 +107,8 @@ def eel_player_claims_pung(confirm_claim): # confirm_claim is boolean
             "message": "Pung claim declined. Game continues.",
             "action": "claim_declined",
             "next_player_id": current_game_state.players[current_game_state.current_player_index].player_id,
-            "last_discarded_tile": {"suit": current_game_state.current_discard.suit, "value": current_game_state.current_discard.value} if current_game_state.current_discard else None
+            "last_discarded_tile": {"suit": current_game_state.current_discard.suit, "value": current_game_state.current_discard.value} if current_game_state.current_discard else None,
+            "winner_found": current_game_state.winner_found # Added (likely False here)
         }
 
     return response
@@ -123,11 +127,32 @@ def eel_draw_tile():
         current_player_hand = current_game_state.players[current_game_state.current_player_index].hand
         hand_serializable = [{"suit": t.suit, "value": t.value} for t in current_player_hand]
         
+        # Check for win after draw
+        if current_game_state.winner_found and current_game_state.winning_player_id == player_id:
+            # Player 0 (human) just drew and won
+            # Hand already includes drawn_tile_obj due to how draw_tile_for_current_player works
+            hand_serializable = [{"suit": t.suit, "value": t.value} for t in current_game_state.players[player_id].hand]
+            revealed_sets_serializable = [
+                {"type": meld.meld_type.value, "tiles": [{"suit": t.suit, "value": t.value} for t in meld.raw_tiles]}
+                for meld in current_game_state.players[player_id].revealed_sets
+            ]
+            return {
+                "success": True, # Draw was successful, and it resulted in a win
+                "action": "win",
+                "winner_found": True,
+                "winning_player_id": player_id,
+                "hand": hand_serializable,
+                "revealed_sets": revealed_sets_serializable,
+                "drawn_tile": drawn_tile_serializable 
+            }
+        
+        # If not a win, but draw was successful
         return {
             "success": True,
             "drawn_tile": drawn_tile_serializable,
             "hand": hand_serializable, # Hand after drawing
-            "player_id": player_id 
+            "player_id": player_id,
+            "winner_found": False # Explicitly false if no win on this draw
         }
     else:
         # If draw failed, return current player's hand for client to potentially re-sync
@@ -137,7 +162,8 @@ def eel_draw_tile():
             "success": False, 
             "error": "Failed to draw tile (wall empty or hand full?).",
             "hand": hand_serializable,
-            "player_id": player_id
+            "player_id": player_id,
+            "winner_found": current_game_state.winner_found # Could be true if another player won previously
         }
 
 @eel.expose
@@ -171,7 +197,8 @@ def eel_discard_tile(tile_to_discard_data): # tile_to_discard_data is {'suit': '
             "discarded_by_player_id": discarding_player_id,
             "updated_hand": hand_serializable, # Their hand after discard
             "next_player_id": next_player_id,
-            "last_discarded_tile": {"suit": current_game_state.current_discard.suit, "value": current_game_state.current_discard.value}
+            "last_discarded_tile": {"suit": current_game_state.current_discard.suit, "value": current_game_state.current_discard.value},
+            "winner_found": current_game_state.winner_found # Pass current win status
         }
 
         # CHECK FOR PENDING HUMAN CLAIM AFTER DISCARD
@@ -196,7 +223,8 @@ def eel_discard_tile(tile_to_discard_data): # tile_to_discard_data is {'suit': '
             "success": False, 
             "error": "Failed to discard tile (tile not in hand, or wrong hand size?).",
             "hand": hand_serializable, # Return current hand for resync
-            "player_id": discarding_player_id
+            "player_id": discarding_player_id,
+            "winner_found": current_game_state.winner_found # Pass current win status
         }
 
 if __name__ == '__main__':
