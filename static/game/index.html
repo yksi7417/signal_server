@@ -2,19 +2,37 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Mahjong Tile Drawer</title>
+    <title>Mahjong Game</title>
     <style>
       body { font-family: sans-serif; text-align: center; }
-      #result { font-size: 4rem; margin: 1em; }
-      #history { margin-top: 1em; }
+      /* #result { font-size: 4rem; margin: 1em; } */ /* Commented out */
+      /* #history { margin-top: 1em; } */ /* Commented out */
     </style>
   </head>
   <body>
-    <h1>Tile Drawer</h1>
-    <button id="draw">Draw a Tile</button>
+    <h1>Mahjong Game</h1>
+    <!-- <button id="draw">Draw a Tile</button> --> <!-- Commented out -->
     <button id="reset">Reset</button>
-    <div id="result">🤷</div>
-    <div id="history"><strong>History:</strong> <span id="hist-list">—</span></div>
+    <div id="game-info">Game information will load here...</div>
+    
+    <div style="margin-top: 10px;">
+        <button id="btnDrawTile">Draw Tile</button>
+        <button id="btnDiscardTile" disabled>Discard Tile</button>
+    </div>
+    <div id="player-console" style="margin-top: 10px; color: green;"></div>
+    <div id="selected-tile-display" style="margin-top: 10px; font-weight: bold;">Selected Tile: None</div>
+
+    <div id="player-hand" style="margin-top: 20px; font-size: 1.5em;">Your hand will load here...</div>
+    <div id="revealed-sets-display" style="margin-top: 10px;">Revealed Sets: None</div>
+    
+    <div id="claim-prompt" style="margin-top: 15px; padding: 10px; border: 1px solid orange; display: none;">
+        <p id="claim-message">Message about claim.</p>
+        <button id="btnClaimYes">Yes</button>
+        <button id="btnClaimNo">No</button>
+    </div>
+
+    <!-- <div id="result">🤷</div> --> <!-- Commented out -->
+    <!-- <div id="history"><strong>History:</strong> <span id="hist-list">—</span></div> --> <!-- Commented out -->
 
     <!-- 1. include eel.js (served automatically) -->
     <script type="text/javascript" src="/eel.js"></script>

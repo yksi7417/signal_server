@@ -1,0 +1,41 @@
+# Tile Suits
+SUIT_DOTS = "Dots"
+SUIT_BAMBOO = "Bamboo"
+SUIT_CHARACTERS = "Characters"
+SUIT_WINDS = "Winds"
+SUIT_DRAGONS = "Dragons"
+SUIT_FLOWERS = "Flowers" # Bonus tiles
+SUIT_SEASONS = "Seasons" # Bonus tiles
+
+SUITS_ALL_REAL = [SUIT_DOTS, SUIT_BAMBOO, SUIT_CHARACTERS, SUIT_WINDS, SUIT_DRAGONS]
+SUITS_BONUS = [SUIT_FLOWERS, SUIT_SEASONS]
+SUITS_NUMERIC = [SUIT_DOTS, SUIT_BAMBOO, SUIT_CHARACTERS]
+
+
+# Wind Values
+WIND_EAST = "East"
+WIND_SOUTH = "South"
+WIND_WEST = "West"
+WIND_NORTH = "North"
+WINDS_ALL = [WIND_EAST, WIND_SOUTH, WIND_WEST, WIND_NORTH]
+
+# Dragon Values
+DRAGON_RED = "Red"
+DRAGON_GREEN = "Green"
+DRAGON_WHITE = "White"
+DRAGONS_ALL = [DRAGON_RED, DRAGON_GREEN, DRAGON_WHITE]
+
+TILE_VALUES_NUMERIC = [str(i) for i in range(1, 10)] # "1" through "9"
+
+# Full list of tile types for generation (excluding bonus for now)
+# Each element is a tuple: (suit_name, list_of_values_for_that_suit)
+TILE_CATEGORIES_FOR_GENERATION = [
+    (SUIT_DOTS, TILE_VALUES_NUMERIC),
+    (SUIT_BAMBOO, TILE_VALUES_NUMERIC),
+    (SUIT_CHARACTERS, TILE_VALUES_NUMERIC),
+    (SUIT_WINDS, WINDS_ALL),
+    (SUIT_DRAGONS, DRAGONS_ALL)
+]
+NUM_COPIES_PER_TILE = 4
+NUM_PLAYERS = 4
+INIT_HAND_SIZE = 13
