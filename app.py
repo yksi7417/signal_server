@@ -26,7 +26,7 @@ def reset_game():
     global current_game_state
     current_game_state = GameState() # Re-initialize our new game state for now
     if eel: # Check if eel is available (it should be)
-         eel.update_history([]) # Send empty history as main.js expects it
+         eel.update_history_js([]) # Send empty history as main.js expects it
     return True # main.js expects a return
 
 @eel.expose
