@@ -230,20 +230,6 @@ class GameState:
 
 
         print(f"Player {claiming_player.player_id}'s turn. Hand size: {len(claiming_player.hand)}. Must discard.")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         return True
 
     def run_ai_turn(self):
@@ -251,13 +237,9 @@ class GameState:
         if not isinstance(ai_player.agent, AIPlayerAgent):
             print(f"Error: run_ai_turn called for non-AI player {ai_player.player_id}")
             return {"success": False, "error": "Not an AI player."}
-
-
         drawn_tile = self.draw_tile_for_current_player()
         if drawn_tile is None:
             return {"success": False, "error": "Wall empty, AI cannot draw."}
-
-
         if self.winner_found and self.winning_player_id == ai_player.player_id:
             print(f"AI Player {ai_player.player_id} has won by self-draw after drawing {drawn_tile}!")
             return {
@@ -273,44 +255,30 @@ class GameState:
                 "claimable_tile": None
             }
 
-
-
-
-
-
         tile_to_discard_by_ai = ai_player.agent.choose_discard(self, ai_player.hand, drawn_tile)
-
         if tile_to_discard_by_ai is None:
             print(f"Error: AI Player {ai_player.player_id} failed to choose a discard.")
-
             if ai_player.hand:
                  tile_to_discard_by_ai = random.choice(ai_player.hand)
             else:
                  return {"success": False, "error": "AI hand empty after draw, cannot discard."}
-
-
-
-
-
-
-        discard_repr = {"suit": tile_to_discard_by_ai.suit, "value": tile_to_discard_by_ai.value}
+        discard_repr = {"suit": tile_to_discard_by_ai.suit,
+                        "value": tile_to_discard_by_ai.value,
+                        "unicode": tile_to_discard_by_ai.unicode}
         discard_success = self.discard_tile_for_current_player(discard_repr)
 
         if not discard_success:
-
             print(f"Error: AI Player {ai_player.player_id} failed to discard {tile_to_discard_by_ai} properly.")
             return {"success": False, "error": "AI failed to execute discard."}
-
-
-
-
-
-
-
+        
         return {
             "success": True,
             "ai_player_id": ai_player.player_id,
-            "discarded_tile": {"suit": self.current_discard.suit, "value": self.current_discard.value},
+            "discarded_tile": {
+                "suit": self.current_discard.suit,
+                "value": self.current_discard.value,
+                "unicode": self.current_discard.unicode
+            },
             "next_player_id": self.players[self.current_player_index].player_id,
             "human_can_claim_pung": (self.pending_claim_player_id == 0 and self.claim_type_pending == "PUNG"),
             "claimable_tile": {"suit": self.potential_claim_tile.suit, "value": self.potential_claim_tile.value} if self.potential_claim_tile and self.pending_claim_player_id == 0 else None

@@ -1,6 +1,7 @@
 import { store, elements } from './gameStore.js';
 import { displayHand, displayRevealedSets, displayGameInfo, displayDiscardedTiles } from './tileDisplay.js';
 import { hideClaimPrompt, showClaimPrompt } from './claimsHandler.js';
+import { handleDiscardTile } from './gameActions.js';
 
 export async function processAiTurns() {
     if (!store.currentGameInfo || store.currentGameInfo.current_player_id === undefined) {
@@ -117,7 +118,10 @@ function handleSuccessfulAiTurn(result) {
         return true;
     }
     
+    console.log("AI turn result:", result);
     if (result.discarded_tile) {
+        store.discardedTiles.push(result.discarded_tile);
+        displayDiscardedTiles();
         if (elements.playerConsoleEl) {
             elements.playerConsoleEl.textContent = 
                 `AI Player ${result.ai_player_id} discarded ${result.discarded_tile.unicode}`;

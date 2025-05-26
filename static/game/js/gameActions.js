@@ -36,9 +36,11 @@ export async function handleDiscardTile(pointerEvent) {
         
         // Continue with existing discard logic
         const result = await eel.eel_discard_tile(tile)();
+        console.log("Discard result:", result);
+
         if (result && result.success) {
-            displayHand(result.hand);
-            // Any other necessary updates...
+            displayHand(result.updated_hand);
+            handleDiscardTileResult(result);
         }
     } catch (error) {
         console.error('Error handling tile discard:', error);

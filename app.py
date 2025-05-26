@@ -207,10 +207,12 @@ def eel_draw_tile():
 @eel.expose
 def eel_discard_tile(tile_to_discard_data):
     global current_game_state
+    print("Discarding tile:", tile_to_discard_data)
 
     discarding_player_id = current_game_state.players[
         current_game_state.current_player_index
     ].player_id
+    print("Current player ID:", discarding_player_id)
 
     if (
         not isinstance(tile_to_discard_data, dict)
@@ -287,40 +289,27 @@ def eel_discard_tile(tile_to_discard_data):
 @eel.expose
 def eel_request_ai_turn():
     global current_game_state
-
     if current_game_state.pending_claim_player_id is not None:
-
         return {
             "success": False,
             "error": "Human claim pending. AI turn cannot run yet.",
         }
-
     current_player_id = current_game_state.players[
         current_game_state.current_player_index
     ].player_id
+
     current_player_agent_type = type(
         current_game_state.players[current_game_state.current_player_index].agent
     )
-
-
-
     if current_player_agent_type == AIPlayerAgent:
         result = current_game_state.run_ai_turn()
-
-
-
-
-
         player0_hand_serializable = []
         if current_game_state.players:
             player0 = current_game_state.players[0]
             player0_hand_serializable = [
                 {"unicode": tile.unicode, "suit": tile.suit, "value": tile.value} for tile in player0.hand
             ]
-
         result["player0_hand"] = player0_hand_serializable
-
-
         player0_revealed_sets_serializable = []
         if current_game_state.players:
             player0 = current_game_state.players[0]
@@ -334,7 +323,6 @@ def eel_request_ai_turn():
                 for meld in player0.revealed_sets
             ]
         result["player0_revealed_sets"] = player0_revealed_sets_serializable
-
         return result
 
 

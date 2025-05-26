@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import random
 import collections
 
+
 class PlayerAgent(ABC):
     def __init__(self, player_id):
         self.player_id = player_id
@@ -37,17 +38,12 @@ class PlayerAgent(ABC):
 
 class HumanPlayerAgent(PlayerAgent):
     def choose_discard(self, game_state, hand):
-
-
-
         print(f"Warning: HumanPlayerAgent.choose_discard called for player {self.player_id}. This should be UI driven.")
-
         if hand:
             return hand[-1]
         return None
 
     def decide_claim(self, game_state, discarded_tile, claim_options):
-
         print(f"Warning: HumanPlayerAgent.decide_claim called for player {self.player_id}. This should be UI driven.")
         return None
 
@@ -56,50 +52,23 @@ class AIPlayerAgent(PlayerAgent):
     def choose_discard(self, game_state, hand, drawn_tile):
         if not hand:
             return None
-
-
-
-
-
-
-
-
-
         if drawn_tile in hand:
-
             count_of_drawn_tile_in_hand = 0
             for tile in hand:
                 if tile == drawn_tile:
                     count_of_drawn_tile_in_hand +=1
-
             if count_of_drawn_tile_in_hand == 1:
-
                 return drawn_tile
-
-
-
-
-
         tile_counts = collections.Counter(hand)
-
-
         single_tiles = [tile for tile, count in tile_counts.items() if count == 1]
-
         if single_tiles:
-
             if drawn_tile in single_tiles:
-
                 return drawn_tile
-
             chosen = random.choice(single_tiles)
-
             return chosen
         else:
-
             chosen = random.choice(hand)
-
             return chosen
 
     def decide_claim(self, game_state, discarded_tile, claim_options):
-
         return None
