@@ -1,7 +1,7 @@
 import { store, elements } from './gameStore.js';
 import { displayHand, displayRevealedSets, displayGameInfo, displayDiscardedTiles } from './tileDisplay.js';
 import { processAiTurns } from './aiTurnHandler.js';
-import { showClaimPrompt, hideClaimPrompt } from './claimsHandler.js';
+import { showClaimPrompt, hideClaimPrompt, enableHumanTurn } from './claimsHandler.js';
 
 export async function handleDrawTile() {
     if(elements.playerConsoleEl) elements.playerConsoleEl.textContent = "";
@@ -26,15 +26,10 @@ export async function handleDrawTile() {
 
 export async function handleDiscardTile(pointerEvent) {
     try {
-        // Add the discarded tile to the store
+        if (store.selectedTileForDiscard === null) 
+            throw new Error("No tile selected for discard.");
+
         const tile = store.selectedTileForDiscard
-        store.discardedTiles.push(tile);
-        console.log("Discarded tile:", tile);
-        
-        // Update the display
-        displayDiscardedTiles();
-        
-        // Continue with existing discard logic
         const result = await eel.eel_discard_tile(tile)();
         console.log("Discard result:", result);
 
@@ -110,13 +105,13 @@ function handleDrawTileResult(result) {
 function updateGameInfoDisplay(result) {
     if (elements.gameInfoEl && 
         result.next_player_id !== undefined && 
-        result.last_discarded_tile) {
+        result.discarded_tile) {
         elements.gameInfoEl.innerHTML = `Game Wind: ${store.currentGameInfo.game_wind || 'N/A'}<br>
                         Current Player ID: ${result.next_player_id}<br>
-                        Last Discard: ${result.last_discarded_tile.suit} ${result.last_discarded_tile.value}`;
+                        Last Discard: ${result.discarded_tile.suit} ${result.discarded_tile.value}`;
     }
 }
-function handleDiscardTileResult(result) {
+export function handleDiscardTileResult(result) {
     if (result && result.success) {
         updateGameStateAfterDiscard(result);
         
@@ -126,7 +121,8 @@ function handleDiscardTileResult(result) {
             handleWinAfterDiscard();
         } else if (result.next_player_id !== 0) {
             updateGameInfoDisplay(result);
-            processAiTurns();
+            if (result.discarded_by_player_id === 0)
+                processAiTurns();
         } else {
             enableHumanTurn();
         }
@@ -141,11 +137,11 @@ function updateGameStateAfterDraw(result) {
     displayHand(result.hand);
 }
 
-function updateGameStateAfterDiscard(result) {
+export function updateGameStateAfterDiscard(result) {
     displayHand(result.updated_hand);
     if(elements.playerConsoleEl) {
         elements.playerConsoleEl.textContent = 
-            `Discarded ${store.selectedTileForDiscard.suit} ${store.selectedTileForDiscard.value}.`;
+            `Discarded ${result.discarded_tile.suit} ${result.discarded_tile.value}.`;
     }
     store.selectedTileForDiscard = null;
     if(elements.selectedTileDisplayEl) {
@@ -154,6 +150,9 @@ function updateGameStateAfterDiscard(result) {
     
     store.currentGameInfo.current_player_id = result.next_player_id;
     store.currentGameInfo.winner_found = result.winner_found;
+
+    store.discardedTiles.push(result.discarded_tile);
+    displayDiscardedTiles();
 }
 
 export async function handleReset() {

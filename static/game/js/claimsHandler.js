@@ -15,7 +15,7 @@ export function showClaimPrompt(tile, claimType) {
 
 export function hideClaimPrompt() {
     if (!elements.claimPromptEl) return;
-    elements.claimPromptEl.style.display = 'none';
+    // elements.claimPromptEl.style.display = 'none';
 }
 
 export async function handleClaimPungYes() {
@@ -106,17 +106,17 @@ function enableDiscardAfterClaim() {
     if(elements.btnDiscardTile) elements.btnDiscardTile.disabled = false;
 }
 
-function enableHumanTurn() {
+export function enableHumanTurn() {
     if(elements.btnDrawTile) elements.btnDrawTile.disabled = false;
     if(elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
 }
 
 function updateGameInfoAfterDecline(result) {
-    if (elements.gameInfoEl && result.next_player_id !== undefined && result.last_discarded_tile) {
+    if (elements.gameInfoEl && result.next_player_id !== undefined && result.discarded_tile) {
         elements.gameInfoEl.innerHTML = `
             Game Wind: ${store.currentGameInfo.game_wind || 'N/A'}<br> 
             Current Player ID: ${result.next_player_id}<br>
-            Last Discard: ${result.last_discarded_tile.suit} ${result.last_discarded_tile.value}
+            Last Discard: ${result.discarded_tile.suit} ${result.discarded_tile.value}
         `;
     }
 }

@@ -1,7 +1,7 @@
 import { store, elements } from './gameStore.js';
 import { displayHand, displayRevealedSets, displayGameInfo, displayDiscardedTiles } from './tileDisplay.js';
 import { hideClaimPrompt, showClaimPrompt } from './claimsHandler.js';
-import { handleDiscardTile } from './gameActions.js';
+import { handleDiscardTileResult  } from './gameActions.js';
 
 export async function processAiTurns() {
     if (!store.currentGameInfo || store.currentGameInfo.current_player_id === undefined) {
@@ -20,7 +20,6 @@ export async function processAiTurns() {
         while (next_player_is_ai && !store.currentGameInfo.winner_found) {
             try {
                 next_player_is_ai = await processSingleAiTurn();
-                
                 if (next_player_is_ai && !store.currentGameInfo.winner_found) {
                     await new Promise(resolve => setTimeout(resolve, 500));
                 }
@@ -61,13 +60,8 @@ async function processSingleAiTurn() {
         if (!ai_turn_result) {
             throw new Error("No result from AI turn");
         }
-
-        // Update discarded tiles if present in the AI turn result
-        if (ai_turn_result.discardedTile) {
-            store.discardedTiles.push(ai_turn_result.discardedTile);
-            displayDiscardedTiles();
-        }
-
+        console.log("AI turn result:", ai_turn_result);
+        handleDiscardTileResult(ai_turn_result);
         updateGameState(ai_turn_result);
         
         if (ai_turn_result.success) {
@@ -118,10 +112,7 @@ function handleSuccessfulAiTurn(result) {
         return true;
     }
     
-    console.log("AI turn result:", result);
     if (result.discarded_tile) {
-        store.discardedTiles.push(result.discarded_tile);
-        displayDiscardedTiles();
         if (elements.playerConsoleEl) {
             elements.playerConsoleEl.textContent = 
                 `AI Player ${result.ai_player_id} discarded ${result.discarded_tile.unicode}`;

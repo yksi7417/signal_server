@@ -112,7 +112,7 @@ def eel_player_claims_pung(confirm_claim):
             "next_player_id": current_game_state.players[
                 current_game_state.current_player_index
             ].player_id,
-            "last_discarded_tile": {
+            "discarded_tile": {
                 "unicode": current_game_state.current_discard.unicode,
                 "suit": current_game_state.current_discard.suit,
                 "value": current_game_state.current_discard.value,
@@ -248,7 +248,7 @@ def eel_discard_tile(tile_to_discard_data):
             "discarded_by_player_id": discarding_player_id,
             "updated_hand": hand_serializable,
             "next_player_id": next_player_id,
-            "last_discarded_tile": {
+            "discarded_tile": {
                 "unicode": current_game_state.current_discard.unicode,
                 "suit": current_game_state.current_discard.suit,
                 "value": current_game_state.current_discard.value,
