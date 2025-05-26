@@ -15,11 +15,8 @@ export function displayHand(tiles) {
         return;
     }
     
-    // Sort tiles before displaying
-    console.log("Sorting tiles for display:", store.currentHandTiles.map(t => t.unicode));
     const sortedTiles = sortTiles(store.currentHandTiles);
     store.currentHandTiles = sortedTiles;
-    console.log("Sorted tiles for display:", store.currentHandTiles.map(t => t.unicode));
     
     elements.playerHandEl.innerHTML = '';
     sortedTiles.forEach((tile, index) => {
