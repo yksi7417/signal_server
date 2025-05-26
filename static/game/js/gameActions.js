@@ -106,9 +106,7 @@ function updateGameInfoDisplay(result) {
     if (elements.gameInfoEl && 
         result.next_player_id !== undefined && 
         result.discarded_tile) {
-        elements.gameInfoEl.innerHTML = `Game Wind: ${store.currentGameInfo.game_wind || 'N/A'}<br>
-                        Current Player ID: ${result.next_player_id}<br>
-                        Last Discard: ${result.discarded_tile.suit} ${result.discarded_tile.value}`;
+        elements.gameInfoEl.innerHTML = `Game Wind: ${store.currentGameInfo.game_wind || 'N/A'}<br>`;
     }
 }
 export function handleDiscardTileResult(result) {

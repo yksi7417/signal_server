@@ -95,11 +95,10 @@ export function displayDiscardedTiles() {
     const discardArea = elements.discardArea;
     discardArea.innerHTML = '';
       // Add a flex container for each row
-    const numTilesPerRow = 10;
+    const numTilesPerRow = 16;
     let currentRow;
     
     store.discardedTiles.forEach((tile, index) => {
-        // Create a new row every 10 tiles
         if (index % numTilesPerRow === 0) {
             currentRow = document.createElement('div');
             currentRow.style.cssText = `
