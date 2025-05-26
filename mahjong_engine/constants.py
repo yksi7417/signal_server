@@ -25,6 +25,18 @@ DRAGON_GREEN = "Green"
 DRAGON_WHITE = "White"
 DRAGONS_ALL = [DRAGON_RED, DRAGON_GREEN, DRAGON_WHITE]
 
+# Flower Values
+FLOWER_PLUM = "Plum"
+FLOWER_ORCHID = "Orchid"
+FLOWER_CHRYSANTHEMUM = "Chrysanthemum"
+FLOWER_BAMBOO = "Bamboo"
+
+# Season Values
+SEASON_SPRING = "Spring"
+SEASON_SUMMER = "Summer"
+SEASON_AUTUMN = "Autumn"
+SEASON_WINTER = "Winter"
+
 TILE_VALUES_NUMERIC = [str(i) for i in range(1, 10)]  # "1" through "9"
 
 # Full list of tile types for generation (excluding bonus for now)
