@@ -114,12 +114,15 @@ function handleSuccessfulAiTurn(result) {
     
     if (result.discarded_tile) {
         if (elements.playerConsoleEl) {
-            elements.playerConsoleEl.textContent = 
-                `AI Player ${result.ai_player_id} discarded ${result.discarded_tile.unicode}`;
+            let displayText = `AI Player ${result.ai_player_id} discarded ${result.discarded_tile.unicode}`;
+            if (result.human_can_claim_pung) {
+                displayText += `\n and you can claim it as a Pung.`;
+            }
+            elements.playerConsoleEl.textContent = displayText
         }
     }
     
-    return result.next_player_id !== 0;
+    return result.next_player_id !== 0 && !result.human_can_claim_pung;
 }
 
 function handleFailedAiTurn(result) {

@@ -294,6 +294,7 @@ def eel_request_ai_turn():
             "success": False,
             "error": "Human claim pending. AI turn cannot run yet.",
         }
+
     current_player_id = current_game_state.players[
         current_game_state.current_player_index
     ].player_id
@@ -303,6 +304,7 @@ def eel_request_ai_turn():
     )
     if current_player_agent_type == AIPlayerAgent:
         result = current_game_state.run_ai_turn()
+
         player0_hand_serializable = []
         if current_game_state.players:
             player0 = current_game_state.players[0]
@@ -323,6 +325,7 @@ def eel_request_ai_turn():
                 for meld in player0.revealed_sets
             ]
         result["player0_revealed_sets"] = player0_revealed_sets_serializable
+        print(f"AI {current_player_id} turn result:", result)
         return result
 
 

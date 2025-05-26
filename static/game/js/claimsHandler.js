@@ -15,7 +15,7 @@ export function showClaimPrompt(tile, claimType) {
 
 export function hideClaimPrompt() {
     if (!elements.claimPromptEl) return;
-    // elements.claimPromptEl.style.display = 'none';
+    elements.claimPromptEl.style.display = 'none';
 }
 
 export async function handleClaimPungYes() {
