@@ -2,10 +2,12 @@ import pytest
 from mahjong_engine.tile import Tile
 from mahjong_engine.constants import (
     SUIT_DOTS, SUIT_BAMBOO, SUIT_CHARACTERS, SUIT_WINDS, SUIT_DRAGONS,
-    SUIT_FLOWERS, SUIT_SEASONS, # For bonus tiles
+    SUIT_FLOWERS, SUIT_SEASONS,
     WIND_EAST, WIND_SOUTH, WIND_WEST, WIND_NORTH,
     DRAGON_RED, DRAGON_GREEN, DRAGON_WHITE,
-    TILE_VALUES_NUMERIC # Although not directly used, good to be aware of
+    FLOWER_PLUM, FLOWER_ORCHID, FLOWER_CHRYSANTHEMUM, FLOWER_BAMBOO,
+    SEASON_SPRING, SEASON_SUMMER, SEASON_AUTUMN, SEASON_WINTER,
+    TILE_VALUES_NUMERIC
 )
 
 # Test Initialization and Representation
@@ -13,17 +15,17 @@ def test_tile_creation():
     tile = Tile(SUIT_DOTS, '1')
     assert tile.suit == SUIT_DOTS
     assert tile.value == '1'
-    assert repr(tile) == "Tile('Dots', '1')"
+    assert repr(tile) == "Tile('Dots', '1', '🀙')"
 
     wind_tile = Tile(SUIT_WINDS, WIND_EAST)
     assert wind_tile.suit == SUIT_WINDS
     assert wind_tile.value == WIND_EAST
-    assert repr(wind_tile) == "Tile('Winds', 'East')"
+    assert repr(wind_tile) == "Tile('Winds', 'East', '🀀')"
 
-    flower_tile = Tile(SUIT_FLOWERS, "Plum")
+    flower_tile = Tile(SUIT_FLOWERS, FLOWER_PLUM)
     assert flower_tile.suit == SUIT_FLOWERS
-    assert flower_tile.value == "Plum"
-    assert repr(flower_tile) == "Tile('Flowers', 'Plum')"
+    assert flower_tile.value == FLOWER_PLUM
+    assert repr(flower_tile) == "Tile('Flowers', 'Plum', '🀢')"
 
 # Test Equality and Hashing
 def test_tile_equality_and_hash():
