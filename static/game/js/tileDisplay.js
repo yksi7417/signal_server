@@ -42,7 +42,8 @@ function createTileElement(tile) {
 function handleTileClick(tile, tileEl) {
     if (store.currentGameInfo.winner_found) return;
     
-    if (store.currentHandTiles.length === store.INIT_HAND_SIZE + 1 && !elements.btnDiscardTile.disabled) {
+    // Allow tile selection when it's our turn to discard (button is enabled)
+    if (!elements.btnDiscardTile.disabled) {
         store.selectedTileForDiscard = tile;
         if (elements.selectedTileDisplayEl) {
             elements.selectedTileDisplayEl.textContent = `Selected Tile: ${tile.unicode}`;

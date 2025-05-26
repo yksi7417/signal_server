@@ -91,16 +91,14 @@ class GameState:
 
     def discard_tile_for_current_player(self, tile_to_discard_repr):
         player = self.players[self.current_player_index]
+        print(f"Player {player.revealed_sets}")
+        revealed_count = sum(len(meld.raw_tiles) for meld in player.revealed_sets)
 
-
-        if len(player.hand) != INIT_HAND_SIZE + 1:
+        if len(player.hand) + revealed_count != INIT_HAND_SIZE + 1:
             print(f"Player {player.player_id} has {len(player.hand)} tiles. Should have {INIT_HAND_SIZE + 1} before discarding.")
             return False
 
         tile_object_to_discard = None
-
-
-
         found_tile = False
         for tile_in_hand in player.hand:
             if tile_in_hand.suit == tile_to_discard_repr['suit'] and tile_in_hand.value == tile_to_discard_repr['value']:
@@ -111,62 +109,33 @@ class GameState:
 
         if not found_tile:
             print(f"Tile {tile_to_discard_repr} not found in player {player.player_id}'s hand.")
-
-
             return False
 
         self.current_discard = tile_object_to_discard
         player.discards.append(tile_object_to_discard)
 
-
-
-
         self.potential_claim_tile = self.current_discard
         self.pending_claim_player_id = None
         self.claim_type_pending = None
 
-
-
-
         start_check_idx = (self.current_player_index + 1) % len(self.players)
-        for i in range(len(self.players) -1):
+        for i in range(len(self.players) - 1):
             check_player_idx = (start_check_idx + i) % len(self.players)
             if check_player_idx == self.current_player_index:
                 continue
 
             other_player = self.players[check_player_idx]
             if can_form_pung_with_discard(other_player.hand, self.potential_claim_tile):
-
-
-
-
                 if isinstance(other_player.agent, HumanPlayerAgent):
                     self.pending_claim_player_id = other_player.player_id
                     self.claim_type_pending = "PUNG"
                     print(f"Player {other_player.player_id} (Human) can Pung {self.potential_claim_tile}. Waiting for UI.")
-
-
                     return True
-
                 elif isinstance(other_player.agent, AIPlayerAgent):
-
-
-
-
-
-
-
-
                     pass
-
-
-
-
         if self.pending_claim_player_id is None:
             self.current_player_index = (self.current_player_index + 1) % len(self.players)
             self.turn_number += 1
-
-
         return True
 
     def process_pung_claim(self, claiming_player_id, claimed_tile):
@@ -189,8 +158,6 @@ class GameState:
         if not claiming_player:
             print(f"Error: Claiming player {claiming_player_id} not found.")
             return False
-
-
         tiles_to_remove_for_pung = []
         temp_hand_for_search = list(claiming_player.hand)
 
