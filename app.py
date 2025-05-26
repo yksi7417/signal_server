@@ -2,14 +2,8 @@ import eel
 from mahjong_engine.game_state import GameState
 from mahjong_engine.player_agent import AIPlayerAgent  # Added import
 
-# 1. point Eel at your web/ folder
 eel.init('static/game')
 current_game_state = GameState()
-
-
-# 2. simple game‐state stored in Python
-# TILES = ["🀇", "🀈", "🀉", "🀊", "🀋", "🀌"]  # Commented out
-# history = []  # Commented out
 
 
 @eel.expose
