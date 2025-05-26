@@ -41,7 +41,9 @@ async function processSingleAiTurn() {
             handleFailedAiTurn(ai_turn_result);
         }
     } catch (error) {
-        handleAiTurnError(error);
+        console.error("Error during AI turn processing:", error);
+        if (elements.playerConsoleEl) elements.playerConsoleEl.textContent = "Error processing AI turn.";
+        return; 
     }
 }
 
