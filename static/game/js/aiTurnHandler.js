@@ -1,5 +1,5 @@
 import { store, elements } from './gameStore.js';
-import { displayHand, displayRevealedSets } from './tileDisplay.js';
+import { displayHand, displayRevealedSets, displayGameInfo, displayDiscardedTiles } from './tileDisplay.js';
 import { hideClaimPrompt, showClaimPrompt } from './claimsHandler.js';
 
 export async function processAiTurns() {
@@ -59,6 +59,12 @@ async function processSingleAiTurn() {
         const ai_turn_result = await eel.eel_request_ai_turn()();
         if (!ai_turn_result) {
             throw new Error("No result from AI turn");
+        }
+
+        // Update discarded tiles if present in the AI turn result
+        if (ai_turn_result.discardedTile) {
+            store.discardedTiles.push(ai_turn_result.discardedTile);
+            displayDiscardedTiles();
         }
 
         updateGameState(ai_turn_result);

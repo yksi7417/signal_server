@@ -23,8 +23,8 @@ function createTileElement(tile) {
     const tileEl = document.createElement('span');
     tileEl.textContent = `${tile.unicode}`;
     tileEl.style.border = "1px solid #ccc";
-    tileEl.style.padding = "5px";
-    tileEl.style.margin = "2px";
+    tileEl.style.padding = "1px";
+    tileEl.style.margin = "0px";
     tileEl.style.cursor = "pointer";
     tileEl.onclick = () => handleTileClick(tile, tileEl);
     return tileEl;
@@ -36,7 +36,7 @@ function handleTileClick(tile, tileEl) {
     if (store.currentHandTiles.length === store.INIT_HAND_SIZE + 1 && !elements.btnDiscardTile.disabled) {
         store.selectedTileForDiscard = tile;
         if (elements.selectedTileDisplayEl) {
-            elements.selectedTileDisplayEl.textContent = `Selected Tile: ${tile.suit} ${tile.value}`;
+            elements.selectedTileDisplayEl.textContent = `Selected Tile: ${tile.unicode}`;
         }
         document.querySelectorAll('#player-hand span').forEach(el => el.style.backgroundColor = 'transparent');
         tileEl.style.backgroundColor = 'lightblue';
@@ -79,4 +79,36 @@ export function displayGameInfo(info) {
     if (info) {
         store.currentGameInfo = { ...store.currentGameInfo, ...info };
     }
+}
+
+export function displayDiscardedTiles() {
+    const discardArea = elements.discardArea;
+    discardArea.innerHTML = '';
+    
+    store.discardedTiles.forEach((tile, index) => {
+        const tileElement = document.createElement('div');
+        tileElement.className = 'mahjong-tile';
+        tileElement.style.cssText = `
+            width: 40px;
+            height: 56px;
+            background-color: white;
+            border: 1px solid #999;
+            border-radius: 0px;
+            margin: 0px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        `;
+        
+        // If it's the latest discarded tile, highlight it
+        if (index === store.discardedTiles.length - 1) {
+            tileElement.style.border = '1px solid #ff6b6b';
+            tileElement.style.boxShadow = '0 0 1px rgba(255,107,107,0.5)';
+        }
+        
+        tileElement.textContent = tile.unicode;
+        discardArea.appendChild(tileElement);
+    });
 }

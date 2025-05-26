@@ -1,5 +1,5 @@
 import { store, elements } from './js/gameStore.js';
-import { displayHand, displayGameInfo, displayRevealedSets } from './js/tileDisplay.js';
+import { displayHand, displayGameInfo, displayRevealedSets, displayDiscardedTiles } from './js/tileDisplay.js';
 import { handleDrawTile, handleDiscardTile, handleReset } from './js/gameActions.js';
 import { processAiTurns } from './js/aiTurnHandler.js';
 import { handleClaimPungYes, handleClaimPungNo } from './js/claimsHandler.js';
@@ -29,6 +29,16 @@ function initializeEventListeners() {
 }
 
 
+// Initialize game state
+async function initializeGame() {
+    try {
+        store.discardedTiles = [];
+        displayDiscardedTiles();
+    } catch (error) {
+        console.error('Error initializing game:', error);
+    }
+}
+
 eel.expose(update_history_js); 
 function update_history_js(hist) {
   console.log("Python called update_history_js with:", hist);
@@ -37,4 +47,5 @@ function update_history_js(hist) {
 window.onload = () => {
   initializeEventListeners();
   handleReset();
+  initializeGame();
 };

@@ -1,5 +1,5 @@
 import { store, elements } from './gameStore.js';
-import { displayHand, displayRevealedSets, displayGameInfo } from './tileDisplay.js';
+import { displayHand, displayRevealedSets, displayGameInfo, displayDiscardedTiles } from './tileDisplay.js';
 import { processAiTurns } from './aiTurnHandler.js';
 import { showClaimPrompt, hideClaimPrompt } from './claimsHandler.js';
 
@@ -24,30 +24,24 @@ export async function handleDrawTile() {
     }
 }
 
-export async function handleDiscardTile() {
-    if (store.currentGameInfo.winner_found) {
-        if(elements.playerConsoleEl) {
-            elements.playerConsoleEl.textContent = 
-                `Game over. Player ${store.currentGameInfo.winning_player_id} has won. Please reset.`;
-        }
-        return;
-    }
-
-    if (!store.selectedTileForDiscard) {
-        if(elements.playerConsoleEl) {
-            elements.playerConsoleEl.textContent = "Please select a tile from your hand to discard.";
-        }
-        return;
-    }
-
+export async function handleDiscardTile(pointerEvent) {
     try {
-        const result = await eel.eel_discard_tile(store.selectedTileForDiscard)();
-        handleDiscardTileResult(result);
-    } catch (error) {
-        console.error("Error calling eel_discard_tile:", error);
-        if(elements.playerConsoleEl) {
-            elements.playerConsoleEl.textContent = "Exception discarding tile: " + error;
+        // Add the discarded tile to the store
+        const tile = store.selectedTileForDiscard
+        store.discardedTiles.push(tile);
+        console.log("Discarded tile:", tile);
+        
+        // Update the display
+        displayDiscardedTiles();
+        
+        // Continue with existing discard logic
+        const result = await eel.eel_discard_tile(tile)();
+        if (result && result.success) {
+            displayHand(result.hand);
+            // Any other necessary updates...
         }
+    } catch (error) {
+        console.error('Error handling tile discard:', error);
     }
 }
 

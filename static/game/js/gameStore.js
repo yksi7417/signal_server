@@ -3,6 +3,7 @@ export const store = {
     currentGameInfo: {},
     selectedTileForDiscard: null,
     currentHandTiles: [],
+    discardedTiles: [],
     INIT_HAND_SIZE: 13
 };
 
@@ -19,5 +20,6 @@ export const elements = {
     claimMessageEl: document.getElementById('claim-message'),
     btnClaimYes: document.getElementById('btnClaimYes'),
     btnClaimNo: document.getElementById('btnClaimNo'),
-    revealedSetsEl: document.getElementById('revealed-sets-display')
+    revealedSetsEl: document.getElementById('revealed-sets-display'),
+    discardArea: document.getElementById('discard-area')
 };

@@ -339,4 +339,4 @@ def eel_request_ai_turn():
 
 
 if __name__ == "__main__":
-    eel.start("index.html", size=(400, 500))
+    eel.start("index.html", size=(1200, 1500))
