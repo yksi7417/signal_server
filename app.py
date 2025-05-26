@@ -8,15 +8,6 @@ current_game_state = GameState()
 
 
 @eel.expose
-def draw_tile():
-    print(
-        "Old draw_tile function called. This functionality will be replaced."
-    )
-    # Consider what JS expects: perhaps an empty string or a specific format
-    return ""
-
-
-@eel.expose
 def reset_game():
     global current_game_state
     current_game_state = GameState()  # Re-initialize our new game state for now
