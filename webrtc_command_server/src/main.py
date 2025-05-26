@@ -10,12 +10,12 @@ async def run():
 
     @pc.on("track")
     def on_track(track):
-        # spawn per‐track handler
+       
         asyncio.create_task(handle_audio_track(track))
 
-    # handshake & keep alive
+   
     await connect_signaling(pc)
-    await asyncio.Future()  # run forever
+    await asyncio.Future() 
 
 if __name__ == "__main__":
     asyncio.run(run())

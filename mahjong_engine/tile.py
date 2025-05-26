@@ -40,8 +40,8 @@ class Tile:
     def is_simple(self):
         return self.is_numeric_suit() and not self.is_terminal()
 
-    # Add __lt__ for sorting, primarily by suit then value
-    # This is a simplified sort order. True Mahjong sorting can be complex.
+   
+   
     def __lt__(self, other):
         if not isinstance(other, Tile):
             return NotImplemented

@@ -28,7 +28,7 @@ async def env_js_handler(request):
     return web.Response(text=js_code, content_type="application/javascript")
 
 
-clients = {}  # {id: websocket}
+clients = {} 
 
 
 async def websocket_handler(request):
@@ -57,7 +57,7 @@ async def websocket_handler(request):
 
     clients[client_id] = ws
 
-    # Notify others
+   
     for other_id, other_ws in clients.items():
         if other_ws != ws:
             await other_ws.send_str(json.dumps({

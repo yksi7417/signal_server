@@ -39,10 +39,10 @@ class GameState:
 
         self.winner_found = False
         self.winning_player_id = None
-        # self.winning_hand_details = None # Optional for now
-        # print(f"Initial wall size: {len(self.wall)}") # For debugging
-        # for p in self.players: # For debugging
-        #    print(f"Player {p.player_id} hand size: {len(p.hand)}")
+       
+       
+       
+       
 
     def deal_tiles(self):
         for player in self.players:
@@ -60,47 +60,47 @@ class GameState:
     def draw_tile_for_current_player(self):
         if not self.wall:
             print("Wall is empty. Cannot draw.")
-            return None # Or raise an exception
+            return None
 
         player = self.players[self.current_player_index]
         
-        # Typically, a player should have 13 tiles before drawing, unless it's for a Kong replacement.
-        # For a basic turn, they draw to get 14, then discard to 13.
-        # Let's assume hand size is 13 for now before drawing.
-        if len(player.hand) >= INIT_HAND_SIZE + 1: # INIT_HAND_SIZE is 13
+       
+       
+       
+        if len(player.hand) >= INIT_HAND_SIZE + 1:
              print(f"Player {player.player_id} already has {len(player.hand)} tiles. Cannot draw again before discarding.")
              return None
 
 
-        drawn_tile = self.wall.pop(0) # Take from the "front" of the wall
+        drawn_tile = self.wall.pop(0)
         player.hand.append(drawn_tile)
         
-        if len(player.hand) == INIT_HAND_SIZE + 1: # Player has 14 tiles (13 + 1 drawn)
-            # Check for self-drawn win
-            # Note: player.revealed_sets would be used by check_standard_win
+        if len(player.hand) == INIT_HAND_SIZE + 1:
+           
+           
             is_win = check_standard_win(player.hand, player.revealed_sets)
             if is_win:
                 self.winner_found = True
                 self.winning_player_id = player.player_id
                 print(f"Player {player.player_id} has won by self-draw!")
-                # Further actions might be stopped, e.g., player doesn't discard.
-                # For now, just setting flags. Game loop needs to respect these flags.
+               
+               
         
-        # print(f"Player {player.player_id} drew {drawn_tile}. Hand size: {len(player.hand)}")
+       
         return drawn_tile
 
-    def discard_tile_for_current_player(self, tile_to_discard_repr): # tile_to_discard_repr could be {'suit': 'Dots', 'value': '5'}
+    def discard_tile_for_current_player(self, tile_to_discard_repr):
         player = self.players[self.current_player_index]
 
-        # Player should have 14 tiles before discarding in a normal turn.
+       
         if len(player.hand) != INIT_HAND_SIZE + 1:
             print(f"Player {player.player_id} has {len(player.hand)} tiles. Should have {INIT_HAND_SIZE + 1} before discarding.")
             return False
 
         tile_object_to_discard = None
-        # Find the tile in hand. For simplicity, we assume tile_to_discard_repr is sufficient to identify it.
-        # A more robust way would be to pass an index or a unique tile ID if tiles had them.
-        # For now, let's find the first match.
+       
+       
+       
         found_tile = False
         for tile_in_hand in player.hand:
             if tile_in_hand.suit == tile_to_discard_repr['suit'] and tile_in_hand.value == tile_to_discard_repr['value']:
@@ -111,63 +111,63 @@ class GameState:
         
         if not found_tile:
             print(f"Tile {tile_to_discard_repr} not found in player {player.player_id}'s hand.")
-            # It's important to add the tile back if it was removed optimistically or handle state carefully.
-            # In this code, remove only happens if found, so this is fine.
+           
+           
             return False
 
-        self.current_discard = tile_object_to_discard # Track the last discarded tile
-        player.discards.append(tile_object_to_discard) # Keep a history of player's discards
+        self.current_discard = tile_object_to_discard
+        player.discards.append(tile_object_to_discard)
         
-        # print(f"Player {player.player_id} discarded {tile_object_to_discard}. Hand size: {len(player.hand)}")
+       
 
-        # --- START NEW CLAIM CHECK LOGIC ---
+       
         self.potential_claim_tile = self.current_discard
-        self.pending_claim_player_id = None # Reset before checking
+        self.pending_claim_player_id = None
         self.claim_type_pending = None
 
-        # Check other players for Pung claim
-        # Iterate starting from the player after the current one, wrapping around.
-        # This ensures a more standard priority if multiple players can claim (though only Pung for now).
+       
+       
+       
         start_check_idx = (self.current_player_index + 1) % len(self.players)
-        for i in range(len(self.players) -1): # Check all other players
+        for i in range(len(self.players) -1):
             check_player_idx = (start_check_idx + i) % len(self.players)
-            if check_player_idx == self.current_player_index: # Should not happen with this loop structure
+            if check_player_idx == self.current_player_index:
                 continue 
             
             other_player = self.players[check_player_idx]
             if can_form_pung_with_discard(other_player.hand, self.potential_claim_tile):
-                # For now, first player who can Pung gets priority (simplification)
-                # More complex logic would handle multiple claims (e.g., win > Pung/Kong > Chow)
+               
+               
                 
-                # Ask agent if they want to claim
+               
                 if isinstance(other_player.agent, HumanPlayerAgent):
                     self.pending_claim_player_id = other_player.player_id
-                    self.claim_type_pending = "PUNG" # Store MeldType.PUNG or a string
+                    self.claim_type_pending = "PUNG"
                     print(f"Player {other_player.player_id} (Human) can Pung {self.potential_claim_tile}. Waiting for UI.")
-                    # This state will be picked up by app.py to notify client.
-                    # The turn does NOT advance yet if a human claim is pending.
-                    return True # Discard was successful, claim pending
+                   
+                   
+                    return True
 
                 elif isinstance(other_player.agent, AIPlayerAgent):
-                    # AI makes its decision immediately
-                    # claim_decision = other_player.agent.decide_claim(self, self.potential_claim_tile, ["PUNG"]) 
-                    # For this step, AIPlayerAgent.decide_claim always returns None, so AI won't claim.
-                    # If AI could claim, we'd call process_pung_claim here and it would return True.
-                    # If AI claims, the turn advances to them, and they discard.
-                    # For now, AI does nothing. If an AI *could* claim, it would do so here.
-                    # If AI claims, it should be processed immediately.
-                    # For this subtask, AI will not claim.
-                    pass # AI does nothing for now regarding Pung.
+                   
+                   
+                   
+                   
+                   
+                   
+                   
+                   
+                    pass
         
-        # --- END NEW CLAIM CHECK LOGIC ---
+       
 
-        # If no claim is pending (e.g. no one could Pung, or AI declined)
+       
         if self.pending_claim_player_id is None:
             self.current_player_index = (self.current_player_index + 1) % len(self.players)
             self.turn_number += 1
-            # print(f"Turn {self.turn_number}. Next player is {self.players[self.current_player_index].player_id}")
+           
         
-        return True # Discard was successful
+        return True
 
     def process_pung_claim(self, claiming_player_id, claimed_tile):
         """
@@ -179,7 +179,7 @@ class GameState:
             return False
 
         claiming_player = None
-        discarding_player_original_index = self.current_player_index # Player who discarded the tile
+        discarding_player_original_index = self.current_player_index
 
         for p in self.players:
             if p.player_id == claiming_player_id:
@@ -190,128 +190,128 @@ class GameState:
             print(f"Error: Claiming player {claiming_player_id} not found.")
             return False
 
-        # Find 2 matching tiles to remove from player's hand
+       
         tiles_to_remove_for_pung = []
-        temp_hand_for_search = list(claiming_player.hand) # Search in a copy
+        temp_hand_for_search = list(claiming_player.hand)
 
         for tile_in_hand in temp_hand_for_search:
             if tile_in_hand == claimed_tile and len(tiles_to_remove_for_pung) < 2:
                 tiles_to_remove_for_pung.append(tile_in_hand)
         
         if len(tiles_to_remove_for_pung) != 2:
-            # This check is crucial. It implies can_form_pung_with_discard might have been true,
-            # but the hand state changed, or there's a logic mismatch.
-            # For this specific failure case in the test (player_lacks_tiles),
-            # can_form_pung_with_discard would have returned False, so this path
-            # in process_pung_claim implies an issue if it's reached when it shouldn't be.
-            # However, the immediate fix is to ensure hand isn't modified if check fails.
+           
+           
+           
+           
+           
+           
             print(f"Error: Could not identify 2 matching tiles for Pung from player {claiming_player_id}'s hand. Found {len(tiles_to_remove_for_pung)}.")
-            return False # Hand is not modified
+            return False
 
-        # Now, actually remove the identified tiles from the player's hand
+       
         for tile_to_remove in tiles_to_remove_for_pung:
             claiming_player.hand.remove(tile_to_remove)
 
-        # Add the Pung to revealed_sets
+       
         new_pung = Pung(tile=claimed_tile, revealed=True, claimed_from=discarding_player_original_index)
         claiming_player.add_revealed_set(new_pung)
 
         print(f"Player {claiming_player_id} formed Pung: {new_pung} from player {discarding_player_original_index}'s discard.")
 
-        # Update game state
-        self.current_player_index = claiming_player_id # Turn goes to the claiming player
+       
+        self.current_player_index = claiming_player_id
         
-        self.current_discard = None # The claimed tile is no longer the "current discard" in the same way
+        self.current_discard = None
         self.potential_claim_tile = None 
         self.pending_claim_player_id = None
         self.claim_type_pending = None
-        # self.turn_number does not advance here, it advances when the claiming player discards.
-        # Or, if you consider a claim part of the "turn cycle", it could advance.
-        # For now, let's say the discard from the claiming player is part of their new turn.
+       
+       
+       
         
         print(f"Player {claiming_player.player_id}'s turn. Hand size: {len(claiming_player.hand)}. Must discard.")
-        # The claiming player now has 11 tiles in hand (13 + 1 drawn - 3 for Pung + 1 claimed = 12, then -1 for Pung? No.)
-        # Hand was size 13 (INIT_HAND_SIZE). They did not draw.
-        # They use 2 from hand + 1 claimed tile for Pung. Hand size becomes 13 - 2 = 11.
-        # They now have 11 tiles + revealed Pung. They must discard one of these 11 tiles.
-        # So their hand size should be 11. The rules of Mahjong mean after claim, you discard.
-        # The hand size for discard check (INIT_HAND_SIZE + 1) is for *after drawing a tile*.
-        # After claiming a Pung, a player has 13 (original) - 2 (used for Pung) = 11 tiles in hand + the Pung.
-        # They then discard from these 11, resulting in 10 tiles in hand + Pung.
-        # This is different from draw-discard.
-        # The check `if len(player.hand) != INIT_HAND_SIZE + 1:` in `discard_tile_for_current_player` will fail.
-        # This needs a state or flag to indicate "post-claim discard".
-        # For now, the subtask does not require modifying the discard logic for post-claim.
-        # We will assume the next action for the human player is to call `eel_discard_tile`
-        # and the current `discard_tile_for_current_player` logic will need adjustment in a future step.
-        return True # Pung processed, player needs to discard
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+       
+        return True
 
-    def run_ai_turn(self): # Assumes self.current_player_index points to an AI
+    def run_ai_turn(self):
         ai_player = self.players[self.current_player_index]
         if not isinstance(ai_player.agent, AIPlayerAgent):
             print(f"Error: run_ai_turn called for non-AI player {ai_player.player_id}")
             return {"success": False, "error": "Not an AI player."}
 
-        # 1. AI Draws a tile
-        drawn_tile = self.draw_tile_for_current_player() # This now checks for win internally
+       
+        drawn_tile = self.draw_tile_for_current_player()
         if drawn_tile is None:
             return {"success": False, "error": "Wall empty, AI cannot draw."}
 
-        # Check if the draw resulted in a win for the AI
+       
         if self.winner_found and self.winning_player_id == ai_player.player_id:
             print(f"AI Player {ai_player.player_id} has won by self-draw after drawing {drawn_tile}!")
             return {
                 "success": True,
                 "ai_player_id": ai_player.player_id,
-                "action": "win", # New action type
+                "action": "win",
                 "winner_found": True,
                 "winning_player_id": self.winning_player_id,
-                "drawn_tile_for_win": {"suit": drawn_tile.suit, "value": drawn_tile.value}, # Include the winning tile
-                "discarded_tile": None, # No discard if win
+                "drawn_tile_for_win": {"suit": drawn_tile.suit, "value": drawn_tile.value},
+                "discarded_tile": None,
                 "next_player_id": self.winning_player_id, 
-                "human_can_claim_pung": False, # Game ends
+                "human_can_claim_pung": False,
                 "claimable_tile": None
             }
         
-        # If not a win, proceed to AI discard:
-        # print(f"AI Player {ai_player.player_id} drew {drawn_tile}. Hand size: {len(ai_player.hand)}")
+       
+       
 
-        # 2. AI Chooses a tile to discard
-        # The hand passed to choose_discard is ai_player.hand, which now has 14 tiles.
+       
+       
         tile_to_discard_by_ai = ai_player.agent.choose_discard(self, ai_player.hand, drawn_tile)
         
         if tile_to_discard_by_ai is None:
             print(f"Error: AI Player {ai_player.player_id} failed to choose a discard.")
-            # This is an internal AI error, try to recover by discarding randomly.
-            if ai_player.hand: # Check hand is not empty
+           
+            if ai_player.hand:
                  tile_to_discard_by_ai = random.choice(ai_player.hand)
-            else: # Should not happen if draw was successful
+            else:
                  return {"success": False, "error": "AI hand empty after draw, cannot discard."}
 
 
-        # print(f"AI Player {ai_player.player_id} chose to discard {tile_to_discard_by_ai}")
+       
 
-        # 3. AI Discards the chosen tile
-        # We need to pass a representation of the tile if discard_tile_for_current_player expects it
+       
+       
         discard_repr = {"suit": tile_to_discard_by_ai.suit, "value": tile_to_discard_by_ai.value}
         discard_success = self.discard_tile_for_current_player(discard_repr)
         
         if not discard_success:
-            # This would be unusual if the AI chose a tile from its own hand.
+           
             print(f"Error: AI Player {ai_player.player_id} failed to discard {tile_to_discard_by_ai} properly.")
             return {"success": False, "error": "AI failed to execute discard."}
 
-        # discard_tile_for_current_player already handles:
-        # - Setting self.current_discard
-        # - Checking for claims by other players (which might set pending_claim_player_id)
-        # - Advancing turn if no claims are pending.
+       
+       
+       
+       
         
-        # print(f"AI Player {ai_player.player_id} turn finished. Discarded: {self.current_discard}")
+       
         return {
             "success": True,
             "ai_player_id": ai_player.player_id,
             "discarded_tile": {"suit": self.current_discard.suit, "value": self.current_discard.value},
-            "next_player_id": self.players[self.current_player_index].player_id, # Who's turn is it now conceptually
+            "next_player_id": self.players[self.current_player_index].player_id,
             "human_can_claim_pung": (self.pending_claim_player_id == 0 and self.claim_type_pending == "PUNG"),
             "claimable_tile": {"suit": self.potential_claim_tile.suit, "value": self.potential_claim_tile.value} if self.potential_claim_tile and self.pending_claim_player_id == 0 else None
         }

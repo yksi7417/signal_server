@@ -15,8 +15,8 @@ def warm_chime(freq, duration=300, shimmer=True):
 
 
 # Use major 3rd interval for harmony (e.g. 660 Hz and ~528 Hz)
-ding = warm_chime(660)      # Slightly brighter "ding"
-dong = warm_chime(528)      # Slightly deeper, harmonic "dong"
+ding = warm_chime(660)     
+dong = warm_chime(528)     
 
 # Combine with natural pacing
 pause = AudioSegment.silent(duration=100)

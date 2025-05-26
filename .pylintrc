@@ -1,0 +1,53 @@
+[MASTER]
+# Use multiple processes to speed up Pylint (use "0" for auto)
+jobs=0
+
+# List of plugins to load
+load-plugins=
+
+[MESSAGES CONTROL]
+# Disable specific warnings
+disable=C0111,  # missing-docstring
+        C0103,  # invalid-name
+        R0903,  # too-few-public-methods
+        W0511   # fixme
+
+[FORMAT]
+# Maximum number of characters on a single line
+max-line-length=160
+
+# Maximum number of lines in a module
+max-module-lines=2000
+
+# String used as indentation unit (default is 4 spaces)
+indent-string='    '
+
+[BASIC]
+# Good variable names
+good-names=i,j,k,ex,Run,_,fd,fp,id
+
+[MISCELLANEOUS]
+# List of note tags to take into consideration
+notes=FIXME,XXX,TODO
+
+[SIMILARITIES]
+# Minimum lines number of a similarity
+min-similarity-lines=4
+
+# Ignore imports when computing similarities
+ignore-imports=yes
+
+[VARIABLES]
+# List of additional names to consider as builtins
+additional-builtins=
+
+[TYPECHECK]
+# List of module names for which member attributes should not be checked
+ignored-modules=numpy,tensorflow,torch,cv2
+
+[REPORTS]
+# Set the output format (text, parseable, colorized, html)
+output-format=colorized
+
+# Include a brief explanation of each error
+msg-template={path}:{line}: [{msg_id}({symbol}), {obj}] {msg}

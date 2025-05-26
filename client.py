@@ -13,7 +13,7 @@ def random_id(prefix="client", length=4):
 async def test():
     uri = "wss://oracle-free-instance-20230330-1941.tail356fe.ts.net/ws"
     async with websockets.connect(uri) as websocket:
-        # Send handshake message
+       
         my_id = random_id()
         await websocket.send(json.dumps({
             "type": "hello",
@@ -21,7 +21,7 @@ async def test():
         }))
         print("✅ Sent hello handshake")
 
-        # Listen for peer-list or new-peer responses
+       
         while True:
             msg = await websocket.recv()
             print("📨 Received:", msg)

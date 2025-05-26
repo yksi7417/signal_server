@@ -8,7 +8,7 @@ from src.audio_handler import track_to_username
 
 async def connect_signaling(pc):
     async with websockets.connect(SIGNALING_SERVER_URL) as ws:
-        # join room
+       
         await ws.send(json.dumps({"action": "join", "room": ROOM_NAME}))
         async for msg in ws:
             data = json.loads(msg)
@@ -27,5 +27,5 @@ async def connect_signaling(pc):
                 await pc.addIceCandidate(data["candidate"])
 
             elif data.get("type") == "track-metadata":
-                # track‐ID → username mapping
+               
                 track_to_username[data["track_id"]] = data["username"]

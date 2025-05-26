@@ -8,12 +8,12 @@ ROOM_NAME = "voice-room"
 VAD_AGGRESSIVENESS = 2
 
 # STT (Whisper.cpp via pywhispercpp)
-WHISPER_MODEL = "medium"         # or "medium.en" for English-only
+WHISPER_MODEL = "medium"        
 
 # Command parser (llama.cpp)
 COMMAND_MODEL_PATH = "models/command-parser.gguf"
-LLM_N_GPU_LAYERS = 30          # adjust to fit each GPU
-LLM_GPU_LAYERS = [0, 1]        # split first 30 layers on cuda:0, rest on cuda:1
+LLM_N_GPU_LAYERS = 30         
+LLM_GPU_LAYERS = [0, 1]       
 
 # Allowed commands
 COMMAND_LIST = [
@@ -25,4 +25,4 @@ COMMAND_LIST = [
     "volume down"
 ]
 
-track_to_username = {}  # track-ID → username mapping
+track_to_username = {} 
