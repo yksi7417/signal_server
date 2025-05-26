@@ -84,22 +84,37 @@ export function displayGameInfo(info) {
 export function displayDiscardedTiles() {
     const discardArea = elements.discardArea;
     discardArea.innerHTML = '';
+      // Add a flex container for each row
+    const numTilesPerRow = 10;
+    let currentRow;
     
     store.discardedTiles.forEach((tile, index) => {
+        // Create a new row every 10 tiles
+        if (index % numTilesPerRow === 0) {
+            currentRow = document.createElement('div');
+            currentRow.style.cssText = `
+                display: flex;
+                justify-content: center;
+                margin-bottom: 1px;
+            `;
+            discardArea.appendChild(currentRow);
+        }
+        
         const tileElement = document.createElement('div');
         tileElement.className = 'mahjong-tile';
         tileElement.style.cssText = `
-            width: 40px;
-            height: 56px;
+            width: 45px;
+            height: 63px;
             background-color: white;
-            border: 1px solid #999;
-            border-radius: 0px;
-            margin: 0px;
+            border: 2px solid #999;
+            border-radius: 3px;
+            margin: 1px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 20px;
-            box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            font-size: 42px;
+            line-height: 1;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.2);
         `;
         
         // If it's the latest discarded tile, highlight it
@@ -107,8 +122,7 @@ export function displayDiscardedTiles() {
             tileElement.style.border = '1px solid #ff6b6b';
             tileElement.style.boxShadow = '0 0 1px rgba(255,107,107,0.5)';
         }
-        
-        tileElement.textContent = tile.unicode;
-        discardArea.appendChild(tileElement);
+          tileElement.textContent = tile.unicode;
+        currentRow.appendChild(tileElement);
     });
 }
