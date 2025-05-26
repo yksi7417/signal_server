@@ -2,6 +2,7 @@ import eel
 from mahjong_engine.game_state import GameState
 from mahjong_engine.player_agent import AIPlayerAgent  # Added import
 
+# 1. point Eel at your web/ folder
 eel.init('static/game')
 current_game_state = GameState()
 
@@ -18,8 +19,8 @@ def draw_tile():
 @eel.expose
 def reset_game():
     global current_game_state
-    current_game_state = GameState()
-    return True
+    current_game_state = GameState()  # Re-initialize our new game state for now
+    return True  # main.js expects a return
 
 
 @eel.expose
@@ -32,7 +33,7 @@ def start_new_game():
     if current_game_state.players:  # Check if players exist
         player0 = current_game_state.players[0]
         player0_hand_serializable = [
-            {"suit": tile.suit, "value": tile.value} for tile in player0.hand
+            {"unicode": tile.unicode, "suit": tile.suit, "value": tile.value} for tile in player0.hand
         ]
 
     game_info = {
@@ -48,6 +49,7 @@ def start_new_game():
 
 
 @eel.expose
+
 def eel_player_claims_pung(confirm_claim):  # confirm_claim is boolean
     global current_game_state
     response = {"success": False, "message": "Claim processing failed."}
@@ -74,13 +76,13 @@ def eel_player_claims_pung(confirm_claim):  # confirm_claim is boolean
         if success:
             player = current_game_state.players[claiming_player_id]
             hand_serializable = [
-                {"suit": t.suit, "value": t.value} for t in player.hand
+                {"unicode": t.unicode, "suit": t.suit, "value": t.value} for t in player.hand
             ]
             revealed_sets_serializable = [
                 {
                     "type": meld.meld_type.value,
                     "tiles": [
-                        {"suit": t.suit, "value": t.value} for t in meld.raw_tiles
+                        {"unicode": t.unicode, "suit": t.suit, "value": t.value} for t in meld.raw_tiles
                     ],
                 }
                 for meld in player.revealed_sets
@@ -120,13 +122,13 @@ def eel_player_claims_pung(confirm_claim):  # confirm_claim is boolean
             "next_player_id": current_game_state.players[
                 current_game_state.current_player_index
             ].player_id,
-            "last_discarded_tile": (
-                {
-                    "suit": current_game_state.current_discard.suit,
-                    "value": current_game_state.current_discard.value,
-                }
-                if current_game_state.current_discard is not None else None
-            ),
+            "last_discarded_tile": {
+                "unicode": current_game_state.current_discard.unicode, 
+                "suit": current_game_state.current_discard.suit,
+                "value": current_game_state.current_discard.value,
+            }
+            if current_game_state.current_discard
+            else None,
             "winner_found": current_game_state.winner_found,  # Added (likely False here)
         }
 
@@ -145,6 +147,7 @@ def eel_draw_tile():
 
     if drawn_tile_obj:
         drawn_tile_serializable = {
+            "unicode": drawn_tile_obj.unicode,
             "suit": drawn_tile_obj.suit,
             "value": drawn_tile_obj.value,
         }
@@ -153,7 +156,7 @@ def eel_draw_tile():
             current_game_state.current_player_index
         ].hand
         hand_serializable = [
-            {"suit": t.suit, "value": t.value} for t in current_player_hand
+            {"unicode": t.unicode, "suit": t.suit, "value": t.value} for t in current_player_hand
         ]
 
         # Check for win after draw
@@ -164,14 +167,14 @@ def eel_draw_tile():
             # Player 0 (human) just drew and won
             # Hand already includes drawn_tile_obj due to how draw_tile_for_current_player works
             hand_serializable = [
-                {"suit": t.suit, "value": t.value}
+                {"unicode": t.unicode, "suit": t.suit, "value": t.value}
                 for t in current_game_state.players[player_id].hand
             ]
             revealed_sets_serializable = [
                 {
                     "type": meld.meld_type.value,
                     "tiles": [
-                        {"suit": t.suit, "value": t.value} for t in meld.raw_tiles
+                        {"unicode": t.unicode, "suit": t.suit, "value": t.value} for t in meld.raw_tiles
                     ],
                 }
                 for meld in current_game_state.players[player_id].revealed_sets
@@ -200,7 +203,7 @@ def eel_draw_tile():
             current_game_state.current_player_index
         ].hand
         hand_serializable = [
-            {"suit": t.suit, "value": t.value} for t in current_player_hand
+            {"unicode": t.unicode, "suit": t.suit, "value": t.value} for t in current_player_hand
         ]
         return {
             "success": False,
@@ -212,6 +215,7 @@ def eel_draw_tile():
 
 
 @eel.expose
+
 def eel_discard_tile(tile_to_discard_data):  # tile_to_discard_data is {'suit': 'Dots', 'value': '5'}
     global current_game_state
     # Player ID of the player whose turn it is to discard
@@ -244,23 +248,20 @@ def eel_discard_tile(tile_to_discard_data):  # tile_to_discard_data is {'suit': 
         hand_serializable = []
         if discarding_player_object:
             hand_serializable = [
-                {"suit": t.suit, "value": t.value}
+                {"unicode": t.unicode, "suit": t.suit, "value": t.value}
                 for t in discarding_player_object.hand
             ]
-
-        last_discarded_tile = None
-        if current_game_state.current_discard is not None:
-            last_discarded_tile = {
-                "suit": current_game_state.current_discard.suit,
-                "value": current_game_state.current_discard.value,
-            }
 
         response = {
             "success": True,
             "discarded_by_player_id": discarding_player_id,
             "updated_hand": hand_serializable,  # Their hand after discard
             "next_player_id": next_player_id,
-            "last_discarded_tile": last_discarded_tile,
+            "last_discarded_tile": {
+                "unicode": current_game_state.current_discard.unicode, 
+                "suit": current_game_state.current_discard.suit,
+                "value": current_game_state.current_discard.value,
+            },
             "winner_found": current_game_state.winner_found,  # Pass current win status
         }
 
@@ -272,18 +273,18 @@ def eel_discard_tile(tile_to_discard_data):  # tile_to_discard_data is {'suit': 
         ):
             response["human_can_claim_pung"] = True
             response["claimable_tile"] = {
+                "unicode": current_game_state.potential_claim_tile.unicode,
                 "suit": current_game_state.potential_claim_tile.suit,
                 "value": current_game_state.potential_claim_tile.value,
             }
         else:
             response["human_can_claim_pung"] = False
-
         return response  # Return the modified response
     else:
         # Hand state might be inconsistent if tile not found, or wrong number of tiles.
         current_player_obj = current_game_state.players[discarding_player_id]
         hand_serializable = [
-            {"suit": t.suit, "value": t.value} for t in current_player_obj.hand
+            {"unicode": t.unicode, "suit": t.suit, "value": t.value} for t in current_player_obj.hand
         ]
         return {
             "success": False,
@@ -300,6 +301,7 @@ if __name__ == "__main__":
 
 
 @eel.expose
+
 def eel_request_ai_turn():
     global current_game_state
 
@@ -330,7 +332,7 @@ def eel_request_ai_turn():
         if current_game_state.players:
             player0 = current_game_state.players[0]
             player0_hand_serializable = [
-                {"suit": tile.suit, "value": tile.value} for tile in player0.hand
+                {"unicode": tile.unicode, "suit": tile.suit, "value": tile.value} for tile in player0.hand
             ]
 
         result["player0_hand"] = player0_hand_serializable  # Add player 0's hand to the response
@@ -343,7 +345,7 @@ def eel_request_ai_turn():
                 {
                     "type": meld.meld_type.value,
                     "tiles": [
-                        {"suit": t.suit, "value": t.value} for t in meld.raw_tiles
+                        {"unicode": t.unicode, "suit": t.suit, "value": t.value} for t in meld.raw_tiles
                     ],
                 }
                 for meld in player0.revealed_sets
@@ -351,41 +353,3 @@ def eel_request_ai_turn():
         result["player0_revealed_sets"] = player0_revealed_sets_serializable
 
         return result
-    else:
-        # print(f"eel_request_ai_turn: Current player {current_player_id} is Human. No AI turn to run.")
-        # It's human's turn, client should already know or enable human actions
-        player0_hand_serializable = []
-        if current_game_state.players:
-            player0 = current_game_state.players[0]
-            player0_hand_serializable = [
-                {"suit": tile.suit, "value": tile.value} for tile in player0.hand
-            ]
-
-        return {
-            "success": False,
-            "error": "Not AI's turn.",
-            "next_player_id": current_player_id,  # It's still this player's turn (human)
-            "player0_hand": player0_hand_serializable,  # Send current hand for player 0
-            "human_can_claim_pung": (
-                current_game_state.pending_claim_player_id == 0
-                and current_game_state.claim_type_pending == "PUNG"
-            ),  # Re-send claim status
-            "claimable_tile": {
-                "suit": current_game_state.potential_claim_tile.suit,
-                "value": current_game_state.potential_claim_tile.value,
-            }
-            if current_game_state.potential_claim_tile
-            and current_game_state.pending_claim_player_id == 0
-            else None,
-            "player0_revealed_sets": [
-                {
-                    "type": meld.meld_type.value,
-                    "tiles": [
-                        {"suit": t.suit, "value": t.value} for t in meld.raw_tiles
-                    ],
-                }
-                for meld in current_game_state.players[0].revealed_sets
-            ]
-            if current_game_state.players
-            else [],
-        }

@@ -76,7 +76,7 @@ function display_hand(tiles) {
   playerHandEl.innerHTML = ''; 
   currentHandTiles.forEach((tile, index) => {
     const tileEl = document.createElement('span');
-    tileEl.textContent = `${tile.suit} ${tile.value}`;
+    tileEl.textContent = `${tile.unicode}`;
     tileEl.style.border = "1px solid #ccc";
     tileEl.style.padding = "5px";
     tileEl.style.margin = "2px";

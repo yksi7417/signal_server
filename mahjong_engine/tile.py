@@ -11,6 +11,7 @@ class Tile:
     def __init__(self, suit, value):
         self.suit = suit
         self.value = value
+        self.unicode = self.__to_string()
 
     def is_suit(self, suit_type):
         return self.suit == suit_type
@@ -57,17 +58,26 @@ class Tile:
         return self.value < other.value
 
     def __repr__(self):
-        # Unicode mapping for Mahjong tiles
+        uni = self.__to_string()
+        if uni:
+            return f"Tile('{self.suit}', '{self.value}', '{uni}')"
+        return f"Tile('{self.suit}', '{self.value}')"
+
+    def __to_string(self):
+        """
+        Return the Unicode string for this tile.
+        Returns an empty string if not found.
+        """
         unicode_map = {
-            (SUIT_DOTS, "1"): "\U0001F007",
-            (SUIT_DOTS, "2"): "\U0001F008",
-            (SUIT_DOTS, "3"): "\U0001F009",
-            (SUIT_DOTS, "4"): "\U0001F00A",
-            (SUIT_DOTS, "5"): "\U0001F00B",
-            (SUIT_DOTS, "6"): "\U0001F00C",
-            (SUIT_DOTS, "7"): "\U0001F00D",
-            (SUIT_DOTS, "8"): "\U0001F00E",
-            (SUIT_DOTS, "9"): "\U0001F00F",
+            (SUIT_CHARACTERS, "1"): "\U0001F007",
+            (SUIT_CHARACTERS, "2"): "\U0001F008",
+            (SUIT_CHARACTERS, "3"): "\U0001F009",
+            (SUIT_CHARACTERS, "4"): "\U0001F00A",
+            (SUIT_CHARACTERS, "5"): "\U0001F00B",
+            (SUIT_CHARACTERS, "6"): "\U0001F00C",
+            (SUIT_CHARACTERS, "7"): "\U0001F00D",
+            (SUIT_CHARACTERS, "8"): "\U0001F00E",
+            (SUIT_CHARACTERS, "9"): "\U0001F00F",
             (SUIT_BAMBOO, "1"): "\U0001F010",
             (SUIT_BAMBOO, "2"): "\U0001F011",
             (SUIT_BAMBOO, "3"): "\U0001F012",
@@ -77,15 +87,15 @@ class Tile:
             (SUIT_BAMBOO, "7"): "\U0001F016",
             (SUIT_BAMBOO, "8"): "\U0001F017",
             (SUIT_BAMBOO, "9"): "\U0001F018",
-            (SUIT_CHARACTERS, "1"): "\U0001F019",
-            (SUIT_CHARACTERS, "2"): "\U0001F01A",
-            (SUIT_CHARACTERS, "3"): "\U0001F01B",
-            (SUIT_CHARACTERS, "4"): "\U0001F01C",
-            (SUIT_CHARACTERS, "5"): "\U0001F01D",
-            (SUIT_CHARACTERS, "6"): "\U0001F01E",
-            (SUIT_CHARACTERS, "7"): "\U0001F01F",
-            (SUIT_CHARACTERS, "8"): "\U0001F020",
-            (SUIT_CHARACTERS, "9"): "\U0001F021",
+            (SUIT_DOTS, "1"): "\U0001F019",
+            (SUIT_DOTS, "2"): "\U0001F01A",
+            (SUIT_DOTS, "3"): "\U0001F01B",
+            (SUIT_DOTS, "4"): "\U0001F01C",
+            (SUIT_DOTS, "5"): "\U0001F01D",
+            (SUIT_DOTS, "6"): "\U0001F01E",
+            (SUIT_DOTS, "7"): "\U0001F01F",
+            (SUIT_DOTS, "8"): "\U0001F020",
+            (SUIT_DOTS, "9"): "\U0001F021",
             (SUIT_WINDS, WIND_EAST): "\U0001F000",
             (SUIT_WINDS, WIND_SOUTH): "\U0001F001",
             (SUIT_WINDS, WIND_WEST): "\U0001F002",
@@ -102,10 +112,7 @@ class Tile:
             (SUIT_SEASONS, "3"): "\U0001F028",
             (SUIT_SEASONS, "4"): "\U0001F029",
         }
-        uni = unicode_map.get((self.suit, self.value))
-        if uni:
-            return f"Tile('{self.suit}', '{self.value}', '{uni}')"
-        return f"Tile('{self.suit}', '{self.value}')"
+        return unicode_map.get((self.suit, self.value), "")
 
     def __eq__(self, other):
         if not isinstance(other, Tile):

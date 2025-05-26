@@ -3,8 +3,9 @@ from .player import Player
 from .tile import Tile
 from .constants import TILE_CATEGORIES_FOR_GENERATION, NUM_COPIES_PER_TILE, NUM_PLAYERS, INIT_HAND_SIZE, WIND_EAST
 from .player_agent import HumanPlayerAgent, AIPlayerAgent
-from .hand_validator import can_form_pung_with_discard, check_standard_win # Added check_standard_win
+from .hand_validator import can_form_pung_with_discard, check_standard_win
 from .melds import Pung
+
 
 class GameState:
     def _create_full_tile_set(self):
@@ -12,32 +13,30 @@ class GameState:
         for suit, values in TILE_CATEGORIES_FOR_GENERATION:
             for value in values:
                 tiles.extend([Tile(suit, value)] * NUM_COPIES_PER_TILE)
-        # print(f"Generated {len(tiles)} tiles.") # For debugging
         return tiles
 
-    def __init__(self, num_players=NUM_PLAYERS): # Use constant
+    def __init__(self, num_players=NUM_PLAYERS):
         self.players = []
-        for i in range(num_players): 
-            if i == 0: # Player 0 is Human
+        for i in range(num_players):
+            if i == 0:
                 agent = HumanPlayerAgent(player_id=i)
-            else: # Other players are AI
+            else:
                 agent = AIPlayerAgent(player_id=i)
             self.players.append(Player(player_id=i, agent=agent))
-            
+
         self.wall = self._create_full_tile_set()
         random.shuffle(self.wall)
-        
+
         self.deal_tiles()
 
-        self.current_player_index = 0 # East player starts
-        self.game_wind = WIND_EAST # Default game wind
+        self.current_player_index = 0
+        self.game_wind = WIND_EAST
         self.current_discard = None
         self.turn_number = 0
-        
-        self.pending_claim_player_id = None # Player who might claim
-        self.potential_claim_tile = None # The tile that can be claimed
-        self.claim_type_pending = None # E.g., "PUNG"
-        
+        self.pending_claim_player_id = None
+        self.potential_claim_tile = None
+        self.claim_type_pending = None
+
         self.winner_found = False
         self.winning_player_id = None
         # self.winning_hand_details = None # Optional for now
@@ -47,14 +46,13 @@ class GameState:
 
     def deal_tiles(self):
         for player in self.players:
-            player.hand = [] # Clear previous hand
+            player.hand = []
             for _ in range(INIT_HAND_SIZE):
-                if self.wall: # Check if wall is not empty
-                    player.hand.append(self.wall.pop(0)) # Deal from the 'front' of the wall
+                if self.wall:
+                    player.hand.append(self.wall.pop(0))
                 else:
-                    # This case should ideally not happen in a standard game start
-                    print("Warning: Wall is empty during initial deal!") 
-                    break 
+                    print("Warning: Wall is empty during initial deal!")
+                    break
 
     def __repr__(self):
         return f"GameState(players={len(self.players)}, wall_size={len(self.wall)}, turn={self.turn_number})"
