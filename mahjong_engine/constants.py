@@ -25,7 +25,7 @@ DRAGON_GREEN = "Green"
 DRAGON_WHITE = "White"
 DRAGONS_ALL = [DRAGON_RED, DRAGON_GREEN, DRAGON_WHITE]
 
-TILE_VALUES_NUMERIC = [str(i) for i in range(1, 10)] # "1" through "9"
+TILE_VALUES_NUMERIC = [str(i) for i in range(1, 10)]  # "1" through "9"
 
 # Full list of tile types for generation (excluding bonus for now)
 # Each element is a tuple: (suit_name, list_of_values_for_that_suit)

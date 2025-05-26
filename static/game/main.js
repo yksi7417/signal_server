@@ -19,7 +19,6 @@ const INIT_HAND_SIZE = 13; // Define INIT_HAND_SIZE in JS
 let current_game_info = {}; // Store global game info from backend
 
 
-// call Python reset_game()
 btnReset.onclick = async () => {
   await eel.reset_game()(); 
   console.log("Game reset on backend. Reloading initial state...");
