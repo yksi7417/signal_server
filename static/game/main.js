@@ -59,7 +59,7 @@ function display_revealed_sets(revealed_sets_data) {
     let html = "Revealed Sets: ";
     revealed_sets_data.forEach(meld => {
         const tilesString = meld.tiles.map(t => `${t.suit} ${t.value}`).join(', ');
-        html += `${meld.type} (${tilesString}) | `;
+        html += `${meld.type} (${tilesString})`;
     });
     revealedSetsEl.innerHTML = html;
 }
@@ -95,7 +95,7 @@ function display_hand(tiles) {
     };
     playerHandEl.appendChild(tileEl);
     if (index < currentHandTiles.length - 1) {
-      playerHandEl.appendChild(document.createTextNode(' | '));
+      playerHandEl.appendChild(document.createTextNode(''));
     }
   });
 }
