@@ -34,7 +34,7 @@ function update_history_js(hist) {
   console.log("Python called update_history_js with:", hist);
 }
 
-initializeEventListeners();
 window.onload = () => {
-    handleReset();
+  initializeEventListeners();
+  handleReset();
 };
