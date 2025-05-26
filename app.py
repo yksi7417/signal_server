@@ -40,7 +40,6 @@ def start_new_game():
 
 
 @eel.expose
-
 def eel_player_claims_pung(confirm_claim):  # confirm_claim is boolean
     global current_game_state
     response = {"success": False, "message": "Claim processing failed."}
@@ -206,7 +205,6 @@ def eel_draw_tile():
 
 
 @eel.expose
-
 def eel_discard_tile(tile_to_discard_data):  # tile_to_discard_data is {'suit': 'Dots', 'value': '5'}
     global current_game_state
     # Player ID of the player whose turn it is to discard
@@ -292,7 +290,6 @@ if __name__ == "__main__":
 
 
 @eel.expose
-
 def eel_request_ai_turn():
     global current_game_state
 
