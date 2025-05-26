@@ -36,7 +36,7 @@ class Meld:
                     int(self.raw_tiles[1].value) == int(self.raw_tiles[0].value) + 1 and
                     int(self.raw_tiles[2].value) == int(self.raw_tiles[1].value) + 1):
                 raise ValueError(f"Invalid tiles for Chow: {self.raw_tiles}")
-           
+
             self.key_tile = self.raw_tiles[0]
         elif meld_type == MeldType.PAIR:
             if not (len(self.raw_tiles) == 2 and self.raw_tiles[0] == self.raw_tiles[1]):
@@ -46,8 +46,7 @@ class Meld:
             raise ValueError(f"Unknown meld type: {meld_type}")
 
     def __repr__(self):
-        return f"{self.meld_type.value}({self.raw_tiles}, \
-            revealed={self.revealed})"
+        return f"{self.meld_type.value}({self.raw_tiles}, revealed={self.revealed})"
 
     def __eq__(self, other):
         if not isinstance(other, Meld):

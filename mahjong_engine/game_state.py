@@ -39,10 +39,10 @@ class GameState:
 
         self.winner_found = False
         self.winning_player_id = None
-       
-       
-       
-       
+
+
+
+
 
     def deal_tiles(self):
         for player in self.players:
@@ -63,10 +63,10 @@ class GameState:
             return None
 
         player = self.players[self.current_player_index]
-        
-       
-       
-       
+
+
+
+
         if len(player.hand) >= INIT_HAND_SIZE + 1:
              print(f"Player {player.player_id} already has {len(player.hand)} tiles. Cannot draw again before discarding.")
              return None
@@ -74,33 +74,33 @@ class GameState:
 
         drawn_tile = self.wall.pop(0)
         player.hand.append(drawn_tile)
-        
+
         if len(player.hand) == INIT_HAND_SIZE + 1:
-           
-           
+
+
             is_win = check_standard_win(player.hand, player.revealed_sets)
             if is_win:
                 self.winner_found = True
                 self.winning_player_id = player.player_id
                 print(f"Player {player.player_id} has won by self-draw!")
-               
-               
-        
-       
+
+
+
+
         return drawn_tile
 
     def discard_tile_for_current_player(self, tile_to_discard_repr):
         player = self.players[self.current_player_index]
 
-       
+
         if len(player.hand) != INIT_HAND_SIZE + 1:
             print(f"Player {player.player_id} has {len(player.hand)} tiles. Should have {INIT_HAND_SIZE + 1} before discarding.")
             return False
 
         tile_object_to_discard = None
-       
-       
-       
+
+
+
         found_tile = False
         for tile_in_hand in player.hand:
             if tile_in_hand.suit == tile_to_discard_repr['suit'] and tile_in_hand.value == tile_to_discard_repr['value']:
@@ -108,65 +108,65 @@ class GameState:
                 player.hand.remove(tile_object_to_discard)
                 found_tile = True
                 break
-        
+
         if not found_tile:
             print(f"Tile {tile_to_discard_repr} not found in player {player.player_id}'s hand.")
-           
-           
+
+
             return False
 
         self.current_discard = tile_object_to_discard
         player.discards.append(tile_object_to_discard)
-        
-       
 
-       
+
+
+
         self.potential_claim_tile = self.current_discard
         self.pending_claim_player_id = None
         self.claim_type_pending = None
 
-       
-       
-       
+
+
+
         start_check_idx = (self.current_player_index + 1) % len(self.players)
         for i in range(len(self.players) -1):
             check_player_idx = (start_check_idx + i) % len(self.players)
             if check_player_idx == self.current_player_index:
-                continue 
-            
+                continue
+
             other_player = self.players[check_player_idx]
             if can_form_pung_with_discard(other_player.hand, self.potential_claim_tile):
-               
-               
-                
-               
+
+
+
+
                 if isinstance(other_player.agent, HumanPlayerAgent):
                     self.pending_claim_player_id = other_player.player_id
                     self.claim_type_pending = "PUNG"
                     print(f"Player {other_player.player_id} (Human) can Pung {self.potential_claim_tile}. Waiting for UI.")
-                   
-                   
+
+
                     return True
 
                 elif isinstance(other_player.agent, AIPlayerAgent):
-                   
-                   
-                   
-                   
-                   
-                   
-                   
-                   
-                    pass
-        
-       
 
-       
+
+
+
+
+
+
+
+                    pass
+
+
+
+
         if self.pending_claim_player_id is None:
             self.current_player_index = (self.current_player_index + 1) % len(self.players)
             self.turn_number += 1
-           
-        
+
+
         return True
 
     def process_pung_claim(self, claiming_player_id, claimed_tile):
@@ -185,65 +185,65 @@ class GameState:
             if p.player_id == claiming_player_id:
                 claiming_player = p
                 break
-        
+
         if not claiming_player:
             print(f"Error: Claiming player {claiming_player_id} not found.")
             return False
 
-       
+
         tiles_to_remove_for_pung = []
         temp_hand_for_search = list(claiming_player.hand)
 
         for tile_in_hand in temp_hand_for_search:
             if tile_in_hand == claimed_tile and len(tiles_to_remove_for_pung) < 2:
                 tiles_to_remove_for_pung.append(tile_in_hand)
-        
+
         if len(tiles_to_remove_for_pung) != 2:
-           
-           
-           
-           
-           
-           
+
+
+
+
+
+
             print(f"Error: Could not identify 2 matching tiles for Pung from player {claiming_player_id}'s hand. Found {len(tiles_to_remove_for_pung)}.")
             return False
 
-       
+
         for tile_to_remove in tiles_to_remove_for_pung:
             claiming_player.hand.remove(tile_to_remove)
 
-       
+
         new_pung = Pung(tile=claimed_tile, revealed=True, claimed_from=discarding_player_original_index)
         claiming_player.add_revealed_set(new_pung)
 
         print(f"Player {claiming_player_id} formed Pung: {new_pung} from player {discarding_player_original_index}'s discard.")
 
-       
+
         self.current_player_index = claiming_player_id
-        
+
         self.current_discard = None
-        self.potential_claim_tile = None 
+        self.potential_claim_tile = None
         self.pending_claim_player_id = None
         self.claim_type_pending = None
-       
-       
-       
-        
+
+
+
+
         print(f"Player {claiming_player.player_id}'s turn. Hand size: {len(claiming_player.hand)}. Must discard.")
-       
-       
-       
-       
-       
-       
-       
-       
-       
-       
-       
-       
-       
-       
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         return True
 
     def run_ai_turn(self):
@@ -252,12 +252,12 @@ class GameState:
             print(f"Error: run_ai_turn called for non-AI player {ai_player.player_id}")
             return {"success": False, "error": "Not an AI player."}
 
-       
+
         drawn_tile = self.draw_tile_for_current_player()
         if drawn_tile is None:
             return {"success": False, "error": "Wall empty, AI cannot draw."}
 
-       
+
         if self.winner_found and self.winning_player_id == ai_player.player_id:
             print(f"AI Player {ai_player.player_id} has won by self-draw after drawing {drawn_tile}!")
             return {
@@ -268,45 +268,45 @@ class GameState:
                 "winning_player_id": self.winning_player_id,
                 "drawn_tile_for_win": {"suit": drawn_tile.suit, "value": drawn_tile.value},
                 "discarded_tile": None,
-                "next_player_id": self.winning_player_id, 
+                "next_player_id": self.winning_player_id,
                 "human_can_claim_pung": False,
                 "claimable_tile": None
             }
-        
-       
-       
 
-       
-       
+
+
+
+
+
         tile_to_discard_by_ai = ai_player.agent.choose_discard(self, ai_player.hand, drawn_tile)
-        
+
         if tile_to_discard_by_ai is None:
             print(f"Error: AI Player {ai_player.player_id} failed to choose a discard.")
-           
+
             if ai_player.hand:
                  tile_to_discard_by_ai = random.choice(ai_player.hand)
             else:
                  return {"success": False, "error": "AI hand empty after draw, cannot discard."}
 
 
-       
 
-       
-       
+
+
+
         discard_repr = {"suit": tile_to_discard_by_ai.suit, "value": tile_to_discard_by_ai.value}
         discard_success = self.discard_tile_for_current_player(discard_repr)
-        
+
         if not discard_success:
-           
+
             print(f"Error: AI Player {ai_player.player_id} failed to discard {tile_to_discard_by_ai} properly.")
             return {"success": False, "error": "AI failed to execute discard."}
 
-       
-       
-       
-       
-        
-       
+
+
+
+
+
+
         return {
             "success": True,
             "ai_player_id": ai_player.player_id,

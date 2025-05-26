@@ -37,7 +37,7 @@ SEASON_SUMMER = "Summer"
 SEASON_AUTUMN = "Autumn"
 SEASON_WINTER = "Winter"
 
-TILE_VALUES_NUMERIC = [str(i) for i in range(1, 10)] 
+TILE_VALUES_NUMERIC = [str(i) for i in range(1, 10)]
 
 # Full list of tile types for generation (excluding bonus for now)
 # Each element is a tuple: (suit_name, list_of_values_for_that_suit)

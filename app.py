@@ -1,6 +1,6 @@
 import eel
 from mahjong_engine.game_state import GameState
-from mahjong_engine.player_agent import AIPlayerAgent 
+from mahjong_engine.player_agent import AIPlayerAgent
 
 # 1. point Eel at your web/ folder
 eel.init('static/game')
@@ -10,18 +10,18 @@ current_game_state = GameState()
 @eel.expose
 def reset_game():
     global current_game_state
-    current_game_state = GameState() 
-    return True 
+    current_game_state = GameState()
+    return True
 
 
 @eel.expose
 def start_new_game():
     global current_game_state
-    current_game_state = GameState() 
+    current_game_state = GameState()
 
-   
+
     player0_hand_serializable = []
-    if current_game_state.players: 
+    if current_game_state.players:
         player0 = current_game_state.players[0]
         player0_hand_serializable = [
             {"unicode": tile.unicode, "suit": tile.suit, "value": tile.value} for tile in player0.hand
@@ -33,14 +33,14 @@ def start_new_game():
         "current_player_id": current_game_state.players[
             current_game_state.current_player_index
         ].player_id,
-        "winner_found": False, 
+        "winner_found": False,
     }
-   
+
     return game_info
 
 
 @eel.expose
-def eel_player_claims_pung(confirm_claim): 
+def eel_player_claims_pung(confirm_claim):
     global current_game_state
     response = {"success": False, "message": "Claim processing failed."}
 
@@ -53,8 +53,8 @@ def eel_player_claims_pung(confirm_claim):
         return response
 
     claiming_player_id = current_game_state.pending_claim_player_id
-   
-    if claiming_player_id != 0: 
+
+    if claiming_player_id != 0:
         response["message"] = "Pending claim is not for the human player."
         return response
 
@@ -83,43 +83,43 @@ def eel_player_claims_pung(confirm_claim):
                 "player_hand": hand_serializable,
                 "revealed_sets": revealed_sets_serializable,
                 "current_player_id": current_game_state.current_player_index,
-                "action": "discard_after_pung", 
-                "winner_found": current_game_state.winner_found, 
+                "action": "discard_after_pung",
+                "winner_found": current_game_state.winner_found,
             }
         else:
             response["message"] = "Backend failed to process Pung claim."
             response["winner_found"] = current_game_state.winner_found
-    else: 
-       
-       
+    else:
+
+
         discarder_player_id = current_game_state.current_player_index
 
-       
+
         current_game_state.potential_claim_tile = None
         current_game_state.pending_claim_player_id = None
         current_game_state.claim_type_pending = None
 
-       
+
         current_game_state.current_player_index = (
             discarder_player_id + 1
         ) % len(current_game_state.players)
         current_game_state.turn_number += 1
 
         response = {
-            "success": True, 
+            "success": True,
             "message": "Pung claim declined. Game continues.",
             "action": "claim_declined",
             "next_player_id": current_game_state.players[
                 current_game_state.current_player_index
             ].player_id,
             "last_discarded_tile": {
-                "unicode": current_game_state.current_discard.unicode, 
+                "unicode": current_game_state.current_discard.unicode,
                 "suit": current_game_state.current_discard.suit,
                 "value": current_game_state.current_discard.value,
             }
             if current_game_state.current_discard
             else None,
-            "winner_found": current_game_state.winner_found, 
+            "winner_found": current_game_state.winner_found,
         }
 
     return response
@@ -128,7 +128,7 @@ def eel_player_claims_pung(confirm_claim):
 @eel.expose
 def eel_draw_tile():
     global current_game_state
-   
+
     player_id = current_game_state.players[
         current_game_state.current_player_index
     ].player_id
@@ -141,7 +141,7 @@ def eel_draw_tile():
             "suit": drawn_tile_obj.suit,
             "value": drawn_tile_obj.value,
         }
-       
+
         current_player_hand = current_game_state.players[
             current_game_state.current_player_index
         ].hand
@@ -149,13 +149,13 @@ def eel_draw_tile():
             {"unicode": t.unicode, "suit": t.suit, "value": t.value} for t in current_player_hand
         ]
 
-       
+
         if (
             current_game_state.winner_found
             and current_game_state.winning_player_id == player_id
         ):
-           
-           
+
+
             hand_serializable = [
                 {"unicode": t.unicode, "suit": t.suit, "value": t.value}
                 for t in current_game_state.players[player_id].hand
@@ -170,7 +170,7 @@ def eel_draw_tile():
                 for meld in current_game_state.players[player_id].revealed_sets
             ]
             return {
-                "success": True, 
+                "success": True,
                 "action": "win",
                 "winner_found": True,
                 "winning_player_id": player_id,
@@ -179,16 +179,16 @@ def eel_draw_tile():
                 "drawn_tile": drawn_tile_serializable,
             }
 
-       
+
         return {
             "success": True,
             "drawn_tile": drawn_tile_serializable,
-            "hand": hand_serializable, 
+            "hand": hand_serializable,
             "player_id": player_id,
-            "winner_found": False, 
+            "winner_found": False,
         }
     else:
-       
+
         current_player_hand = current_game_state.players[
             current_game_state.current_player_index
         ].hand
@@ -200,14 +200,14 @@ def eel_draw_tile():
             "error": "Failed to draw tile (wall empty or hand full?)",
             "hand": hand_serializable,
             "player_id": player_id,
-            "winner_found": current_game_state.winner_found, 
+            "winner_found": current_game_state.winner_found,
         }
 
 
 @eel.expose
-def eel_discard_tile(tile_to_discard_data): 
+def eel_discard_tile(tile_to_discard_data):
     global current_game_state
-   
+
     discarding_player_id = current_game_state.players[
         current_game_state.current_player_index
     ].player_id
@@ -222,12 +222,12 @@ def eel_discard_tile(tile_to_discard_data):
     success = current_game_state.discard_tile_for_current_player(tile_to_discard_data)
 
     if success:
-       
+
         next_player_id = current_game_state.players[
             current_game_state.current_player_index
         ].player_id
 
-       
+
         discarding_player_object = None
         for p in current_game_state.players:
             if p.player_id == discarding_player_id:
@@ -244,17 +244,17 @@ def eel_discard_tile(tile_to_discard_data):
         response = {
             "success": True,
             "discarded_by_player_id": discarding_player_id,
-            "updated_hand": hand_serializable, 
+            "updated_hand": hand_serializable,
             "next_player_id": next_player_id,
             "last_discarded_tile": {
-                "unicode": current_game_state.current_discard.unicode, 
+                "unicode": current_game_state.current_discard.unicode,
                 "suit": current_game_state.current_discard.suit,
                 "value": current_game_state.current_discard.value,
             },
-            "winner_found": current_game_state.winner_found, 
+            "winner_found": current_game_state.winner_found,
         }
 
-       
+
         if (
             current_game_state.pending_claim_player_id == 0
             and current_game_state.potential_claim_tile
@@ -268,9 +268,9 @@ def eel_discard_tile(tile_to_discard_data):
             }
         else:
             response["human_can_claim_pung"] = False
-        return response 
+        return response
     else:
-       
+
         current_player_obj = current_game_state.players[discarding_player_id]
         hand_serializable = [
             {"unicode": t.unicode, "suit": t.suit, "value": t.value} for t in current_player_obj.hand
@@ -278,9 +278,9 @@ def eel_discard_tile(tile_to_discard_data):
         return {
             "success": False,
             "error": "Failed to discard tile (tile not in hand, or wrong hand size?)",
-            "hand": hand_serializable, 
+            "hand": hand_serializable,
             "player_id": discarding_player_id,
-            "winner_found": current_game_state.winner_found, 
+            "winner_found": current_game_state.winner_found,
         }
 
 
@@ -289,7 +289,7 @@ def eel_request_ai_turn():
     global current_game_state
 
     if current_game_state.pending_claim_player_id is not None:
-       
+
         return {
             "success": False,
             "error": "Human claim pending. AI turn cannot run yet.",
@@ -302,14 +302,14 @@ def eel_request_ai_turn():
         current_game_state.players[current_game_state.current_player_index].agent
     )
 
-   
+
 
     if current_player_agent_type == AIPlayerAgent:
-        result = current_game_state.run_ai_turn() 
+        result = current_game_state.run_ai_turn()
 
-       
-       
-       
+
+
+
 
         player0_hand_serializable = []
         if current_game_state.players:
@@ -318,9 +318,9 @@ def eel_request_ai_turn():
                 {"unicode": tile.unicode, "suit": tile.suit, "value": tile.value} for tile in player0.hand
             ]
 
-        result["player0_hand"] = player0_hand_serializable 
+        result["player0_hand"] = player0_hand_serializable
 
-       
+
         player0_revealed_sets_serializable = []
         if current_game_state.players:
             player0 = current_game_state.players[0]

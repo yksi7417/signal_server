@@ -8,12 +8,12 @@ ROOM_NAME = "voice-room"
 VAD_AGGRESSIVENESS = 2
 
 # STT (Whisper.cpp via pywhispercpp)
-WHISPER_MODEL = "medium"        
+WHISPER_MODEL = "medium"
 
 # Command parser (llama.cpp)
 COMMAND_MODEL_PATH = "models/command-parser.gguf"
-LLM_N_GPU_LAYERS = 30         
-LLM_GPU_LAYERS = [0, 1]       
+LLM_N_GPU_LAYERS = 30
+LLM_GPU_LAYERS = [0, 1]
 
 # Allowed commands
 COMMAND_LIST = [
@@ -25,4 +25,4 @@ COMMAND_LIST = [
     "volume down"
 ]
 
-track_to_username = {} 
+rack_to_username = {}

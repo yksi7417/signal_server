@@ -40,8 +40,8 @@ class Tile:
     def is_simple(self):
         return self.is_numeric_suit() and not self.is_terminal()
 
-   
-   
+
+
     def __lt__(self, other):
         if not isinstance(other, Tile):
             return NotImplemented

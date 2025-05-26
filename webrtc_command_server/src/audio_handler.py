@@ -10,7 +10,7 @@ vad = webrtcvad.Vad(VAD_AGGRESSIVENESS)
 
 async def handle_audio_track(track: AudioStreamTrack):
     buffer = bytearray()
-    sample_rate = 48000 
+    sample_rate = 48000
 
     async for frame in track.recv():
         pcm = frame.to_ndarray().tobytes()

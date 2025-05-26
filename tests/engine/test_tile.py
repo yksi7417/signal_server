@@ -56,7 +56,7 @@ def test_tile_equality_and_hash():
     assert tile3 in tile_set
     assert tile4 in tile_set
 
-   
+
     tile_dict = {tile1a: "one_dots", tile2: "two_bamboo", tile4: "east_wind"}
     assert tile_dict[tile1b] == "one_dots"
     assert tile_dict[tile5] == "east_wind"
@@ -74,7 +74,7 @@ def test_tile_properties():
     flower = Tile(SUIT_FLOWERS, FLOWER_PLUM)
     season = Tile(SUIT_SEASONS, SEASON_SPRING)
 
-   
+
     assert dot1.is_numeric_suit()
     assert char9.is_numeric_suit()
     assert bamboo2.is_numeric_suit()
@@ -83,14 +83,14 @@ def test_tile_properties():
     assert not flower.is_numeric_suit()
     assert not season.is_numeric_suit()
 
-   
+
     assert not dot1.is_honor()
     assert east_wind.is_honor()
     assert red_dragon.is_honor()
     assert not flower.is_honor()
     assert not season.is_honor()
 
-   
+
     assert east_wind.is_wind()
     assert not dot1.is_wind()
     assert not red_dragon.is_wind()
@@ -98,14 +98,14 @@ def test_tile_properties():
     assert not east_wind.is_dragon()
     assert not dot5.is_dragon()
 
-   
+
     assert flower.is_bonus()
     assert season.is_bonus()
     assert not dot1.is_bonus()
     assert not east_wind.is_bonus()
     assert not red_dragon.is_bonus()
 
-   
+
     assert dot1.is_terminal()
     assert not dot5.is_terminal()
     assert char9.is_terminal()
@@ -114,7 +114,7 @@ def test_tile_properties():
     assert not red_dragon.is_terminal()
     assert not flower.is_terminal()
 
-   
+
     assert not dot1.is_simple()
     assert dot5.is_simple()
     assert bamboo2.is_simple()
@@ -123,7 +123,7 @@ def test_tile_properties():
     assert not red_dragon.is_simple()
     assert not flower.is_simple()
 
-   
+
     assert dot1.is_suit(SUIT_DOTS)
     assert not dot1.is_suit(SUIT_BAMBOO)
     assert east_wind.is_suit(SUIT_WINDS)
@@ -162,7 +162,7 @@ def test_tile_sorting():
     sorted_tiles = sorted(tiles_to_sort)
     assert sorted_tiles == expected_order
 
-   
+
     assert Tile(SUIT_DOTS, '1') < Tile(SUIT_DOTS, '2')
     assert Tile(SUIT_DOTS, '9') < Tile(SUIT_BAMBOO, '1')
     assert Tile(SUIT_BAMBOO, '9') < Tile(SUIT_CHARACTERS, '1')
@@ -175,7 +175,7 @@ def test_tile_sorting():
     assert Tile(SUIT_FLOWERS, FLOWER_PLUM) < Tile(SUIT_SEASONS, SEASON_AUTUMN)
     assert Tile(SUIT_SEASONS, SEASON_AUTUMN) < Tile(SUIT_SEASONS, SEASON_SPRING)
 
-   
+
     with pytest.raises(TypeError):
         Tile(SUIT_DOTS, '1') < "Not a tile"
 
