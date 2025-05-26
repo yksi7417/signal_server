@@ -1,22 +1,32 @@
-// cache DOM nodes
-const btnReset = document.getElementById('reset');
-const gameInfoEl = document.getElementById('game-info');
-const playerHandEl = document.getElementById('player-hand');
-const btnDrawTile = document.getElementById('btnDrawTile');
-const btnDiscardTile = document.getElementById('btnDiscardTile');
-const playerConsoleEl = document.getElementById('player-console'); // For messages
-const selectedTileDisplayEl = document.getElementById('selected-tile-display');
-const claimPromptEl = document.getElementById('claim-prompt');
-const claimMessageEl = document.getElementById('claim-message');
-const btnClaimYes = document.getElementById('btnClaimYes');
-const btnClaimNo = document.getElementById('btnClaimNo');
-const revealedSetsEl = document.getElementById('revealed-sets-display');
+import { store, elements } from './js/gameStore.js';
+import { displayHand, displayGameInfo, displayRevealedSets } from './js/tileDisplay.js';
+import { handleDrawTile, handleDiscardTile, handleReset } from './js/gameActions.js';
+import { processAiTurns } from './js/aiTurnHandler.js';
+import { handleClaimPungYes, handleClaimPungNo } from './js/claimsHandler.js';
 
 
-let selectedTileForDiscard = null; // To store which tile object the player clicked on
-let currentHandTiles = []; // To store the current hand of Tile objects {suit, value}
-const INIT_HAND_SIZE = 13; // Define INIT_HAND_SIZE in JS 
-let current_game_info = {}; // Store global game info from backend
+// Initialize button event listeners
+function initializeEventListeners() {
+    if (elements.btnReset) {
+        elements.btnReset.onclick = handleReset;
+    }
+
+    if (elements.btnDrawTile) {
+        elements.btnDrawTile.onclick = handleDrawTile;
+    }
+
+    if (elements.btnDiscardTile) {
+        elements.btnDiscardTile.onclick = handleDiscardTile;
+    }
+
+    if (elements.btnClaimYes) {
+        elements.btnClaimYes.onclick = handleClaimPungYes;
+    }
+
+    if (elements.btnClaimNo) {
+        elements.btnClaimNo.onclick = handleClaimPungNo;
+    }
+}
 
 
 btnReset.onclick = async () => {
