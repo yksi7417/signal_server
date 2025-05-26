@@ -4,8 +4,8 @@ from .constants import (
     SUITS_NUMERIC, SUITS_BONUS,
     WIND_EAST, WIND_SOUTH, WIND_WEST, WIND_NORTH,
     DRAGON_RED, DRAGON_GREEN, DRAGON_WHITE,
-    TILE_VALUES_NUMERIC
 )
+
 
 class Tile:
     def __init__(self, suit, value):
@@ -26,14 +26,15 @@ class Tile:
 
     def is_dragon(self):
         return self.suit == SUIT_DRAGONS
-    
-    def is_bonus(self): # Flowers or Seasons
+
+    def is_bonus(self):
         return self.suit in SUITS_BONUS
 
     def is_terminal(self):
-        return self.is_numeric_suit() and (self.value == '1' or self.value == '9')
+        return self.is_numeric_suit() and \
+            (self.value == '1' or self.value == '9')
 
-    def is_simple(self): # Numeric but not terminal
+    def is_simple(self):
         return self.is_numeric_suit() and not self.is_terminal()
 
     # Add __lt__ for sorting, primarily by suit then value
@@ -41,21 +42,69 @@ class Tile:
     def __lt__(self, other):
         if not isinstance(other, Tile):
             return NotImplemented
-        
-        suit_order = [SUIT_DOTS, SUIT_BAMBOO, SUIT_CHARACTERS, SUIT_WINDS, SUIT_DRAGONS, SUIT_FLOWERS, SUIT_SEASONS]
+
+        suit_order = [SUIT_DOTS, SUIT_BAMBOO, SUIT_CHARACTERS,
+                      SUIT_WINDS, SUIT_DRAGONS, SUIT_FLOWERS, SUIT_SEASONS]
         try:
             self_suit_index = suit_order.index(self.suit)
             other_suit_index = suit_order.index(other.suit)
-        except ValueError: # Should not happen if suits are valid
+        except ValueError:
             return NotImplemented
 
         if self_suit_index != other_suit_index:
             return self_suit_index < other_suit_index
-        
-        # Value comparison (simple lexicographical for now, might need adjustment for numeric vs named values)
+
         return self.value < other.value
 
     def __repr__(self):
+        # Unicode mapping for Mahjong tiles
+        unicode_map = {
+            (SUIT_DOTS, "1"): "\U0001F007",
+            (SUIT_DOTS, "2"): "\U0001F008",
+            (SUIT_DOTS, "3"): "\U0001F009",
+            (SUIT_DOTS, "4"): "\U0001F00A",
+            (SUIT_DOTS, "5"): "\U0001F00B",
+            (SUIT_DOTS, "6"): "\U0001F00C",
+            (SUIT_DOTS, "7"): "\U0001F00D",
+            (SUIT_DOTS, "8"): "\U0001F00E",
+            (SUIT_DOTS, "9"): "\U0001F00F",
+            (SUIT_BAMBOO, "1"): "\U0001F010",
+            (SUIT_BAMBOO, "2"): "\U0001F011",
+            (SUIT_BAMBOO, "3"): "\U0001F012",
+            (SUIT_BAMBOO, "4"): "\U0001F013",
+            (SUIT_BAMBOO, "5"): "\U0001F014",
+            (SUIT_BAMBOO, "6"): "\U0001F015",
+            (SUIT_BAMBOO, "7"): "\U0001F016",
+            (SUIT_BAMBOO, "8"): "\U0001F017",
+            (SUIT_BAMBOO, "9"): "\U0001F018",
+            (SUIT_CHARACTERS, "1"): "\U0001F019",
+            (SUIT_CHARACTERS, "2"): "\U0001F01A",
+            (SUIT_CHARACTERS, "3"): "\U0001F01B",
+            (SUIT_CHARACTERS, "4"): "\U0001F01C",
+            (SUIT_CHARACTERS, "5"): "\U0001F01D",
+            (SUIT_CHARACTERS, "6"): "\U0001F01E",
+            (SUIT_CHARACTERS, "7"): "\U0001F01F",
+            (SUIT_CHARACTERS, "8"): "\U0001F020",
+            (SUIT_CHARACTERS, "9"): "\U0001F021",
+            (SUIT_WINDS, WIND_EAST): "\U0001F000",
+            (SUIT_WINDS, WIND_SOUTH): "\U0001F001",
+            (SUIT_WINDS, WIND_WEST): "\U0001F002",
+            (SUIT_WINDS, WIND_NORTH): "\U0001F003",
+            (SUIT_DRAGONS, DRAGON_RED): "\U0001F004",
+            (SUIT_DRAGONS, DRAGON_GREEN): "\U0001F005",
+            (SUIT_DRAGONS, DRAGON_WHITE): "\U0001F006",
+            (SUIT_FLOWERS, "1"): "\U0001F022",
+            (SUIT_FLOWERS, "2"): "\U0001F023",
+            (SUIT_FLOWERS, "3"): "\U0001F024",
+            (SUIT_FLOWERS, "4"): "\U0001F025",
+            (SUIT_SEASONS, "1"): "\U0001F026",
+            (SUIT_SEASONS, "2"): "\U0001F027",
+            (SUIT_SEASONS, "3"): "\U0001F028",
+            (SUIT_SEASONS, "4"): "\U0001F029",
+        }
+        uni = unicode_map.get((self.suit, self.value))
+        if uni:
+            return f"Tile('{self.suit}', '{self.value}', '{uni}')"
         return f"Tile('{self.suit}', '{self.value}')"
 
     def __eq__(self, other):
