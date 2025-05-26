@@ -1,5 +1,11 @@
 import { store, elements } from './gameStore.js';
 
+function sortTiles(tiles) {
+    return [...tiles].sort((a, b) => {
+        return a.unicode.localeCompare(b.unicode)
+    });
+}
+
 export function displayHand(tiles) {
     if (!elements.playerHandEl) return;
     store.currentHandTiles = tiles || [];
@@ -9,11 +15,17 @@ export function displayHand(tiles) {
         return;
     }
     
+    // Sort tiles before displaying
+    console.log("Sorting tiles for display:", store.currentHandTiles.map(t => t.unicode));
+    const sortedTiles = sortTiles(store.currentHandTiles);
+    store.currentHandTiles = sortedTiles;
+    console.log("Sorted tiles for display:", store.currentHandTiles.map(t => t.unicode));
+    
     elements.playerHandEl.innerHTML = '';
-    store.currentHandTiles.forEach((tile, index) => {
+    sortedTiles.forEach((tile, index) => {
         const tileEl = createTileElement(tile);
         elements.playerHandEl.appendChild(tileEl);
-        if (index < store.currentHandTiles.length - 1) {
+        if (index < sortedTiles.length - 1) {
             elements.playerHandEl.appendChild(document.createTextNode(''));
         }
     });
