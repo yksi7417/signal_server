@@ -284,11 +284,6 @@ def eel_discard_tile(tile_to_discard_data):  # tile_to_discard_data is {'suit': 
         }
 
 
-if __name__ == "__main__":
-    # 3. start a Chromium window at web/index.html
-    eel.start("index.html", size=(400, 500))
-
-
 @eel.expose
 def eel_request_ai_turn():
     global current_game_state
@@ -341,3 +336,7 @@ def eel_request_ai_turn():
         result["player0_revealed_sets"] = player0_revealed_sets_serializable
 
         return result
+
+
+if __name__ == "__main__":
+    eel.start("index.html", size=(400, 500))
