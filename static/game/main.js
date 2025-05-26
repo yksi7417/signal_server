@@ -44,6 +44,26 @@ function update_history_js(hist) {
   console.log("Python called update_history_js with:", hist);
 }
 
+// Add keyboard controls
+document.addEventListener('keydown', (event) => {
+    // Only handle spacebar press and prevent default space behavior
+    if (event.code === 'Space' && !event.repeat) {
+        event.preventDefault(); // Prevent page scrolling
+        
+        const drawButton = document.getElementById('btnDrawTile');
+        const discardButton = document.getElementById('btnDiscardTile');
+        
+        // If discard is enabled and a tile is selected, discard it
+        if (discardButton && !discardButton.disabled && store.selectedTileForDiscard) {
+            discardButton.click();
+        }
+        // Otherwise, if draw is enabled, draw a tile
+        else if (drawButton && !drawButton.disabled) {
+            drawButton.click();
+        }
+    }
+});
+
 window.onload = () => {
   initializeEventListeners();
   handleReset();
