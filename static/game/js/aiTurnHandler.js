@@ -13,19 +13,43 @@ export async function processAiTurns() {
         return;
     }
 
-    let next_player_is_ai = store.currentGameInfo.current_player_id !== 0;
+    try {
+        let next_player_is_ai = store.currentGameInfo.current_player_id !== 0;
 
-    while (next_player_is_ai && !store.currentGameInfo.winner_found) {
-        await processSingleAiTurn();
-        
-        if (next_player_is_ai && !store.currentGameInfo.winner_found) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+        while (next_player_is_ai && !store.currentGameInfo.winner_found) {
+            try {
+                next_player_is_ai = await processSingleAiTurn();
+                
+                if (next_player_is_ai && !store.currentGameInfo.winner_found) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            } catch (error) {
+                console.error("Error during AI turn processing:", error);
+                break;
+            }
+        }
+
+        if (store.currentGameInfo.winner_found) {
+            handleGameOver();
+        }
+    } catch (error) {
+        console.error("Error in AI turn processing:", error);
+        if (elements.playerConsoleEl) {
+            elements.playerConsoleEl.textContent = "Error during AI turn. Please reset the game.";
         }
     }
+}
 
-    if (store.currentGameInfo.winner_found) {
-        handleGameOver();
+function handleGameOver() {
+    if (elements.playerConsoleEl) {
+        elements.playerConsoleEl.textContent = 
+            `Game over. Player ${store.currentGameInfo.winning_player_id} has won. Please reset.`;
     }
+    if (elements.gameInfoEl && store.currentGameInfo.winning_player_id !== undefined) {
+        elements.gameInfoEl.innerHTML += `<br><b>Player ${store.currentGameInfo.winning_player_id} WINS!</b>`;
+    }
+    if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
+    if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
 }
 
 async function processSingleAiTurn() {
@@ -33,17 +57,24 @@ async function processSingleAiTurn() {
 
     try {
         const ai_turn_result = await eel.eel_request_ai_turn()();
+        if (!ai_turn_result) {
+            throw new Error("No result from AI turn");
+        }
+
         updateGameState(ai_turn_result);
         
-        if (ai_turn_result && ai_turn_result.success) {
-            handleSuccessfulAiTurn(ai_turn_result);
+        if (ai_turn_result.success) {
+            return handleSuccessfulAiTurn(ai_turn_result);
         } else {
             handleFailedAiTurn(ai_turn_result);
+            return false;
         }
     } catch (error) {
         console.error("Error during AI turn processing:", error);
-        if (elements.playerConsoleEl) elements.playerConsoleEl.textContent = "Error processing AI turn.";
-        return; 
+        if (elements.playerConsoleEl) {
+            elements.playerConsoleEl.textContent = "Error during AI turn. Try resetting the game.";
+        }
+        return false;
     }
 }
 
@@ -59,21 +90,32 @@ function updateUIForAiTurn() {
 }
 
 function updateGameState(result) {
-    store.currentGameInfo.winner_found = result.winner_found;
-    store.currentGameInfo.winning_player_id = result.winning_player_id;
+    if (!result) return;
+    
+    if (result.winner_found !== undefined) {
+        store.currentGameInfo.winner_found = result.winner_found;
+    }
+    if (result.winning_player_id !== undefined) {
+        store.currentGameInfo.winning_player_id = result.winning_player_id;
+    }
 }
 
 function handleSuccessfulAiTurn(result) {
-    if(result.player0_hand) displayHand(result.player0_hand);
-    if(result.player0_revealed_sets) displayRevealedSets(result.player0_revealed_sets);
+    if (!result) return false;
+
+    if (result.player0_hand) displayHand(result.player0_hand);
+    if (result.player0_revealed_sets) displayRevealedSets(result.player0_revealed_sets);
 
     if (result.action === "win" && result.winner_found) {
-        handleAiWin(result);
+        handleGameOver();
         return true;
     }
     
     if (result.discarded_tile) {
-        handleAiDiscard(result);
+        if (elements.playerConsoleEl) {
+            elements.playerConsoleEl.textContent = 
+                `AI Player ${result.ai_player_id} discarded ${result.discarded_tile.unicode}`;
+        }
     }
     
     return result.next_player_id !== 0;
@@ -101,16 +143,4 @@ function handleGameStateAfterFailedTurn(result) {
         if(elements.btnDrawTile) elements.btnDrawTile.disabled = false;
         if(elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
     }
-}
-
-function handleGameOver() {
-    if (elements.playerConsoleEl) {
-        elements.playerConsoleEl.textContent = 
-            `Game over. Player ${store.currentGameInfo.winning_player_id} has won. Please reset.`;
-    }
-    if(elements.gameInfoEl && store.currentGameInfo.winning_player_id !== undefined) {
-        elements.gameInfoEl.innerHTML += `<br><b>Player ${store.currentGameInfo.winning_player_id} WINS!</b>`;
-    }
-    if(elements.btnDrawTile) elements.btnDrawTile.disabled = true;
-    if(elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
 }
