@@ -68,7 +68,7 @@ export function displayRevealedSets(revealed_sets_data) {
     
     let html = "Revealed Sets: ";
     revealed_sets_data.forEach(meld => {
-        const tilesString = meld.tiles.map(t => `${t.suit} ${t.value}`).join(', ');
+        const tilesString = meld.tiles.map(t => `${t.unicode}`).join(', ');
         html += `${meld.type} (${tilesString})`;
     });
     elements.revealedSetsEl.innerHTML = html;

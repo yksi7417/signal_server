@@ -1,5 +1,5 @@
 import { store, elements } from './gameStore.js';
-import { displayHand, displayRevealedSets, displayGameInfo, displayDiscardedTiles } from './tileDisplay.js';
+import { displayHand, displayRevealedSets } from './tileDisplay.js';
 import { hideClaimPrompt, showClaimPrompt } from './claimsHandler.js';
 import { handleDiscardTileResult  } from './gameActions.js';
 

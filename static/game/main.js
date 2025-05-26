@@ -1,7 +1,6 @@
 import { store, elements } from './js/gameStore.js';
-import { displayHand, displayGameInfo, displayRevealedSets, displayDiscardedTiles } from './js/tileDisplay.js';
+import { displayDiscardedTiles } from './js/tileDisplay.js';
 import { handleDrawTile, handleDiscardTile, handleReset } from './js/gameActions.js';
-import { processAiTurns } from './js/aiTurnHandler.js';
 import { handleClaimPungYes, handleClaimPungNo } from './js/claimsHandler.js';
 
 
