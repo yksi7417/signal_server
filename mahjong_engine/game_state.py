@@ -3,8 +3,9 @@ from .player import Player
 from .tile import Tile
 from .constants import TILE_CATEGORIES_FOR_GENERATION, NUM_COPIES_PER_TILE, NUM_PLAYERS, INIT_HAND_SIZE, WIND_EAST
 from .player_agent import HumanPlayerAgent, AIPlayerAgent
-from .hand_validator import can_form_pung_with_discard, check_standard_win
-from .melds import Pung
+from .hand_validator import (can_form_pung_with_discard, check_standard_win,
+                           can_form_kong_with_discard, can_form_self_kong)
+from .melds import Pung, Kong
 
 
 class GameState:
@@ -63,30 +64,18 @@ class GameState:
             return None
 
         player = self.players[self.current_player_index]
-
-
-
-
         if len(player.hand) >= INIT_HAND_SIZE + 1:
-             print(f"Player {player.player_id} already has {len(player.hand)} tiles. Cannot draw again before discarding.")
-             return None
-
+            print(f"Player {player.player_id} already has {len(player.hand)} tiles.\
+                  Cannot draw again before discarding.")
+            return None
 
         drawn_tile = self.wall.pop(0)
         player.hand.append(drawn_tile)
-
-        if len(player.hand) == INIT_HAND_SIZE + 1:
-
-
-            is_win = check_standard_win(player.hand, player.revealed_sets)
-            if is_win:
-                self.winner_found = True
-                self.winning_player_id = player.player_id
-                print(f"Player {player.player_id} has won by self-draw!")
-
-
-
-
+        is_win = check_standard_win(player.hand, player.revealed_sets)
+        if is_win:
+            self.winner_found = True
+            self.winning_player_id = player.player_id
+            print(f"Player {player.player_id} has won!")
         return drawn_tile
 
     def discard_tile_for_current_player(self, tile_to_discard_repr):
@@ -123,15 +112,28 @@ class GameState:
             check_player_idx = (start_check_idx + i) % len(self.players)
             if check_player_idx == self.current_player_index:
                 continue
-
             other_player = self.players[check_player_idx]
-            if can_form_pung_with_discard(other_player.hand, self.potential_claim_tile):
+            
+            # Check for Kong first (higher priority)
+            if can_form_kong_with_discard(other_player.hand, self.potential_claim_tile):
+                if isinstance(other_player.agent, HumanPlayerAgent):
+                    self.pending_claim_player_id = other_player.player_id
+                    self.claim_type_pending = "KONG"
+                    print(f"Player {other_player.player_id} can Kong {self.potential_claim_tile}")
+                    return True
+                elif isinstance(other_player.agent, AIPlayerAgent):
+                    # TODO: Implement AI Kong decision
+                    pass
+            
+            # Then check for Pung
+            elif can_form_pung_with_discard(other_player.hand, self.potential_claim_tile):
                 if isinstance(other_player.agent, HumanPlayerAgent):
                     self.pending_claim_player_id = other_player.player_id
                     self.claim_type_pending = "PUNG"
-                    print(f"Player {other_player.player_id} (Human) can Pung {self.potential_claim_tile}. Waiting for UI.")
+                    print(f"Player {other_player.player_id} can Pung {self.potential_claim_tile}")
                     return True
                 elif isinstance(other_player.agent, AIPlayerAgent):
+                    # TODO: Implement AI Pung decision
                     pass
         if self.pending_claim_player_id is None:
             self.current_player_index = (self.current_player_index + 1) % len(self.players)
@@ -198,6 +200,70 @@ class GameState:
 
         print(f"Player {claiming_player.player_id}'s turn. Hand size: {len(claiming_player.hand)}. Must discard.")
         return True
+
+    def process_kong_claim(self, claiming_player_id, claimed_tile):
+        """
+        Processes a Kong claim for the specified player with the given tile.
+        """
+        if claimed_tile is None or claiming_player_id is None:
+            print("Error: Claimed tile or player ID is None.")
+            return False
+
+        claiming_player = None
+        discarding_player_original_index = self.current_player_index
+
+        for p in self.players:
+            if p.player_id == claiming_player_id:
+                claiming_player = p
+                break
+
+        if not claiming_player:
+            print(f"Error: Claiming player {claiming_player_id} not found.")
+            return False
+
+        # Find the three matching tiles in hand
+        tiles_to_remove_for_kong = []
+        temp_hand_for_search = list(claiming_player.hand)
+
+        for tile_in_hand in temp_hand_for_search:
+            if tile_in_hand == claimed_tile:
+                tiles_to_remove_for_kong.append(tile_in_hand)
+
+        if len(tiles_to_remove_for_kong) != 3:
+            print(f"Error: Could not identify 3 matching tiles for Kong.")
+            return False
+
+        # Remove the tiles from hand
+        for tile_to_remove in tiles_to_remove_for_kong:
+            claiming_player.hand.remove(tile_to_remove)
+
+        # Create and add the Kong meld
+        new_kong = Kong(tile=claimed_tile, revealed=True, claimed_from=discarding_player_original_index)
+        claiming_player.add_revealed_set(new_kong)
+
+        print(f"Player {claiming_player_id} formed Kong from player {discarding_player_original_index}'s discard.")
+
+        self.current_player_index = claiming_player_id
+        self.current_discard = None
+        self.potential_claim_tile = None
+        self.pending_claim_player_id = None
+        self.claim_type_pending = None
+
+        # Draw a replacement tile after Kong
+        self.draw_tile_for_current_player()
+
+        return True
+
+    def check_and_handle_self_kong(self, player):
+        """Check if player can form Kong with their own tiles and handle it."""
+        possible_kongs = can_form_self_kong(player.hand)
+        
+        if possible_kongs and isinstance(player.agent, HumanPlayerAgent):
+            # For human players, we'll need UI interaction
+            self.potential_self_kong_tiles = possible_kongs
+            return True
+        
+        return False
 
     def run_ai_turn(self):
         ai_player = self.players[self.current_player_index]

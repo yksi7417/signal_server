@@ -50,6 +50,30 @@ export async function handleClaimPungNo() {
     }
 }
 
+export async function handleClaimKongYes() {
+    if (store.currentGameInfo.winner_found) return;
+    
+    const result = await eel.eel_player_claims_kong(true)();
+    hideClaimPrompt();
+    
+    if (result && result.success) {
+        handleSuccessfulKongClaim(result);
+    } else {
+        handleFailedKongClaim(result);
+    }
+}
+
+export async function handleClaimKongNo() {
+    if (store.currentGameInfo.winner_found) return;
+    
+    const result = await eel.eel_player_claims_kong(false)();
+    hideClaimPrompt();
+    
+    if (result && result.success && result.action === "claim_declined") {
+        handleClaimDeclined(result);
+    }
+}
+
 function handleSuccessfulClaim(result) {
     if (elements.playerConsoleEl) {
         elements.playerConsoleEl.textContent = result.message;
@@ -116,5 +140,31 @@ function updateGameInfoAfterDecline(result) {
         elements.gameInfoEl.innerHTML = `
             Game Wind: ${store.currentGameInfo.game_wind || 'N/A'}<br> 
         `;
+    }
+}
+
+function handleSuccessfulKongClaim(result) {
+    if (elements.playerConsoleEl) {
+        elements.playerConsoleEl.textContent = result.message;
+    }
+    displayHand(result.hand);
+    displayRevealedSets(result.revealed_sets);
+    
+    store.currentGameInfo.winner_found = result.winner_found;
+    store.currentGameInfo.winning_player_id = result.winning_player_id;
+
+    if (store.currentGameInfo.winner_found) {
+        handleWinAfterClaim();
+    } else {
+        enableDiscardAfterClaim();
+    }
+}
+
+function handleFailedKongClaim(result) {
+    if (elements.playerConsoleEl && result) {
+        elements.playerConsoleEl.textContent = "Error claiming Kong: " + (result.message || "Unknown");
+    }
+    if(result?.winner_found !== undefined) {
+        store.currentGameInfo.winner_found = result.winner_found;
     }
 }

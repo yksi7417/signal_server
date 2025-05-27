@@ -169,3 +169,33 @@ def can_form_pung_with_discard(hand, discarded_tile):
             count += 1
 
     return count >= 2
+
+def can_form_kong_with_discard(hand, discarded_tile):
+    """
+    Checks if a player's hand can form a Kong with a given discarded tile.
+    Args:
+        hand: List of Tile objects in the player's hand.
+        discarded_tile: The Tile object that was discarded.
+    Returns:
+        True if a Kong can be formed, False otherwise.
+    """
+    if not hand or not discarded_tile:
+        return False
+
+    count = 0
+    for tile_in_hand in hand:
+        if tile_in_hand == discarded_tile:
+            count += 1
+
+    return count >= 3
+
+def can_form_self_kong(hand):
+    """
+    Checks if a player's hand contains any Kong (4 identical tiles).
+    Returns a list of tiles that could form Kongs.
+    """
+    if not hand:
+        return []
+    
+    tile_counts = collections.Counter(hand)
+    return [tile for tile, count in tile_counts.items() if count >= 4]
