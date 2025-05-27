@@ -4,7 +4,7 @@ import { processAiTurns } from './aiTurnHandler.js';
 
 export function showClaimPrompt(tile, claimType) {
     if (!elements.claimPromptEl || !elements.claimMessageEl) return;
-    
+    store.activeClaimType = claimType;
     elements.claimMessageEl.textContent = 
         `Player discarded ${tile.suit} ${tile.value}. Do you want to claim ${claimType}?`;
     elements.claimPromptEl.style.display = 'block';
@@ -125,6 +125,15 @@ function handleWinAfterClaim() {
     if(elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
 }
 
+function handleWinAfterClaimDecline() {
+    if(elements.playerConsoleEl) {
+        elements.playerConsoleEl.textContent = 
+            `Player ${store.currentGameInfo.winning_player_id} WINS! (After claim decline processing path)`;
+    }
+    if(elements.btnDrawTile) elements.btnDrawTile.disabled = true;
+    if(elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+}
+
 function enableDiscardAfterClaim() {
     if(elements.btnDrawTile) elements.btnDrawTile.disabled = true;
     if(elements.btnDiscardTile) elements.btnDiscardTile.disabled = false;
@@ -140,6 +149,67 @@ function updateGameInfoAfterDecline(result) {
         elements.gameInfoEl.innerHTML = `
             Game Wind: ${store.currentGameInfo.game_wind || 'N/A'}<br> 
         `;
+    }
+}
+
+async function handleClaimWinYes() {
+    if (store.currentGameInfo.winner_found) return;
+    
+    const result = await eel.eel_player_claims_win(true)();
+    hideClaimPrompt();
+    
+    if (result && result.success) {
+        handleSuccessfulWinClaim(result);
+    } else {
+        handleFailedWinClaim(result);
+    }
+}
+
+async function handleClaimWinNo() {
+    if (store.currentGameInfo.winner_found) return;
+    
+    const result = await eel.eel_player_claims_win(false)();
+    hideClaimPrompt();
+    
+    if (elements.playerConsoleEl && result.message) {
+        elements.playerConsoleEl.textContent = result.message;
+    }
+    
+    if (result && result.success && result.action === "claim_declined") {
+        handleClaimDeclined(result);
+    } else if (result?.winner_found !== undefined) {
+        store.currentGameInfo.winner_found = result.winner_found;
+        store.currentGameInfo.winning_player_id = result.winning_player_id;
+        if (store.currentGameInfo.winner_found) {
+            if (elements.playerConsoleEl) {
+                elements.playerConsoleEl.textContent = `Player ${store.currentGameInfo.winning_player_id} WINS!`;
+            }
+            if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
+            if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+        }
+    }
+}
+
+function handleSuccessfulWinClaim(result) {
+    if (elements.playerConsoleEl) {
+        elements.playerConsoleEl.textContent = result.message || `Player ${result.winning_player_id} WINS!`;
+    }
+    if (result.hand) displayHand(result.hand);
+    if (result.revealed_sets) displayRevealedSets(result.revealed_sets);
+    
+    store.currentGameInfo.winner_found = result.winner_found;
+    store.currentGameInfo.winning_player_id = result.winning_player_id;
+    
+    if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
+    if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+}
+
+function handleFailedWinClaim(result) {
+    if (elements.playerConsoleEl && result) {
+        elements.playerConsoleEl.textContent = "Error claiming Win: " + (result.message || "Unknown error");
+    }
+    if (result?.winner_found !== undefined) {
+        store.currentGameInfo.winner_found = result.winner_found;
     }
 }
 
@@ -168,3 +238,38 @@ function handleFailedKongClaim(result) {
         store.currentGameInfo.winner_found = result.winner_found;
     }
 }
+
+function initializeClaimButtonHandlers() {
+    const btnClaimYes = elements.btnClaimYes;
+    const btnClaimNo = elements.btnClaimNo;
+
+    if (btnClaimYes) {
+        btnClaimYes.onclick = async () => {
+            if (!store.activeClaimType) return;
+            if (store.activeClaimType === 'PUNG') {
+                await handleClaimPungYes();
+            } else if (store.activeClaimType === 'KONG') {
+                await handleClaimKongYes();
+            } else if (store.activeClaimType === 'WIN') {
+                await handleClaimWinYes();
+            }
+            store.activeClaimType = null; // Clear after handling
+        };
+    }
+
+    if (btnClaimNo) {
+        btnClaimNo.onclick = async () => {
+            if (!store.activeClaimType) return;
+            if (store.activeClaimType === 'PUNG') {
+                await handleClaimPungNo();
+            } else if (store.activeClaimType === 'KONG') {
+                await handleClaimKongNo();
+            } else if (store.activeClaimType === 'WIN') {
+                await handleClaimWinNo();
+            }
+            store.activeClaimType = null; // Clear after handling
+        };
+    }
+}
+
+initializeClaimButtonHandlers();

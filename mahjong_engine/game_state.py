@@ -239,6 +239,122 @@ class GameState:
         print(f"Player {claiming_player.player_id}'s turn. Hand size: {len(claiming_player.hand)}. Must discard.")
         return True
 
+    def process_win_claim(self, claiming_player_id, claimed_tile):
+        """
+        Processes a Win claim for the specified player with the given tile.
+        Assumes validation (is_winning_hand) and decision were already made.
+        """
+        claiming_player = None
+        for p in self.players:
+            if p.player_id == claiming_player_id:
+                claiming_player = p
+                break
+
+        if not claiming_player:
+            print(f"Error: Claiming player {claiming_player_id} not found for WIN.")
+            return False
+
+        # Add the claimed tile to the player's hand for completeness,
+        # even though validation happened with it conceptually.
+        # This ensures the hand reflects the winning state.
+        claiming_player.hand.append(claimed_tile)
+
+
+        self.winner_found = True
+        self.winning_player_id = claiming_player_id
+
+        print(f"Player {claiming_player_id} has claimed WIN with tile {claimed_tile}!")
+
+        # Clear pending claim and discard information
+        self.pending_claim_player_id = None
+        self.claim_type_pending = None
+        self.potential_claim_tile = None
+        self.current_discard = None  # Tile is claimed for win
+
+        # Set current player context to the winner
+        self.current_player_index = claiming_player_id
+        
+        # No further actions like drawing/discarding are needed after a win.
+        return True
+
+    def process_hidden_kong(self, player_id, tile_info):
+        """
+        Processes a Hidden Kong declaration for the specified player with the given tile_info.
+        """
+        player = self.players[player_id]
+
+        if self.current_player_index != player_id:
+            return {"success": False, "error": "Not your turn to declare a Hidden Kong."}
+
+        # Hand size check: Expected INIT_HAND_SIZE + 1 (14 tiles) after drawing, before discard.
+        # Or INIT_HAND_SIZE (13 tiles) if declaring from existing hand before drawing (less common for hidden kong)
+        # For this implementation, we'll assume it's possible after drawing, so hand size is 14.
+        # Or, if it's from a hand of 13 tiles, it implies they haven't drawn yet this turn.
+        # Let's be flexible: player must have 4 of the tiles.
+        # A more strict check would be: len(player.hand) == INIT_HAND_SIZE + 1
+        
+        try:
+            kong_tile_obj = Tile(tile_info['suit'], tile_info['value'])
+        except Exception as e:
+            return {"success": False, "error": f"Invalid tile data for Hidden Kong: {e}"}
+
+        tile_count_in_hand = sum(1 for t in player.hand if t == kong_tile_obj)
+
+        if tile_count_in_hand < 4:
+            return {"success": False, "error": f"Not enough {kong_tile_obj} tiles in hand for Hidden Kong. Found {tile_count_in_hand}."}
+
+        # Process the Kong
+        removed_count = 0
+        temp_hand = list(player.hand) # Create a copy to modify while iterating
+        for _ in range(4):
+            for tile_in_hand in temp_hand:
+                if tile_in_hand == kong_tile_obj:
+                    player.hand.remove(tile_in_hand) # Remove from original hand
+                    temp_hand.remove(tile_in_hand) # Remove from temp hand to avoid recounting
+                    removed_count +=1
+                    break 
+        
+        if removed_count != 4: # Should not happen if tile_count_in_hand was >= 4
+             # Restore hand if removal failed partway (though very unlikely)
+            player.hand = temp_hand # This is not a perfect restore, but a fallback.
+            return {"success": False, "error": "Error removing tiles for Hidden Kong."}
+
+
+        # Create the Kong meld - revealed=False is crucial for hidden kong
+        new_kong = Kong(tile=kong_tile_obj, revealed=False, claimed_from=player_id)
+        player.add_revealed_set(new_kong)
+
+        # Draw Replacement Tile
+        replacement_tile = self.draw_tile_for_current_player() # This appends to hand and checks for win
+
+        drawn_tile_serializable = None
+        if replacement_tile:
+            drawn_tile_serializable = {
+                "unicode": replacement_tile.unicode, 
+                "suit": replacement_tile.suit, 
+                "value": replacement_tile.value
+            }
+        
+        message = f"Hidden Kong with {kong_tile_obj} declared. Replacement tile drawn: {replacement_tile.unicode if replacement_tile else 'None'}. Your turn to discard."
+
+        if self.winner_found and self.winning_player_id == player_id:
+            # This condition would be true if draw_tile_for_current_player() resulted in a win
+            message = f"Hidden Kong with {kong_tile_obj}. Drew {replacement_tile.unicode if replacement_tile else 'None'}. Player {player_id} WINS by self-draw after Kong!"
+        elif replacement_tile is None:
+             # This is a problem case - wall empty before discard turn after Kong.
+             # Game might end in a draw or other specific rule.
+             # For now, allow the successful Kong declaration but flag the issue.
+             message = f"Hidden Kong with {kong_tile_obj} declared. Wall empty, no replacement tile drawn. Special game condition."
+             # Potentially, this should be success:False if no replacement means invalid move.
+             # However, forming the Kong itself is valid.
+             # Let's return success, but the frontend/game rules might need to handle this state.
+
+        return {
+            "success": True,
+            "message": message,
+            "drawn_tile": drawn_tile_serializable
+        }
+
     def process_kong_claim(self, claiming_player_id, claimed_tile):
         """
         Processes a Kong claim for the specified player with the given tile.

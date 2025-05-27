@@ -35,7 +35,58 @@ function createTileElement(tile) {
     tileEl.style.padding = "1px";
     tileEl.style.margin = "0px";
     tileEl.style.cursor = "pointer";
-    tileEl.onclick = () => handleTileClick(tile, tileEl);
+
+    // Count occurrences of this tile in the hand
+    const tileCount = store.currentHandTiles.filter(t => t.suit === tile.suit && t.value === tile.value).length;
+
+    if (tileCount === 4) {
+        tileEl.classList.add('self-kongable'); // Add CSS class for styling
+        tileEl.onclick = async () => {
+            if (store.currentGameInfo.winner_found) return;
+            // Hidden Kong can usually be declared on player's turn, often after drawing.
+            // We assume it's the player's turn if this handler is active.
+            // Add additional checks if isPlayerTurn is available and relevant here.
+
+            if (confirm(`Declare a hidden Kong with ${tile.suit} ${tile.value}?`)) {
+                const tileData = { suit: tile.suit, value: tile.value };
+                try {
+                    const result = await eel.eel_player_declares_hidden_kong(tileData)();
+                    if (result && result.success) {
+                        displayHand(result.hand);
+                        displayRevealedSets(result.revealed_sets);
+                        if (elements.playerConsoleEl) {
+                            elements.playerConsoleEl.textContent = result.message;
+                        }
+                        // After successful Kong, player usually needs to discard.
+                        // The backend should ideally dictate button states if a replacement tile was drawn.
+                        if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = false;
+                        if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
+
+                        if (result.drawn_tile && elements.playerConsoleEl) {
+                             elements.playerConsoleEl.textContent += ` Replacement tile drawn: ${result.drawn_tile.unicode}`;
+                        }
+
+                    } else if (result && result.error) {
+                        if (elements.playerConsoleEl) {
+                            elements.playerConsoleEl.textContent = "Error declaring Hidden Kong: " + result.error;
+                        }
+                    } else {
+                         if (elements.playerConsoleEl) {
+                            elements.playerConsoleEl.textContent = "Failed to declare Hidden Kong. Unknown error.";
+                        }
+                    }
+                } catch (error) {
+                    console.error("EEL call failed for Hidden Kong:", error);
+                    if (elements.playerConsoleEl) {
+                        elements.playerConsoleEl.textContent = "An unexpected error occurred while declaring Hidden Kong.";
+                    }
+                }
+            }
+        };
+    } else {
+        // Default click handler for discarding
+        tileEl.onclick = () => handleTileClick(tile, tileEl);
+    }
     return tileEl;
 }
 
@@ -43,18 +94,27 @@ function handleTileClick(tile, tileEl) {
     if (store.currentGameInfo.winner_found) return;
     
     // Allow tile selection when it's our turn to discard (button is enabled)
-    if (!elements.btnDiscardTile.disabled) {
+    if (elements.btnDiscardTile && !elements.btnDiscardTile.disabled) {
         store.selectedTileForDiscard = tile;
         if (elements.selectedTileDisplayEl) {
             elements.selectedTileDisplayEl.textContent = `Selected Tile: ${tile.unicode}`;
         }
-        document.querySelectorAll('#player-hand span').forEach(el => el.style.backgroundColor = 'transparent');
-        tileEl.style.backgroundColor = 'lightblue';
+        document.querySelectorAll('#player-hand span').forEach(el => {
+            el.style.backgroundColor = 'transparent';
+            // Ensure self-kongable tiles retain their border if not selected
+            if (!el.classList.contains('self-kongable') || el === tileEl) {
+                 // If it is self-kongable and selected, lightblue is fine.
+                 // If not self-kongable, or self-kongable and selected, apply/remove background.
+            }
+        });
+        tileEl.style.backgroundColor = 'lightblue'; // Highlight selected tile
     } else {
-        if (elements.playerConsoleEl && !elements.btnDiscardTile.disabled) {
-            elements.playerConsoleEl.textContent = "Draw a tile first or ensure it's your turn to discard.";
-        } else if (elements.playerConsoleEl && elements.btnDiscardTile.disabled && !elements.btnDrawTile.disabled) {
-            elements.playerConsoleEl.textContent = "Draw a tile first.";
+        if (elements.playerConsoleEl) {
+            if (elements.btnDrawTile && !elements.btnDrawTile.disabled) {
+                 elements.playerConsoleEl.textContent = "Draw a tile first or declare a Kong if possible.";
+            } else if (elements.btnDiscardTile && elements.btnDiscardTile.disabled) {
+                 elements.playerConsoleEl.textContent = "It's not your turn to discard or action pending.";
+            }
         }
     }
 }
