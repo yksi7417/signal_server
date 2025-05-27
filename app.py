@@ -126,6 +126,89 @@ def eel_player_claims_pung(confirm_claim):
 
 
 @eel.expose
+def eel_player_claims_win(confirm_claim):
+    global current_game_state
+    response = {"success": False, "message": "Win claim processing failed."}
+
+    if (
+        current_game_state.pending_claim_player_id is None
+        or current_game_state.potential_claim_tile is None
+        or current_game_state.claim_type_pending != "WIN"
+    ):
+        response["message"] = "No Win claim was pending or tile info missing."
+        return response
+
+    claiming_player_id = current_game_state.pending_claim_player_id
+
+    if claiming_player_id != 0:  # Assuming 0 is the human player
+        response["message"] = "Pending win claim is not for the human player."
+        return response
+
+    if confirm_claim:
+        claimed_tile = current_game_state.potential_claim_tile
+        # This method will be implemented in GameState later
+        success = current_game_state.process_win_claim(claiming_player_id, claimed_tile)
+        
+        if success:
+            player = current_game_state.players[claiming_player_id]
+            hand_serializable = [
+                {"unicode": t.unicode, "suit": t.suit, "value": t.value} 
+                for t in player.hand
+            ]
+            revealed_sets_serializable = [
+                {
+                    "type": meld.meld_type.value,
+                    "tiles": [
+                        {"unicode": t.unicode, "suit": t.suit, "value": t.value} 
+                        for t in meld.raw_tiles
+                    ],
+                }
+                for meld in player.revealed_sets
+            ]
+            response = {
+                "success": True,
+                "message": f"Player {claiming_player_id} claimed Win!",
+                "hand": hand_serializable,
+                "revealed_sets": revealed_sets_serializable,
+                "winner_found": current_game_state.winner_found,
+                "winning_player_id": current_game_state.winning_player_id,
+                "action": "win_claimed" 
+            }
+        else:
+            response["message"] = "Backend failed to process Win claim."
+            response["winner_found"] = current_game_state.winner_found
+    else:
+        # Win claim declined
+        discarder_player_id = current_game_state.current_player_index 
+        
+        current_game_state.potential_claim_tile = None
+        current_game_state.pending_claim_player_id = None
+        current_game_state.claim_type_pending = None
+        
+        current_game_state.current_player_index = (discarder_player_id + 1) % len(current_game_state.players)
+        current_game_state.turn_number += 1 # Good practice
+
+        discarded_tile_serializable = None
+        if current_game_state.current_discard:
+            discarded_tile_serializable = {
+                "unicode": current_game_state.current_discard.unicode,
+                "suit": current_game_state.current_discard.suit,
+                "value": current_game_state.current_discard.value,
+            }
+
+        response = {
+            "success": True,
+            "message": "Win claim declined. Game continues.",
+            "action": "claim_declined",
+            "next_player_id": current_game_state.players[current_game_state.current_player_index].player_id,
+            "discarded_tile": discarded_tile_serializable,
+            "winner_found": current_game_state.winner_found # Should be False
+        }
+        
+    return response
+
+
+@eel.expose
 def eel_player_claims_kong(confirm_claim):
     global current_game_state
     response = {"success": False, "message": "Kong claim processing failed."}
@@ -194,6 +277,62 @@ def eel_player_claims_kong(confirm_claim):
 
     return response
 
+@eel.expose
+def eel_player_declares_hidden_kong(tile_info):
+    global current_game_state
+    response = {"success": False, "error": "Failed to declare hidden kong by default."}
+
+    if not current_game_state.players:
+        response["error"] = "Game not initialized or no players found."
+        return response
+
+    # Ensure it's the human player's turn (player_id == 0)
+    if current_game_state.current_player_index != 0:
+        response["error"] = "Not your turn to declare hidden kong."
+        return response
+    
+    player_id = current_game_state.players[current_game_state.current_player_index].player_id
+    if player_id != 0: # Double check
+        response["error"] = "Not your turn (player ID mismatch)."
+        return response
+
+    if not tile_info or 'suit' not in tile_info or 'value' not in tile_info:
+        response["error"] = "Invalid tile_info provided for Hidden Kong."
+        return response
+
+    # Call the GameState method to process the hidden kong
+    # This method is expected to return a dictionary with success status and other info
+    result_dict = current_game_state.process_hidden_kong(player_id, tile_info)
+
+    if result_dict.get("success"):
+        player = current_game_state.players[player_id]
+        hand_serializable = [
+            {"unicode": t.unicode, "suit": t.suit, "value": t.value} for t in player.hand
+        ]
+        revealed_sets_serializable = [
+            {
+                "type": meld.meld_type.value,
+                "tiles": [
+                    {"unicode": t.unicode, "suit": t.suit, "value": t.value} for t in meld.raw_tiles
+                ],
+                "revealed": meld.revealed # Include revealed status
+            }
+            for meld in player.revealed_sets
+        ]
+        
+        response = {
+            "success": True,
+            "message": result_dict.get("message", "Hidden Kong declared successfully."),
+            "hand": hand_serializable,
+            "revealed_sets": revealed_sets_serializable,
+            "drawn_tile": result_dict.get("drawn_tile"), # Serialized tile from process_hidden_kong
+            "winner_found": current_game_state.winner_found,
+            "winning_player_id": current_game_state.winning_player_id
+        }
+    else:
+        response["error"] = result_dict.get("error", "Unknown error declaring Hidden Kong.")
+
+    return response
 
 @eel.expose
 def eel_draw_tile():
