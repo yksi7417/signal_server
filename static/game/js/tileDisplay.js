@@ -67,10 +67,10 @@ export function displayRevealedSets(revealed_sets_data) {
         return;
     }
     
-    let html = "Revealed Sets: ";
+    let html = "";
     revealed_sets_data.forEach(meld => {
-        const tilesString = meld.tiles.map(t => `${t.unicode}`).join(', ');
-        html += `${meld.type} (${tilesString})`;
+        const tilesString = meld.tiles.map(t => `${t.unicode}`).join(' ');
+        html += `(${tilesString})`;
     });
     elements.revealedSetsEl.innerHTML = html;
 }
@@ -84,7 +84,6 @@ export function displayGameInfo(info) {
     
     elements.gameInfoEl.innerHTML = `
         Game Wind: ${info.game_wind || 'N/A'}<br>
-        Current Player ID: ${info.current_player_id !== undefined ? info.current_player_id : 'N/A'}
     `;
     if (info) {
         store.currentGameInfo = { ...store.currentGameInfo, ...info };
