@@ -6,6 +6,7 @@ from .player_agent import HumanPlayerAgent, AIPlayerAgent
 from .hand_validator import (can_form_pung_with_discard, check_standard_win,
                            can_form_kong_with_discard, can_form_self_kong)
 from .melds import Pung, Kong
+from .ruleset import DefaultRuleSet # Added import for DefaultRuleSet
 
 
 class GameState:
@@ -29,6 +30,7 @@ class GameState:
         random.shuffle(self.wall)
 
         self.deal_tiles()
+        self.rules = DefaultRuleSet() # Instantiated DefaultRuleSet
 
         self.current_player_index = 0
         self.game_wind = WIND_EAST
@@ -71,11 +73,18 @@ class GameState:
 
         drawn_tile = self.wall.pop(0)
         player.hand.append(drawn_tile)
-        is_win = check_standard_win(player.hand, player.revealed_sets)
-        if is_win:
-            self.winner_found = True
-            self.winning_player_id = player.player_id
-            print(f"Player {player.player_id} has won!")
+
+        # Calculate total tiles including revealed sets
+        revealed_tiles_count = sum(len(meld.raw_tiles) for meld in player.revealed_sets)
+        total_tiles = len(player.hand) + revealed_tiles_count
+
+        if total_tiles == INIT_HAND_SIZE + 1:
+            is_win = self.rules.is_winning_hand(player.hand, player.revealed_sets) # Changed to self.rules
+            if is_win:
+                self.winner_found = True
+                self.winning_player_id = player.player_id
+                print(f"Player {player.player_id} has won by self-draw!")
+
         return drawn_tile
 
     def discard_tile_for_current_player(self, tile_to_discard_repr):
@@ -104,41 +113,70 @@ class GameState:
         player.discards.append(tile_object_to_discard)
 
         self.potential_claim_tile = self.current_discard
+        # Reset pending claims before checks
         self.pending_claim_player_id = None
         self.claim_type_pending = None
 
+        # 1. Check for WIN claim from other players
         start_check_idx = (self.current_player_index + 1) % len(self.players)
-        for i in range(len(self.players) - 1):
+        for i in range(len(self.players) - 1): # Iterate through other players
             check_player_idx = (start_check_idx + i) % len(self.players)
-            if check_player_idx == self.current_player_index:
-                continue
+            # current_player_index is implicitly skipped by the loop structure starting from current_player_index + 1
+            
             other_player = self.players[check_player_idx]
+            potential_win_hand = other_player.hand + [self.current_discard]
             
-            # Check for Kong first (higher priority)
-            if can_form_kong_with_discard(other_player.hand, self.potential_claim_tile):
+            if self.rules.is_winning_hand(potential_win_hand, other_player.revealed_sets): # Changed to self.rules
                 if isinstance(other_player.agent, HumanPlayerAgent):
                     self.pending_claim_player_id = other_player.player_id
-                    self.claim_type_pending = "KONG"
-                    print(f"Player {other_player.player_id} can Kong {self.potential_claim_tile}")
-                    return True
-                elif isinstance(other_player.agent, AIPlayerAgent):
-                    # TODO: Implement AI Kong decision
-                    pass
-            
-            # Then check for Pung
-            elif can_form_pung_with_discard(other_player.hand, self.potential_claim_tile):
-                if isinstance(other_player.agent, HumanPlayerAgent):
-                    self.pending_claim_player_id = other_player.player_id
-                    self.claim_type_pending = "PUNG"
-                    print(f"Player {other_player.player_id} can Pung {self.potential_claim_tile}")
-                    return True
-                elif isinstance(other_player.agent, AIPlayerAgent):
-                    # TODO: Implement AI Pung decision
-                    pass
+                    self.claim_type_pending = "WIN"
+                    # self.potential_claim_tile is already self.current_discard
+                    print(f"Player {other_player.player_id} (Human) can WIN with {self.current_discard}. Waiting for UI.")
+                    return True # Human win claim takes priority
+                # Optional: Logic for AI win claim can be added here if needed in future.
+                # For now, if an AI can win, it doesn't immediately halt flow for UI.
+                # It might be recorded or handled by AI's own turn logic.
+
+        # 2. If no WIN claim by a Human, check for PUNG/KONG claims
+        if self.pending_claim_player_id is None: # Only proceed if no Human WIN claim took precedence
+            # Iterate through other players again for Pung/Kong.
+            # Note: Could combine with the WIN check loop if careful about claim priorities.
+            # For clarity and strict adherence to "WIN first for Human", separate loops are fine.
+            for i in range(len(self.players) - 1):
+                check_player_idx = (start_check_idx + i) % len(self.players)
+                other_player = self.players[check_player_idx]
+
+                # Check for Kong first (higher priority)
+                if can_form_kong_with_discard(other_player.hand, self.potential_claim_tile):
+                    if isinstance(other_player.agent, HumanPlayerAgent):
+                        self.pending_claim_player_id = other_player.player_id
+                        self.claim_type_pending = "KONG"
+                        print(f"Player {other_player.player_id} can Kong {self.potential_claim_tile}")
+                        return True
+                    elif isinstance(other_player.agent, AIPlayerAgent):
+                        # TODO: Implement AI Kong decision
+                        pass
+
+                # Then check for Pung
+                elif can_form_pung_with_discard(other_player.hand, self.potential_claim_tile):
+                    if isinstance(other_player.agent, HumanPlayerAgent):
+                        # Check if this Pung is part of a win already identified for an AI (less likely to be an issue here)
+                        # Or if this player could also have won (win check has priority)
+                        # This simplified logic assumes WIN check above handles Human WIN priority.
+                        self.pending_claim_player_id = other_player.player_id
+                        self.claim_type_pending = "PUNG"
+                        print(f"Player {other_player.player_id} (Human) can Pung {self.potential_claim_tile}. Waiting for UI.")
+                        return True
+                    # elif isinstance(other_player.agent, AIPlayerAgent): pass 
+                        # AI Pung claim logic could be triggered here if AI should pre-emptively claim.
+                        # Current game flow usually has AI decide on its turn.
+
+        # 3. If no claims by a human player that require UI interaction, advance turn
         if self.pending_claim_player_id is None:
             self.current_player_index = (self.current_player_index + 1) % len(self.players)
             self.turn_number += 1
-        return True
+        
+        return True # Discard was successful, regardless of claims
 
     def process_pung_claim(self, claiming_player_id, claimed_tile):
         """

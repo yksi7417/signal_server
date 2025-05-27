@@ -18,7 +18,9 @@ def find_possible_melds(hand, last_tile=None):
     return []
 
 def _can_form_melds_recursive(tile_counts, num_melds_to_find):
-
+    # NOTE: This function has been moved to mahjong_engine.ruleset.DefaultRuleSet
+    # It is kept here temporarily to avoid breaking other potential direct usages,
+    # but should be considered deprecated in this file.
     if num_melds_to_find == 0:
 
         return not any(tile_counts.values())
@@ -83,6 +85,9 @@ def _can_form_melds_recursive(tile_counts, num_melds_to_find):
     return False
 
 def check_standard_win(player_hand_tiles, player_revealed_sets):
+    # NOTE: This function has been moved to mahjong_engine.ruleset.DefaultRuleSet.is_winning_hand
+    # It is kept here temporarily to avoid breaking other potential direct usages,
+    # but should be considered deprecated in this file for win checking by GameState.
     """
     Checks if a combination of hand tiles and revealed sets forms a standard winning hand (4 melds + 1 pair).
     Args:
@@ -142,12 +147,11 @@ def check_standard_win(player_hand_tiles, player_revealed_sets):
 
 def get_hand_score(hand_details, game_context):
     """
-    Calculates the score of a winning hand based on its composition and game context.
-    This will be based on the Pomax rules (Chinese Classical or Cantonese).
+    DEPRECATED: Scoring logic has been moved to RuleSet implementations.
+    This function should no longer be directly called for new scoring calculations.
     """
-
-    print("DEV_INFO: get_hand_score called, but not yet implemented.")
-    return 0
+    print("DEV_INFO: get_hand_score in hand_validator.py is deprecated. Use RuleSet.calculate_score.")
+    return 0 # Return a default value
 
 
 def can_form_pung_with_discard(hand, discarded_tile):
