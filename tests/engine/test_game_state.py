@@ -233,8 +233,7 @@ def test_run_ai_turn_successful_no_human_claim(game):
     assert game.current_discard is not None
     assert game.current_discard == Tile(result["discarded_tile"]["suit"], result["discarded_tile"]["value"])
     assert game.current_discard in ai_player.discards
-
-    assert not result["human_can_claim_pung"]
+    assert result["human_can_claim"] is None
     assert game.pending_claim_player_id is None
     assert game.current_player_index == (1 + 1) % NUM_PLAYERS
 
@@ -262,9 +261,8 @@ def test_run_ai_turn_leads_to_human_pung_claim(game):
 
     assert result["success"]
     assert result["ai_player_id"] == ai_player.player_id
-    assert Tile(result["discarded_tile"]["suit"], result["discarded_tile"]["value"]) == tile_ai_will_discard
-
-    assert result["human_can_claim_pung"]
+    assert Tile(result["discarded_tile"]["suit"], result["discarded_tile"]["value"]) == tile_ai_will_discard    
+    assert result["human_can_claim"] == "PUNG"
     assert Tile(result["claimable_tile"]["suit"], result["claimable_tile"]["value"]) == tile_ai_will_discard
     assert game.pending_claim_player_id == 0
     assert game.claim_type_pending == "PUNG"

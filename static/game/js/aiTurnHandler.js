@@ -115,14 +115,14 @@ function handleSuccessfulAiTurn(result) {
     if (result.discarded_tile) {
         if (elements.playerConsoleEl) {
             let displayText = `AI Player ${result.ai_player_id} discarded ${result.discarded_tile.unicode}`;
-            if (result.human_can_claim_pung) {
-                displayText += `\n and you can claim it as a Pung.`;
+            if (result.human_can_claim) {
+                displayText += `\n and you can claim it as a ${result.human_can_claim}.`;
             }
             elements.playerConsoleEl.textContent = displayText
         }
     }
     
-    return result.next_player_id !== 0 && !result.human_can_claim_pung;
+    return result.next_player_id !== 0 && !result.human_can_claim;
 }
 
 function handleFailedAiTurn(result) {
@@ -141,8 +141,8 @@ function handleFailedAiTurn(result) {
 function handleGameStateAfterFailedTurn(result) {
     if(store.currentGameInfo.winner_found) {
         handleGameOver();
-    } else if(result?.human_can_claim_pung) {
-        showClaimPrompt(result.claimable_tile, "PUNG");
+    } else if(result?.human_can_claim) {
+        showClaimPrompt(result.claimable_tile, result?.human_can_claim);
     } else if (!store.currentGameInfo.winner_found) {
         if(elements.btnDrawTile) elements.btnDrawTile.disabled = false;
         if(elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;

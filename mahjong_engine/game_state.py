@@ -281,10 +281,13 @@ class GameState:
                 "action": "win",
                 "winner_found": True,
                 "winning_player_id": self.winning_player_id,
-                "drawn_tile_for_win": {"suit": drawn_tile.suit, "value": drawn_tile.value},
+                "drawn_tile_for_win": {
+                    "suit": drawn_tile.suit,
+                    "value": drawn_tile.value,
+                    "unicode": drawn_tile.unicode},
                 "discarded_tile": None,
                 "next_player_id": self.winning_player_id,
-                "human_can_claim_pung": False,
+                "human_can_claim": None,
                 "claimable_tile": None
             }
 
@@ -303,7 +306,7 @@ class GameState:
         if not discard_success:
             print(f"Error: AI Player {ai_player.player_id} failed to discard {tile_to_discard_by_ai} properly.")
             return {"success": False, "error": "AI failed to execute discard."}
-        
+
         return {
             "success": True,
             "ai_player_id": ai_player.player_id,
@@ -313,6 +316,6 @@ class GameState:
                 "unicode": self.current_discard.unicode
             },
             "next_player_id": self.players[self.current_player_index].player_id,
-            "human_can_claim_pung": (self.pending_claim_player_id == 0 and self.claim_type_pending == "PUNG"),
+            "human_can_claim": self.claim_type_pending if self.pending_claim_player_id == 0 else None,
             "claimable_tile": {"suit": self.potential_claim_tile.suit, "value": self.potential_claim_tile.value} if self.potential_claim_tile and self.pending_claim_player_id == 0 else None
         }

@@ -330,16 +330,16 @@ def eel_discard_tile(tile_to_discard_data):
         if (
             current_game_state.pending_claim_player_id == 0
             and current_game_state.potential_claim_tile
-            and current_game_state.claim_type_pending == "PUNG"
+            and current_game_state.claim_type_pending
         ):
-            response["human_can_claim_pung"] = True
+            response["human_can_claim"] = current_game_state.claim_type_pending
             response["claimable_tile"] = {
                 "unicode": current_game_state.potential_claim_tile.unicode,
                 "suit": current_game_state.potential_claim_tile.suit,
                 "value": current_game_state.potential_claim_tile.value,
             }
         else:
-            response["human_can_claim_pung"] = False
+            response["human_can_claim"] = None
         return response
     else:
 

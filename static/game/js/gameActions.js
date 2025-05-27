@@ -112,9 +112,8 @@ function updateGameInfoDisplay(result) {
 export function handleDiscardTileResult(result) {
     if (result && result.success) {
         updateGameStateAfterDiscard(result);
-        
-        if (result.human_can_claim_pung && !store.currentGameInfo.winner_found) {
-            showClaimPrompt(result.claimable_tile, "PUNG");
+          if (result.human_can_claim && !store.currentGameInfo.winner_found) {
+            showClaimPrompt(result.claimable_tile, result.human_can_claim);
         } else if (store.currentGameInfo.winner_found) {
             handleWinAfterDiscard();
         } else if (result.next_player_id !== 0) {
