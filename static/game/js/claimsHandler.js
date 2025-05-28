@@ -265,37 +265,3 @@ function handleFailedKongClaim(result) {
     }
 }
 
-function initializeClaimButtonHandlers() {
-    const btnClaimYes = elements.btnClaimYes;
-    const btnClaimNo = elements.btnClaimNo;
-
-    if (btnClaimYes) {
-        btnClaimYes.onclick = async () => {
-            if (!store.activeClaimType) return;
-            if (store.activeClaimType === 'PUNG') {
-                await handleClaimPungYes();
-            } else if (store.activeClaimType === 'KONG') {
-                await handleClaimKongYes();
-            } else if (store.activeClaimType === 'WIN') {
-                await handleClaimWinYes();
-            }
-            store.activeClaimType = null; // Clear after handling
-        };
-    }
-
-    if (btnClaimNo) {
-        btnClaimNo.onclick = async () => {
-            if (!store.activeClaimType) return;
-            if (store.activeClaimType === 'PUNG') {
-                await handleClaimPungNo();
-            } else if (store.activeClaimType === 'KONG') {
-                await handleClaimKongNo();
-            } else if (store.activeClaimType === 'WIN') {
-                await handleClaimWinNo();
-            }
-            store.activeClaimType = null; // Clear after handling
-        };
-    }
-}
-
-initializeClaimButtonHandlers();
