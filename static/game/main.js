@@ -1,7 +1,7 @@
 import { store, elements } from './js/gameStore.js';
 import { displayDiscardedTiles } from './js/tileDisplay.js';
 import { handleDrawTile, handleDiscardTile, handleReset } from './js/gameActions.js';
-import { handleClaimPungYes, handleClaimPungNo } from './js/claimsHandler.js';
+import { handleClaimYes, handleClaimNo } from './js/claimsHandler.js';
 
 
 // Initialize button event listeners
@@ -19,11 +19,11 @@ function initializeEventListeners() {
     }
 
     if (elements.btnClaimYes) {
-        elements.btnClaimYes.onclick = handleClaimPungYes;
+        elements.btnClaimYes.onclick = handleClaimYes;
     }
 
     if (elements.btnClaimNo) {
-        elements.btnClaimNo.onclick = handleClaimPungNo;
+        elements.btnClaimNo.onclick = handleClaimNo;
     }
 }
 
@@ -45,8 +45,7 @@ function update_history_js(hist) {
 
 // Add keyboard controls
 document.addEventListener('keydown', (event) => {
-    // Only handle spacebar press and prevent default space behavior
-    if (event.code === 'Space' && !event.repeat) {
+    if ((event.key === 'd' || event.key === 'D') && !event.repeat) {
         event.preventDefault(); // Prevent page scrolling
         
         const drawButton = document.getElementById('btnDrawTile');

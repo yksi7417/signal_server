@@ -91,9 +91,10 @@ class GameState:
         player = self.players[self.current_player_index]
         print(f"Player {player.revealed_sets}")
         revealed_count = sum(len(meld.raw_tiles) for meld in player.revealed_sets)
+        total_tiles = len(player.hand) + revealed_count
 
-        if len(player.hand) + revealed_count != INIT_HAND_SIZE + 1:
-            print(f"Player {player.player_id} has {len(player.hand)} tiles. Should have {INIT_HAND_SIZE + 1} before discarding.")
+        if total_tiles != INIT_HAND_SIZE + 1:
+            print(f"Player {player.player_id} has {total_tiles} tiles. Should have {INIT_HAND_SIZE + 1} before discarding.")
             return False
 
         tile_object_to_discard = None

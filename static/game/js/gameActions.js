@@ -88,6 +88,22 @@ function handleSuccessfulDraw(result) {
         elements.btnDiscardTile.disabled = false;
 }
 
+
+function handleWinAfterDraw(result) {
+    store.currentGameInfo.winner_found = true;
+    store.currentGameInfo.winning_player_id = result.winning_player_id;
+    
+    if(elements.playerConsoleEl) {
+        elements.playerConsoleEl.textContent = `Player ${result.winning_player_id} WINS!`;
+    }
+    
+    if(elements.btnDrawTile) elements.btnDrawTile.disabled = true;
+    if(elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+    
+    displayRevealedSets(result.revealed_sets);
+    displayHand(result.hand);
+}
+
 function handleDrawTileResult(result) {
     if (result && result.success) {
         updateGameStateAfterDraw(result);
@@ -109,6 +125,14 @@ function updateGameInfoDisplay(result) {
         elements.gameInfoEl.innerHTML = `Game Wind: ${store.currentGameInfo.game_wind || 'N/A'}<br>`;
     }
 }
+
+function handleDrawError(result) {
+    if (elements.playerConsoleEl) {
+        elements.playerConsoleEl.textContent = 
+            result && result.message ? result.message : "Error drawing tile.";
+    }
+}
+
 export function handleDiscardTileResult(result) {
     if (result && result.success) {
         updateGameStateAfterDiscard(result);
@@ -162,6 +186,9 @@ export async function handleReset() {
     if(elements.selectedTileDisplayEl) {
         elements.selectedTileDisplayEl.textContent = "Selected Tile: None";
     }
+    store.discardedTiles = [];
+    displayDiscardedTiles();
+
     store.selectedTileForDiscard = null;
     displayRevealedSets([]);
     hideClaimPrompt();

@@ -18,6 +18,26 @@ export function hideClaimPrompt() {
     elements.claimPromptEl.style.display = 'none';
 }
 
+export async function handleClaimYes() {
+    if (store.activeClaimType === 'PUNG') {
+        await handleClaimPungYes();
+    } else if (store.activeClaimType === 'KONG') {
+        await handleClaimKongYes();    
+    } else if (store.activeClaimType === 'WIN') {
+        await handleClaimWinYes();
+    } 
+}
+
+export async function handleClaimNo() {
+    if (store.activeClaimType === 'PUNG') {
+        await handleClaimPungNo();
+    } else if (store.activeClaimType === 'KONG') {
+        await handleClaimKongNo();    
+    } else if (store.activeClaimType === 'WIN') {
+        await handleClaimWinNo();
+    } 
+}
+
 export async function handleClaimPungYes() {
     if (store.currentGameInfo.winner_found) return;
     
@@ -27,7 +47,7 @@ export async function handleClaimPungYes() {
     if (result && result.success) {
         handleSuccessfulClaim(result);
     } else {
-        handleFailedClaim(result);
+        handleFailedPungClaim(result);
     }
 }
 
@@ -91,7 +111,7 @@ function handleSuccessfulClaim(result) {
     }
 }
 
-function handleFailedClaim(result) {
+function handleFailedPungClaim(result) {
     if (elements.playerConsoleEl && result) {
         elements.playerConsoleEl.textContent = "Error claiming Pung: " + (result.message || "Unknown");
     }
