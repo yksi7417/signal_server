@@ -1,6 +1,7 @@
 import { store, elements } from './gameStore.js';
 import { displayHand, displayRevealedSets } from './tileDisplay.js';
 import { processAiTurns } from './aiTurnHandler.js';
+import { showCelebrationScreen } from './celebrationScreen.js';
 
 export function showClaimPrompt(tile, claimType) {
     if (!elements.claimPromptEl || !elements.claimMessageEl) return;
@@ -179,9 +180,24 @@ async function handleClaimWinYes() {
     hideClaimPrompt();
     
     if (result && result.success) {
-        handleSuccessfulWinClaim(result);
+        if (elements.playerConsoleEl) {
+            elements.playerConsoleEl.textContent = result.message;
+        }
+        store.currentGameInfo.winner_found = result.winner_found;
+        store.currentGameInfo.winning_player_id = result.winning_player_id;
+
+        if (result.action === "win_claimed") {
+            showCelebrationScreen(result.winning_player_id);
+        }
+        
+        if (result.hand) {
+            displayHand(result.hand);
+        }
+        if (result.revealed_sets) {
+            displayRevealedSets(result.revealed_sets);
+        }
     } else {
-        handleFailedWinClaim(result);
+        handleFailedClaim(result);
     }
 }
 
@@ -191,22 +207,12 @@ async function handleClaimWinNo() {
     const result = await eel.eel_player_claims_win(false)();
     hideClaimPrompt();
     
-    if (elements.playerConsoleEl && result.message) {
+    if (elements.playerConsoleEl) {
         elements.playerConsoleEl.textContent = result.message;
     }
     
     if (result && result.success && result.action === "claim_declined") {
         handleClaimDeclined(result);
-    } else if (result?.winner_found !== undefined) {
-        store.currentGameInfo.winner_found = result.winner_found;
-        store.currentGameInfo.winning_player_id = result.winning_player_id;
-        if (store.currentGameInfo.winner_found) {
-            if (elements.playerConsoleEl) {
-                elements.playerConsoleEl.textContent = `Player ${store.currentGameInfo.winning_player_id} WINS!`;
-            }
-            if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
-            if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
-        }
     }
 }
 

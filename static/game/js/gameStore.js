@@ -11,7 +11,8 @@ export const store = {
     discardedTiles: [],
     INIT_HAND_SIZE: 13,
     claimType: null,
-    claimableTile: null
+    claimableTile: null,
+    activeClaimType: null // Will track the type of claim being made (PUNG, KONG, WIN)
 };
 
 // DOM element references
