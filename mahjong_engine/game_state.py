@@ -61,40 +61,39 @@ class GameState:
         return f"GameState(players={len(self.players)}, wall_size={len(self.wall)}, turn={self.turn_number})"
 
     def draw_tile_for_current_player(self):
+        """Draw a tile for current player with modulo-3 hand validation."""
         if not self.wall:
             print("Wall is empty. Cannot draw.")
             return None
 
         player = self.players[self.current_player_index]
-        if len(player.hand) >= INIT_HAND_SIZE + 1:
-            print(f"Player {player.player_id} already has {len(player.hand)} tiles.\
-                  Cannot draw again before discarding.")
+        hand_size = len(player.hand)
+
+        if hand_size % 3 != 1:
+            msg = (f"Player {player.player_id} cannot draw with "
+                  f"{hand_size} tiles in hand.")
+            print(msg)
             return None
 
+        # Draw and add tile
         drawn_tile = self.wall.pop(0)
         player.hand.append(drawn_tile)
 
-        # Calculate total tiles including revealed sets
-        revealed_tiles_count = sum(len(meld.raw_tiles) for meld in player.revealed_sets)
-        total_tiles = len(player.hand) + revealed_tiles_count
-
-        if total_tiles == INIT_HAND_SIZE + 1:
-            is_win = self.rules.is_winning_hand(player.hand, player.revealed_sets) # Changed to self.rules
+        # Check for win if hand size % 3 == 2
+        if len(player.hand) % 3 == 2:
+            is_win = self.rules.is_winning_hand(player.hand, player.revealed_sets)
             if is_win:
                 self.winner_found = True
                 self.winning_player_id = player.player_id
-                print(f"Player {player.player_id} has won by self-draw!")
+                msg = f"Player {player.player_id} won by self-draw!"
+                print(msg)
 
         return drawn_tile
 
     def discard_tile_for_current_player(self, tile_to_discard_repr):
         player = self.players[self.current_player_index]
-        print(f"Player {player.revealed_sets}")
-        revealed_count = sum(len(meld.raw_tiles) for meld in player.revealed_sets)
-        total_tiles = len(player.hand) + revealed_count
-
-        if total_tiles != INIT_HAND_SIZE + 1:
-            print(f"Player {player.player_id} has {total_tiles} tiles. Should have {INIT_HAND_SIZE + 1} before discarding.")
+        if len(player.hand) % 3 != 2:
+            print(f"Player {player.player_id} has tiles:{len(player.hand)} % 3 != 1 before discarding.")
             return False
 
         tile_object_to_discard = None
