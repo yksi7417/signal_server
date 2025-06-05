@@ -21,11 +21,13 @@ class Meld:
         self.claimed_from = claimed_from
 
         if meld_type == MeldType.PUNG:
-            if not (len(self.raw_tiles) == 3 and self.raw_tiles[0] == self.raw_tiles[1] == self.raw_tiles[2]):
+            if not (len(self.raw_tiles) ==
+                    3 and self.raw_tiles[0] == self.raw_tiles[1] == self.raw_tiles[2]):
                 raise ValueError(f"Invalid tiles for Pung: {self.raw_tiles}")
             self.key_tile = self.raw_tiles[0]
         elif meld_type == MeldType.KONG:
-            if not (len(self.raw_tiles) == 4 and self.raw_tiles[0] == self.raw_tiles[1] == self.raw_tiles[2] == self.raw_tiles[3]):
+            if not (len(self.raw_tiles) ==
+                    4 and self.raw_tiles[0] == self.raw_tiles[1] == self.raw_tiles[2] == self.raw_tiles[3]):
                 raise ValueError(f"Invalid tiles for Kong: {self.raw_tiles}")
             self.key_tile = self.raw_tiles[0]
         elif meld_type == MeldType.CHOW:
@@ -39,7 +41,8 @@ class Meld:
 
             self.key_tile = self.raw_tiles[0]
         elif meld_type == MeldType.PAIR:
-            if not (len(self.raw_tiles) == 2 and self.raw_tiles[0] == self.raw_tiles[1]):
+            if not (len(self.raw_tiles) ==
+                    2 and self.raw_tiles[0] == self.raw_tiles[1]):
                 raise ValueError(f"Invalid tiles for Pair: {self.raw_tiles}")
             self.key_tile = self.raw_tiles[0]
         else:
@@ -63,14 +66,18 @@ class Pung(Meld):
     def __init__(self, tile, revealed=False, claimed_from=None):
         if not isinstance(tile, Tile):
             raise ValueError("Pung must be initialized with a Tile object.")
-        super().__init__(MeldType.PUNG, [tile, tile, tile], revealed, claimed_from)
+        super().__init__(
+            MeldType.PUNG, [
+                tile, tile, tile], revealed, claimed_from)
 
 
 class Kong(Meld):
     def __init__(self, tile, revealed=False, claimed_from=None):
         if not isinstance(tile, Tile):
             raise ValueError("Kong must be initialized with a Tile object.")
-        super().__init__(MeldType.KONG, [tile, tile, tile, tile], revealed, claimed_from)
+        super().__init__(
+            MeldType.KONG, [
+                tile, tile, tile, tile], revealed, claimed_from)
 
 
 class Pair(Meld):
@@ -83,6 +90,7 @@ class Pair(Meld):
 class Chow(Meld):
     def __init__(self, t1, t2, t3, revealed=False, claimed_from=None):
         if not all(isinstance(t, Tile) for t in [t1, t2, t3]):
-            raise ValueError("Chow must be initialized with three Tile objects.")
+            raise ValueError(
+                "Chow must be initialized with three Tile objects.")
         tiles = sorted([t1, t2, t3])
         super().__init__(MeldType.CHOW, tiles, revealed, claimed_from)

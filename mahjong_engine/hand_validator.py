@@ -3,6 +3,7 @@ from .melds import Meld, MeldType, Pung, Kong, Chow, Pair
 from .constants import SUITS_NUMERIC, SUIT_WINDS, SUIT_DRAGONS
 import collections
 
+
 def find_possible_melds(hand, last_tile=None):
     """
     Analyzes a hand (list of Tile objects) to find all possible Pungs, Kongs, Chows.
@@ -10,12 +11,9 @@ def find_possible_melds(hand, last_tile=None):
     Returns: A list of Meld objects.
     """
 
-
-
-
-
     print("DEV_INFO: find_possible_melds called, but not yet implemented.")
     return []
+
 
 def _can_form_melds_recursive(tile_counts, num_melds_to_find):
     # NOTE: This function has been moved to mahjong_engine.ruleset.DefaultRuleSet
@@ -25,28 +23,20 @@ def _can_form_melds_recursive(tile_counts, num_melds_to_find):
 
         return not any(tile_counts.values())
 
-
     current_sum_of_tiles = sum(tile_counts.values())
     if current_sum_of_tiles < num_melds_to_find * 3:
         return False
     if current_sum_of_tiles > num_melds_to_find * 4:
         return False
 
-
-
     sorted_unique_tiles = sorted(list(tile_counts.keys()))
 
     if not sorted_unique_tiles:
         return False
 
-
-
-
-
     for tile in sorted_unique_tiles:
         if tile_counts[tile] == 0:
             continue
-
 
         if tile_counts[tile] >= 4:
             tile_counts[tile] -= 4
@@ -54,13 +44,11 @@ def _can_form_melds_recursive(tile_counts, num_melds_to_find):
                 return True
             tile_counts[tile] += 4
 
-
         if tile_counts[tile] >= 3:
             tile_counts[tile] -= 3
             if _can_form_melds_recursive(tile_counts, num_melds_to_find - 1):
                 return True
             tile_counts[tile] += 3
-
 
         if tile.is_numeric_suit() and int(tile.value) <= 7:
             t1 = tile
@@ -71,23 +59,21 @@ def _can_form_melds_recursive(tile_counts, num_melds_to_find):
                 tile_counts[t1] -= 1
                 tile_counts[t2] -= 1
                 tile_counts[t3] -= 1
-                if _can_form_melds_recursive(tile_counts, num_melds_to_find - 1):
+                if _can_form_melds_recursive(
+                        tile_counts, num_melds_to_find - 1):
                     return True
                 tile_counts[t1] += 1
                 tile_counts[t2] += 1
                 tile_counts[t3] += 1
 
-
-
-
-
-
     return False
+
 
 def check_standard_win(player_hand_tiles, player_revealed_sets):
     # NOTE: This function has been moved to mahjong_engine.ruleset.DefaultRuleSet.is_winning_hand
     # It is kept here temporarily to avoid breaking other potential direct usages,
-    # but should be considered deprecated in this file for win checking by GameState.
+    # but should be considered deprecated in this file for win checking by
+    # GameState.
     """
     Checks if a combination of hand tiles and revealed sets forms a standard winning hand (4 melds + 1 pair).
     Args:
@@ -104,9 +90,6 @@ def check_standard_win(player_hand_tiles, player_revealed_sets):
     if num_melds_to_find_in_hand < 0:
         return False
 
-
-
-
     min_expected_tiles_in_hand = (num_melds_to_find_in_hand * 3) + 2
     max_expected_tiles_in_hand = (num_melds_to_find_in_hand * 4) + 2
 
@@ -117,17 +100,15 @@ def check_standard_win(player_hand_tiles, player_revealed_sets):
     if len(player_hand_tiles) % 3 == 1 and num_melds_to_find_in_hand > 0:
         return False
 
-
     if num_melds_to_find_in_hand == 0:
 
-        return len(player_hand_tiles) == 2 and player_hand_tiles[0] == player_hand_tiles[1]
-
+        return len(
+            player_hand_tiles) == 2 and player_hand_tiles[0] == player_hand_tiles[1]
 
     if not player_hand_tiles and num_melds_to_find_in_hand > 0:
         return False
 
     hand_counts = collections.Counter(player_hand_tiles)
-
 
     unique_tiles_in_hand = sorted(list(hand_counts.keys()))
 
@@ -136,14 +117,14 @@ def check_standard_win(player_hand_tiles, player_revealed_sets):
 
             hand_counts[tile_for_pair] -= 2
 
-
-
-            if _can_form_melds_recursive(hand_counts.copy(), num_melds_to_find_in_hand):
+            if _can_form_melds_recursive(
+                    hand_counts.copy(), num_melds_to_find_in_hand):
                 return True
 
             hand_counts[tile_for_pair] += 2
 
     return False
+
 
 def get_hand_score(hand_details, game_context):
     """
@@ -151,7 +132,7 @@ def get_hand_score(hand_details, game_context):
     This function should no longer be directly called for new scoring calculations.
     """
     print("DEV_INFO: get_hand_score in hand_validator.py is deprecated. Use RuleSet.calculate_score.")
-    return 0 # Return a default value
+    return 0  # Return a default value
 
 
 def can_form_pung_with_discard(hand, discarded_tile):
@@ -166,13 +147,13 @@ def can_form_pung_with_discard(hand, discarded_tile):
     if not hand or not discarded_tile:
         return False
 
-
     count = 0
     for tile_in_hand in hand:
         if tile_in_hand == discarded_tile:
             count += 1
 
     return count >= 2
+
 
 def can_form_kong_with_discard(hand, discarded_tile):
     """
@@ -193,6 +174,7 @@ def can_form_kong_with_discard(hand, discarded_tile):
 
     return count >= 3
 
+
 def can_form_self_kong(hand):
     """
     Checks if a player's hand contains any Kong (4 identical tiles).
@@ -200,6 +182,6 @@ def can_form_self_kong(hand):
     """
     if not hand:
         return []
-    
+
     tile_counts = collections.Counter(hand)
     return [tile for tile, count in tile_counts.items() if count >= 4]

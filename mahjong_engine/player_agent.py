@@ -38,13 +38,17 @@ class PlayerAgent(ABC):
 
 class HumanPlayerAgent(PlayerAgent):
     def choose_discard(self, game_state, hand):
-        print(f"Warning: HumanPlayerAgent.choose_discard called for player {self.player_id}. This should be UI driven.")
+        print(
+            f"Warning: HumanPlayerAgent.choose_discard called for player {
+                self.player_id}. This should be UI driven.")
         if hand:
             return hand[-1]
         return None
 
     def decide_claim(self, game_state, discarded_tile, claim_options):
-        print(f"Warning: HumanPlayerAgent.decide_claim called for player {self.player_id}. This should be UI driven.")
+        print(
+            f"Warning: HumanPlayerAgent.decide_claim called for player {
+                self.player_id}. This should be UI driven.")
         return None
 
 
@@ -56,11 +60,13 @@ class AIPlayerAgent(PlayerAgent):
             count_of_drawn_tile_in_hand = 0
             for tile in hand:
                 if tile == drawn_tile:
-                    count_of_drawn_tile_in_hand +=1
+                    count_of_drawn_tile_in_hand += 1
             if count_of_drawn_tile_in_hand == 1:
                 return drawn_tile
         tile_counts = collections.Counter(hand)
-        single_tiles = [tile for tile, count in tile_counts.items() if count == 1]
+        single_tiles = [
+            tile for tile,
+            count in tile_counts.items() if count == 1]
         if single_tiles:
             if drawn_tile in single_tiles:
                 return drawn_tile

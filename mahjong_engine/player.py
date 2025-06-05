@@ -19,7 +19,11 @@ class Player:
             agent_class_name = self.agent.__class__.__name__
         else:
             agent_class_name = 'None'
-        return f"Player(player_id={self.player_id}, agent={agent_class_name}, wind={self.wind}, revealed_sets={len(self.revealed_sets)})"
+        return f"Player(player_id={
+            self.player_id}, agent={agent_class_name}, wind={
+            self.wind}, revealed_sets={
+            len(
+                self.revealed_sets)})"
 
     def set_agent(self, agent):
         self.agent = agent
