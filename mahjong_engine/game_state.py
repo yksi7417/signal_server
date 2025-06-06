@@ -1,12 +1,15 @@
 import random
+
+from .constants import (INIT_HAND_SIZE, NUM_COPIES_PER_TILE, NUM_PLAYERS,
+                        TILE_CATEGORIES_FOR_GENERATION, WIND_EAST)
+from .hand_validator import (can_form_kong_with_discard,
+                             can_form_pung_with_discard, can_form_self_kong,
+                             check_standard_win)
+from .melds import Kong, Pung
 from .player import Player
-from .tile import Tile
-from .constants import TILE_CATEGORIES_FOR_GENERATION, NUM_COPIES_PER_TILE, NUM_PLAYERS, INIT_HAND_SIZE, WIND_EAST
-from .player_agent import HumanPlayerAgent, AIPlayerAgent
-from .hand_validator import (can_form_pung_with_discard, check_standard_win,
-                             can_form_kong_with_discard, can_form_self_kong)
-from .melds import Pung, Kong
+from .player_agent import AIPlayerAgent, HumanPlayerAgent
 from .ruleset import DefaultRuleSet  # Added import for DefaultRuleSet
+from .tile import Tile
 
 
 class GameState:
@@ -54,12 +57,7 @@ class GameState:
                     break
 
     def __repr__(self):
-        return f"GameState(players={
-            len(
-                self.players)}, wall_size={
-            len(
-                self.wall)}, turn={
-                    self.turn_number})"
+        return f"GameState(players={len(self.players)}, wall_size={len(self.wall)}, turn={self.turn_number})"
 
     def draw_tile_for_current_player(self):
         """Draw a tile for current player with modulo-3 hand validation."""
