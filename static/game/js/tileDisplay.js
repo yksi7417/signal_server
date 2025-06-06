@@ -1,4 +1,4 @@
-import { store, elements } from './gameStore.js';
+import { elements, store } from './gameStore.js';
 
 function sortTiles(tiles) {
     return [...tiles].sort((a, b) => {
@@ -9,15 +9,15 @@ function sortTiles(tiles) {
 export function displayHand(tiles) {
     if (!elements.playerHandEl) return;
     store.currentHandTiles = tiles || [];
-    
+
     if (store.currentHandTiles.length === 0) {
         elements.playerHandEl.textContent = "No tiles in hand.";
         return;
     }
-    
+
     const sortedTiles = sortTiles(store.currentHandTiles);
     store.currentHandTiles = sortedTiles;
-    
+
     elements.playerHandEl.innerHTML = '';
     sortedTiles.forEach((tile, index) => {
         const tileEl = createTileElement(tile);
@@ -63,7 +63,7 @@ function createTileElement(tile) {
                         if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
 
                         if (result.drawn_tile && elements.playerConsoleEl) {
-                             elements.playerConsoleEl.textContent += ` Replacement tile drawn: ${result.drawn_tile.unicode}`;
+                            elements.playerConsoleEl.textContent += ` Replacement tile drawn: ${result.drawn_tile.unicode}`;
                         }
 
                     } else if (result && result.error) {
@@ -71,7 +71,7 @@ function createTileElement(tile) {
                             elements.playerConsoleEl.textContent = "Error declaring Hidden Kong: " + result.error;
                         }
                     } else {
-                         if (elements.playerConsoleEl) {
+                        if (elements.playerConsoleEl) {
                             elements.playerConsoleEl.textContent = "Failed to declare Hidden Kong. Unknown error.";
                         }
                     }
@@ -92,7 +92,7 @@ function createTileElement(tile) {
 
 function handleTileClick(tile, tileEl) {
     if (store.currentGameInfo.winner_found) return;
-    
+
     // Allow tile selection when it's our turn to discard (button is enabled)
     if (elements.btnDiscardTile && !elements.btnDiscardTile.disabled) {
         store.selectedTileForDiscard = tile;
@@ -103,17 +103,17 @@ function handleTileClick(tile, tileEl) {
             el.style.backgroundColor = 'transparent';
             // Ensure self-kongable tiles retain their border if not selected
             if (!el.classList.contains('self-kongable') || el === tileEl) {
-                 // If it is self-kongable and selected, lightblue is fine.
-                 // If not self-kongable, or self-kongable and selected, apply/remove background.
+                // If it is self-kongable and selected, lightblue is fine.
+                // If not self-kongable, or self-kongable and selected, apply/remove background.
             }
         });
         tileEl.style.backgroundColor = 'lightblue'; // Highlight selected tile
     } else {
         if (elements.playerConsoleEl) {
             if (elements.btnDrawTile && !elements.btnDrawTile.disabled) {
-                 elements.playerConsoleEl.textContent = "Draw a tile first or declare a Kong if possible.";
+                elements.playerConsoleEl.textContent = "Draw a tile first or declare a Kong if possible.";
             } else if (elements.btnDiscardTile && elements.btnDiscardTile.disabled) {
-                 elements.playerConsoleEl.textContent = "It's not your turn to discard or action pending.";
+                elements.playerConsoleEl.textContent = "It's not your turn to discard or action pending.";
             }
         }
     }
@@ -121,12 +121,12 @@ function handleTileClick(tile, tileEl) {
 
 export function displayRevealedSets(revealed_sets_data) {
     if (!elements.revealedSetsEl) return;
-    
+
     if (!revealed_sets_data || revealed_sets_data.length === 0) {
         elements.revealedSetsEl.textContent = "Revealed Sets: None";
         return;
     }
-    
+
     let html = "";
     revealed_sets_data.forEach(meld => {
         const tilesString = meld.tiles.map(t => `${t.unicode}`).join(' ');
@@ -141,10 +141,17 @@ export function displayGameInfo(info) {
         elements.gameInfoEl.textContent = "";
         return;
     }
-    
+
     elements.gameInfoEl.innerHTML = `
         Game Wind: ${info.game_wind || 'N/A'}<br>
     `;
+
+    // Update remaining tiles count
+    const remainingTilesEl = document.getElementById('remaining-tiles');
+    if (remainingTilesEl && typeof info.remaining_tiles !== 'undefined') {
+        remainingTilesEl.textContent = `Remaining Tiles: ${info.remaining_tiles}`;
+    }
+
     if (info) {
         store.currentGameInfo = { ...store.currentGameInfo, ...info };
     }
@@ -153,10 +160,10 @@ export function displayGameInfo(info) {
 export function displayDiscardedTiles() {
     const discardArea = elements.discardArea;
     discardArea.innerHTML = '';
-      // Add a flex container for each row
+    // Add a flex container for each row
     const numTilesPerRow = 16;
     let currentRow;
-    
+
     store.discardedTiles.forEach((tile, index) => {
         if (index % numTilesPerRow === 0) {
             currentRow = document.createElement('div');
@@ -167,7 +174,7 @@ export function displayDiscardedTiles() {
             `;
             discardArea.appendChild(currentRow);
         }
-        
+
         const tileElement = document.createElement('div');
         tileElement.className = 'mahjong-tile';
         tileElement.style.cssText = `
@@ -184,13 +191,13 @@ export function displayDiscardedTiles() {
             line-height: 1;
             box-shadow: 2px 2px 4px rgba(0,0,0,0.2);
         `;
-        
+
         // If it's the latest discarded tile, highlight it
         if (index === store.discardedTiles.length - 1) {
             tileElement.style.border = '1px solid #ff6b6b';
             tileElement.style.boxShadow = '0 0 1px rgba(255,107,107,0.5)';
         }
-          tileElement.textContent = tile.unicode;
+        tileElement.textContent = tile.unicode;
         currentRow.appendChild(tileElement);
     });
 }

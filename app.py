@@ -1,4 +1,5 @@
 import eel
+
 from mahjong_engine.game_state import GameState
 from mahjong_engine.player_agent import AIPlayerAgent
 
@@ -33,6 +34,7 @@ def start_new_game():
             current_game_state.current_player_index
         ].player_id,
         "winner_found": False,
+        "remaining_tiles": len(current_game_state.wall)
     }
 
     return game_info
@@ -361,15 +363,15 @@ def eel_draw_tile():
         current_player_hand = current_game_state.players[
             current_game_state.current_player_index
         ].hand
-        hand_serializable = [{"unicode": t.unicode,
-                              "suit": t.suit,
-                              "value": t.value} for t in current_player_hand]
+        hand_serializable = [
+            {"unicode": t.unicode, "suit": t.suit, "value": t.value} 
+            for t in current_player_hand
+        ]
 
         if (
             current_game_state.winner_found
             and current_game_state.winning_player_id == player_id
         ):
-
             hand_serializable = [
                 {"unicode": t.unicode, "suit": t.suit, "value": t.value}
                 for t in current_game_state.players[player_id].hand
@@ -378,7 +380,8 @@ def eel_draw_tile():
                 {
                     "type": meld.meld_type.value,
                     "tiles": [
-                        {"unicode": t.unicode, "suit": t.suit, "value": t.value} for t in meld.raw_tiles
+                        {"unicode": t.unicode, "suit": t.suit, "value": t.value} 
+                        for t in meld.raw_tiles
                     ],
                 }
                 for meld in current_game_state.players[player_id].revealed_sets
@@ -391,6 +394,7 @@ def eel_draw_tile():
                 "hand": hand_serializable,
                 "revealed_sets": revealed_sets_serializable,
                 "drawn_tile": drawn_tile_serializable,
+                "remaining_tiles": len(current_game_state.wall)
             }
 
         return {
@@ -399,21 +403,23 @@ def eel_draw_tile():
             "hand": hand_serializable,
             "player_id": player_id,
             "winner_found": False,
+            "remaining_tiles": len(current_game_state.wall)
         }
     else:
-
         current_player_hand = current_game_state.players[
             current_game_state.current_player_index
         ].hand
-        hand_serializable = [{"unicode": t.unicode,
-                              "suit": t.suit,
-                              "value": t.value} for t in current_player_hand]
+        hand_serializable = [
+            {"unicode": t.unicode, "suit": t.suit, "value": t.value} 
+            for t in current_player_hand
+        ]
         return {
             "success": False,
             "error": "Failed to draw tile (wall empty or hand full?)",
             "hand": hand_serializable,
             "player_id": player_id,
             "winner_found": current_game_state.winner_found,
+            "remaining_tiles": len(current_game_state.wall)
         }
 
 
@@ -467,6 +473,7 @@ def eel_discard_tile(tile_to_discard_data):
                 "value": current_game_state.current_discard.value,
             },
             "winner_found": current_game_state.winner_found,
+            "remaining_tiles": len(current_game_state.wall)
         }
 
         if (

@@ -4,7 +4,8 @@ export const store = {
         game_wind: null,
         current_player_id: null,
         winner_found: false,
-        winning_player_id: null
+        winning_player_id: null,
+        remaining_tiles: null
     },
     selectedTileForDiscard: null,
     currentHandTiles: [],
