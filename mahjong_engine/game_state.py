@@ -108,9 +108,7 @@ class GameState:
                 break
 
         if not found_tile:
-            print(
-                f"Tile {tile_to_discard_repr} not found in player {
-                    player.player_id}'s hand.")
+            print(f"Tile {tile_to_discard_repr} not found in player {player.player_id}'s hand.")
             return False
 
         self.current_discard = tile_object_to_discard

@@ -15,16 +15,15 @@ export function showCelebrationScreen(player_id) {
         `;
         document.body.appendChild(overlay);
         elements.celebrationOverlay = overlay;
-        
         // Add event listener to new game button
         const btnNewGame = document.getElementById('btnNewGame');
         btnNewGame.onclick = async () => {
-            await eel.reset_game()();
+            await fetch('/api/reset_game', { method: 'POST' });
             hideCelebrationScreen();
             location.reload(); // Refresh the page to start a new game
         };
     }
-    
+
     // Show the celebration overlay
     elements.celebrationOverlay.style.display = 'flex';
 }

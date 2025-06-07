@@ -1,5 +1,5 @@
-from flask import Flask, jsonify, render_template, request
-
+import os
+from flask import Flask, render_template, request, jsonify
 from mahjong_engine.game_state import GameState
 from mahjong_engine.player_agent import AIPlayerAgent
 
@@ -13,16 +13,10 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/game')
-def game():
-    return render_template('index.html')
-
-
 @app.route('/api/reset_game', methods=['POST'])
 def reset_game():
     global current_game_state
-    current_game_state = GameState()
-    return jsonify(True)
+    current_game_state = GameState()    return jsonify(True)
 
 
 @app.route('/api/start_new_game', methods=['POST'])
@@ -47,15 +41,12 @@ def start_new_game():
         "remaining_tiles": len(current_game_state.wall)
     }
 
-    return jsonify(game_info)
+    return game_info
 
 
-@app.route('/api/player_claims_pung', methods=['POST'])
-def player_claims_pung():
+@eel.expose
+def eel_player_claims_pung(confirm_claim):
     global current_game_state
-    data = request.get_json()
-    confirm_claim = data.get('confirm_claim', False)
-    
     response = {"success": False, "message": "Claim processing failed."}
 
     if (
@@ -64,13 +55,13 @@ def player_claims_pung():
         or current_game_state.claim_type_pending != "PUNG"
     ):
         response["message"] = "No Pung claim was pending or tile info missing."
-        return jsonify(response)
+        return response
 
     claiming_player_id = current_game_state.pending_claim_player_id
 
     if claiming_player_id != 0:
         response["message"] = "Pending claim is not for the human player."
-        return jsonify(response)
+        return response
 
     if confirm_claim:
         claimed_tile = current_game_state.potential_claim_tile
@@ -104,6 +95,7 @@ def player_claims_pung():
             response["message"] = "Backend failed to process Pung claim."
             response["winner_found"] = current_game_state.winner_found
     else:
+
         discarder_player_id = current_game_state.current_player_index
 
         current_game_state.potential_claim_tile = None
@@ -132,15 +124,12 @@ def player_claims_pung():
             "winner_found": current_game_state.winner_found,
         }
 
-    return jsonify(response)
+    return response
 
 
-@app.route('/api/player_claims_win', methods=['POST'])
-def player_claims_win():
+@eel.expose
+def eel_player_claims_win(confirm_claim):
     global current_game_state
-    data = request.get_json()
-    confirm_claim = data.get('confirm_claim', False)
-    
     response = {"success": False, "message": "Win claim processing failed."}
 
     if (
@@ -149,16 +138,17 @@ def player_claims_win():
         or current_game_state.claim_type_pending != "WIN"
     ):
         response["message"] = "No Win claim was pending or tile info missing."
-        return jsonify(response)
+        return response
 
     claiming_player_id = current_game_state.pending_claim_player_id
 
     if claiming_player_id != 0:  # Assuming 0 is the human player
         response["message"] = "Pending win claim is not for the human player."
-        return jsonify(response)
+        return response
 
     if confirm_claim:
         claimed_tile = current_game_state.potential_claim_tile
+        # This method will be implemented in GameState later
         success = current_game_state.process_win_claim(
             claiming_player_id, claimed_tile)
 
@@ -200,7 +190,7 @@ def player_claims_win():
 
         current_game_state.current_player_index = (
             discarder_player_id + 1) % len(current_game_state.players)
-        current_game_state.turn_number += 1
+        current_game_state.turn_number += 1  # Good practice
 
         discarded_tile_serializable = None
         if current_game_state.current_discard:
@@ -216,18 +206,15 @@ def player_claims_win():
             "action": "claim_declined",
             "next_player_id": current_game_state.players[current_game_state.current_player_index].player_id,
             "discarded_tile": discarded_tile_serializable,
-            "winner_found": current_game_state.winner_found
+            "winner_found": current_game_state.winner_found  # Should be False
         }
 
-    return jsonify(response)
+    return response
 
 
-@app.route('/api/player_claims_kong', methods=['POST'])
-def player_claims_kong():
+@eel.expose
+def eel_player_claims_kong(confirm_claim):
     global current_game_state
-    data = request.get_json()
-    confirm_claim = data.get('confirm_claim', False)
-    
     response = {"success": False, "message": "Kong claim processing failed."}
 
     if (
@@ -236,13 +223,13 @@ def player_claims_kong():
         or current_game_state.claim_type_pending != "KONG"
     ):
         response["message"] = "No Kong claim was pending or tile info missing."
-        return jsonify(response)
+        return response
 
     claiming_player_id = current_game_state.pending_claim_player_id
 
     if claiming_player_id != 0:
         response["message"] = "Pending claim is not for the human player."
-        return jsonify(response)
+        return response
 
     if confirm_claim:
         claimed_tile = current_game_state.potential_claim_tile
@@ -294,38 +281,37 @@ def player_claims_kong():
             "winning_player_id": current_game_state.winning_player_id if current_game_state.winner_found else None
         }
 
-    return jsonify(response)
+    return response
 
 
-@app.route('/api/player_declares_hidden_kong', methods=['POST'])
-def player_declares_hidden_kong():
+@eel.expose
+def eel_player_declares_hidden_kong(tile_info):
     global current_game_state
-    data = request.get_json()
-    tile_info = data.get('tile_info', {})
-    
     response = {
         "success": False,
         "error": "Failed to declare hidden kong by default."}
 
     if not current_game_state.players:
         response["error"] = "Game not initialized or no players found."
-        return jsonify(response)
+        return response
 
     # Ensure it's the human player's turn (player_id == 0)
     if current_game_state.current_player_index != 0:
         response["error"] = "Not your turn to declare hidden kong."
-        return jsonify(response)
+        return response
 
     player_id = current_game_state.players[current_game_state.current_player_index].player_id
     if player_id != 0:  # Double check
         response["error"] = "Not your turn (player ID mismatch)."
-        return jsonify(response)
+        return response
 
     if not tile_info or 'suit' not in tile_info or 'value' not in tile_info:
         response["error"] = "Invalid tile_info provided for Hidden Kong."
-        return jsonify(response)
+        return response
 
     # Call the GameState method to process the hidden kong
+    # This method is expected to return a dictionary with success status and
+    # other info
     result_dict = current_game_state.process_hidden_kong(player_id, tile_info)
 
     if result_dict.get("success"):
@@ -339,7 +325,7 @@ def player_declares_hidden_kong():
                 "tiles": [
                     {"unicode": t.unicode, "suit": t.suit, "value": t.value} for t in meld.raw_tiles
                 ],
-                "revealed": meld.revealed
+                "revealed": meld.revealed  # Include revealed status
             }
             for meld in player.revealed_sets
         ]
@@ -349,6 +335,7 @@ def player_declares_hidden_kong():
             "message": result_dict.get("message", "Hidden Kong declared successfully."),
             "hand": hand_serializable,
             "revealed_sets": revealed_sets_serializable,
+            # Serialized tile from process_hidden_kong
             "drawn_tile": result_dict.get("drawn_tile"),
             "winner_found": current_game_state.winner_found,
             "winning_player_id": current_game_state.winning_player_id
@@ -357,11 +344,11 @@ def player_declares_hidden_kong():
         response["error"] = result_dict.get(
             "error", "Unknown error declaring Hidden Kong.")
 
-    return jsonify(response)
+    return response
 
 
-@app.route('/api/draw_tile', methods=['POST'])
-def draw_tile():
+@eel.expose
+def eel_draw_tile():
     global current_game_state
 
     player_id = current_game_state.players[
@@ -403,7 +390,7 @@ def draw_tile():
                 }
                 for meld in current_game_state.players[player_id].revealed_sets
             ]
-            return jsonify({
+            return {
                 "success": True,
                 "action": "win",
                 "winner_found": True,
@@ -412,16 +399,16 @@ def draw_tile():
                 "revealed_sets": revealed_sets_serializable,
                 "drawn_tile": drawn_tile_serializable,
                 "remaining_tiles": len(current_game_state.wall)
-            })
+            }
 
-        return jsonify({
+        return {
             "success": True,
             "drawn_tile": drawn_tile_serializable,
             "hand": hand_serializable,
             "player_id": player_id,
             "winner_found": False,
             "remaining_tiles": len(current_game_state.wall)
-        })
+        }
     else:
         current_player_hand = current_game_state.players[
             current_game_state.current_player_index
@@ -430,22 +417,19 @@ def draw_tile():
             {"unicode": t.unicode, "suit": t.suit, "value": t.value} 
             for t in current_player_hand
         ]
-        return jsonify({
+        return {
             "success": False,
             "error": "Failed to draw tile (wall empty or hand full?)",
             "hand": hand_serializable,
             "player_id": player_id,
             "winner_found": current_game_state.winner_found,
             "remaining_tiles": len(current_game_state.wall)
-        })
+        }
 
 
-@app.route('/api/discard_tile', methods=['POST'])
-def discard_tile():
+@eel.expose
+def eel_discard_tile(tile_to_discard_data):
     global current_game_state
-    data = request.get_json()
-    tile_to_discard_data = data.get('tile_to_discard', {})
-    
     print("Discarding tile:", tile_to_discard_data)
 
     discarding_player_id = current_game_state.players[
@@ -458,12 +442,13 @@ def discard_tile():
         or "suit" not in tile_to_discard_data
         or "value" not in tile_to_discard_data
     ):
-        return jsonify({"success": False, "error": "Invalid tile data for discard."})
+        return {"success": False, "error": "Invalid tile data for discard."}
 
     success = current_game_state.discard_tile_for_current_player(
         tile_to_discard_data)
 
     if success:
+
         next_player_id = current_game_state.players[
             current_game_state.current_player_index
         ].player_id
@@ -508,29 +493,30 @@ def discard_tile():
             }
         else:
             response["human_can_claim"] = None
-        return jsonify(response)
+        return response
     else:
+
         current_player_obj = current_game_state.players[discarding_player_id]
         hand_serializable = [{"unicode": t.unicode,
                               "suit": t.suit,
                               "value": t.value} for t in current_player_obj.hand]
-        return jsonify({
+        return {
             "success": False,
             "error": "Failed to discard tile (tile not in hand, or wrong hand size?)",
             "hand": hand_serializable,
             "player_id": discarding_player_id,
             "winner_found": current_game_state.winner_found,
-        })
+        }
 
 
-@app.route('/api/request_ai_turn', methods=['POST'])
-def request_ai_turn():
+@eel.expose
+def eel_request_ai_turn():
     global current_game_state
     if current_game_state.pending_claim_player_id is not None:
-        return jsonify({
+        return {
             "success": False,
             "error": "Human claim pending. AI turn cannot run yet.",
-        })
+        }
 
     current_player_id = current_game_state.players[
         current_game_state.current_player_index
@@ -549,7 +535,6 @@ def request_ai_turn():
                 {"unicode": tile.unicode, "suit": tile.suit, "value": tile.value} for tile in player0.hand
             ]
         result["player0_hand"] = player0_hand_serializable
-        
         player0_revealed_sets_serializable = []
         if current_game_state.players:
             player0 = current_game_state.players[0]
@@ -564,10 +549,8 @@ def request_ai_turn():
             ]
         result["player0_revealed_sets"] = player0_revealed_sets_serializable
         print(f"AI {current_player_id} turn result:", result)
-        return jsonify(result)
+        return result
 
 
 if __name__ == "__main__":
-    import os
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    eel.start("index.html", size=(1200, 1500))

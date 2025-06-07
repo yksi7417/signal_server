@@ -1,17 +1,17 @@
-import { store, elements } from './gameStore.js';
-import { displayHand, displayRevealedSets } from './tileDisplay.js';
 import { processAiTurns } from './aiTurnHandler.js';
 import { showCelebrationScreen } from './celebrationScreen.js';
+import { elements, store } from './gameStore.js';
+import { displayHand, displayRevealedSets } from './tileDisplay.js';
 
 export function showClaimPrompt(tile, claimType) {
     if (!elements.claimPromptEl || !elements.claimMessageEl) return;
     store.activeClaimType = claimType;
-    elements.claimMessageEl.textContent = 
+    elements.claimMessageEl.textContent =
         `Player discarded ${tile.suit} ${tile.value}. Do you want to claim ${claimType}?`;
     elements.claimPromptEl.style.display = 'block';
-    
-    if(elements.btnDrawTile) elements.btnDrawTile.disabled = true;
-    if(elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+
+    if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
+    if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
 }
 
 export function hideClaimPrompt() {
@@ -23,28 +23,33 @@ export async function handleClaimYes() {
     if (store.activeClaimType === 'PUNG') {
         await handleClaimPungYes();
     } else if (store.activeClaimType === 'KONG') {
-        await handleClaimKongYes();    
+        await handleClaimKongYes();
     } else if (store.activeClaimType === 'WIN') {
         await handleClaimWinYes();
-    } 
+    }
 }
 
 export async function handleClaimNo() {
     if (store.activeClaimType === 'PUNG') {
         await handleClaimPungNo();
     } else if (store.activeClaimType === 'KONG') {
-        await handleClaimKongNo();    
+        await handleClaimKongNo();
     } else if (store.activeClaimType === 'WIN') {
         await handleClaimWinNo();
-    } 
+    }
 }
 
 export async function handleClaimPungYes() {
     if (store.currentGameInfo.winner_found) return;
-    
-    const result = await eel.eel_player_claims_pung(true)();
+
+    const response = await fetch('/api/player_claims_pung', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm_claim: true })
+    });
+    const result = await response.json();
     hideClaimPrompt();
-    
+
     if (result && result.success) {
         handleSuccessfulClaim(result);
     } else {
@@ -54,18 +59,23 @@ export async function handleClaimPungYes() {
 
 export async function handleClaimPungNo() {
     if (store.currentGameInfo.winner_found) return;
-    
-    const result = await eel.eel_player_claims_pung(false)();
+
+    const response = await fetch('/api/player_claims_pung', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm_claim: false })
+    });
+    const result = await response.json();
     hideClaimPrompt();
-    
+
     if (elements.playerConsoleEl) {
         elements.playerConsoleEl.textContent = result.message;
     }
-    
+
     if (result && result.success && result.action === "claim_declined") {
         handleClaimDeclined(result);
     } else {
-        if(result?.winner_found !== undefined) {
+        if (result?.winner_found !== undefined) {
             store.currentGameInfo.winner_found = result.winner_found;
         }
     }
@@ -73,10 +83,15 @@ export async function handleClaimPungNo() {
 
 export async function handleClaimKongYes() {
     if (store.currentGameInfo.winner_found) return;
-    
-    const result = await eel.eel_player_claims_kong(true)();
+
+    const response = await fetch('/api/player_claims_kong', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm_claim: true })
+    });
+    const result = await response.json();
     hideClaimPrompt();
-    
+
     if (result && result.success) {
         handleSuccessfulKongClaim(result);
     } else {
@@ -86,10 +101,15 @@ export async function handleClaimKongYes() {
 
 export async function handleClaimKongNo() {
     if (store.currentGameInfo.winner_found) return;
-    
-    const result = await eel.eel_player_claims_kong(false)();
+
+    const response = await fetch('/api/player_claims_kong', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm_claim: false })
+    });
+    const result = await response.json();
     hideClaimPrompt();
-    
+
     if (result && result.success && result.action === "claim_declined") {
         handleClaimDeclined(result);
     }
@@ -101,7 +121,7 @@ function handleSuccessfulClaim(result) {
     }
     displayHand(result.player_hand);
     displayRevealedSets(result.revealed_sets);
-    
+
     store.currentGameInfo.winner_found = result.winner_found;
     store.currentGameInfo.winning_player_id = result.winning_player_id;
 
@@ -116,7 +136,7 @@ function handleFailedPungClaim(result) {
     if (elements.playerConsoleEl && result) {
         elements.playerConsoleEl.textContent = "Error claiming Pung: " + (result.message || "Unknown");
     }
-    if(result?.winner_found !== undefined) {
+    if (result?.winner_found !== undefined) {
         store.currentGameInfo.winner_found = result.winner_found;
     }
 }
@@ -127,7 +147,7 @@ function handleClaimDeclined(result) {
     store.currentGameInfo.winning_player_id = result.winning_player_id;
 
     updateGameInfoAfterDecline(result);
-    
+
     if (store.currentGameInfo.winner_found) {
         handleWinAfterClaimDecline();
     } else if (result.next_player_id !== 0) {
@@ -138,31 +158,31 @@ function handleClaimDeclined(result) {
 }
 
 function handleWinAfterClaim() {
-    if(elements.playerConsoleEl) {
-        elements.playerConsoleEl.textContent = 
+    if (elements.playerConsoleEl) {
+        elements.playerConsoleEl.textContent =
             `Player ${store.currentGameInfo.winning_player_id} WINS! (After Pung claim processing path)`;
     }
-    if(elements.btnDrawTile) elements.btnDrawTile.disabled = true;
-    if(elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+    if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
+    if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
 }
 
 function handleWinAfterClaimDecline() {
-    if(elements.playerConsoleEl) {
-        elements.playerConsoleEl.textContent = 
+    if (elements.playerConsoleEl) {
+        elements.playerConsoleEl.textContent =
             `Player ${store.currentGameInfo.winning_player_id} WINS! (After claim decline processing path)`;
     }
-    if(elements.btnDrawTile) elements.btnDrawTile.disabled = true;
-    if(elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+    if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
+    if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
 }
 
 function enableDiscardAfterClaim() {
-    if(elements.btnDrawTile) elements.btnDrawTile.disabled = true;
-    if(elements.btnDiscardTile) elements.btnDiscardTile.disabled = false;
+    if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
+    if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = false;
 }
 
 export function enableHumanTurn() {
-    if(elements.btnDrawTile) elements.btnDrawTile.disabled = false;
-    if(elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+    if (elements.btnDrawTile) elements.btnDrawTile.disabled = false;
+    if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
 }
 
 function updateGameInfoAfterDecline(result) {
@@ -175,10 +195,15 @@ function updateGameInfoAfterDecline(result) {
 
 async function handleClaimWinYes() {
     if (store.currentGameInfo.winner_found) return;
-    
-    const result = await eel.eel_player_claims_win(true)();
+
+    const response = await fetch('/api/player_claims_win', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm_claim: true })
+    });
+    const result = await response.json();
     hideClaimPrompt();
-    
+
     if (result && result.success) {
         if (elements.playerConsoleEl) {
             elements.playerConsoleEl.textContent = result.message;
@@ -189,7 +214,7 @@ async function handleClaimWinYes() {
         if (result.action === "win_claimed") {
             showCelebrationScreen(result.winning_player_id);
         }
-        
+
         if (result.hand) {
             displayHand(result.hand);
         }
@@ -203,14 +228,19 @@ async function handleClaimWinYes() {
 
 async function handleClaimWinNo() {
     if (store.currentGameInfo.winner_found) return;
-    
-    const result = await eel.eel_player_claims_win(false)();
+
+    const response = await fetch('/api/player_claims_win', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm_claim: false })
+    });
+    const result = await response.json();
     hideClaimPrompt();
-    
+
     if (elements.playerConsoleEl) {
         elements.playerConsoleEl.textContent = result.message;
     }
-    
+
     if (result && result.success && result.action === "claim_declined") {
         handleClaimDeclined(result);
     }
@@ -222,10 +252,10 @@ function handleSuccessfulWinClaim(result) {
     }
     if (result.hand) displayHand(result.hand);
     if (result.revealed_sets) displayRevealedSets(result.revealed_sets);
-    
+
     store.currentGameInfo.winner_found = result.winner_found;
     store.currentGameInfo.winning_player_id = result.winning_player_id;
-    
+
     if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
     if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
 }
@@ -245,7 +275,7 @@ function handleSuccessfulKongClaim(result) {
     }
     displayHand(result.hand);
     displayRevealedSets(result.revealed_sets);
-    
+
     store.currentGameInfo.winner_found = result.winner_found;
     store.currentGameInfo.winning_player_id = result.winning_player_id;
 
@@ -260,7 +290,7 @@ function handleFailedKongClaim(result) {
     if (elements.playerConsoleEl && result) {
         elements.playerConsoleEl.textContent = "Error claiming Kong: " + (result.message || "Unknown");
     }
-    if(result?.winner_found !== undefined) {
+    if (result?.winner_found !== undefined) {
         store.currentGameInfo.winner_found = result.winner_found;
     }
 }

@@ -14,10 +14,11 @@ export async function handleDrawTile() {
     }
 
     try {
-        const result = await eel.eel_draw_tile()();
+        const response = await fetch('/api/draw_tile', { method: 'POST' });
+        const result = await response.json();
         handleDrawTileResult(result);
     } catch (error) {
-        console.error("Error calling eel_draw_tile:", error);
+        console.error("Error calling draw_tile API:", error);
         if (elements.playerConsoleEl) {
             elements.playerConsoleEl.textContent = "Exception drawing tile: " + error;
         }
@@ -30,7 +31,12 @@ export async function handleDiscardTile(pointerEvent) {
             throw new Error("No tile selected for discard.");
 
         const tile = store.selectedTileForDiscard
-        const result = await eel.eel_discard_tile(tile)();
+        const response = await fetch('/api/discard_tile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tile_to_discard: tile })
+        });
+        const result = await response.json();
         console.log("Discard result:", result);
 
         if (result && result.success) {
@@ -45,7 +51,8 @@ export async function handleDiscardTile(pointerEvent) {
 async function loadInitialGameState() {
     console.log("Requesting new game state from Python...");
     try {
-        const game_info_data = await eel.start_new_game()();
+        const response = await fetch('/api/start_new_game', { method: 'POST' });
+        const game_info_data = await response.json();
         if (game_info_data) {
             console.log("Received game state:", game_info_data);
             store.currentGameInfo = game_info_data; // This includes winner_found: false
@@ -180,7 +187,7 @@ export function updateGameStateAfterDiscard(result) {
 }
 
 export async function handleReset() {
-    await eel.reset_game()();
+    await fetch('/api/reset_game', { method: 'POST' });
     console.log("Game reset on backend. Reloading initial state...");
     loadInitialGameState();
     if (elements.playerConsoleEl) {

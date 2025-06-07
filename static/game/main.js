@@ -1,7 +1,7 @@
-import { store, elements } from './js/gameStore.js';
+import { handleClaimNo, handleClaimYes } from './js/claimsHandler.js';
+import { handleDiscardTile, handleDrawTile, handleReset } from './js/gameActions.js';
+import { elements, store } from './js/gameStore.js';
 import { displayDiscardedTiles } from './js/tileDisplay.js';
-import { handleDrawTile, handleDiscardTile, handleReset } from './js/gameActions.js';
-import { handleClaimYes, handleClaimNo } from './js/claimsHandler.js';
 
 
 // Initialize button event listeners
@@ -38,19 +38,14 @@ async function initializeGame() {
     }
 }
 
-eel.expose(update_history_js); 
-function update_history_js(hist) {
-  console.log("Python called update_history_js with:", hist);
-}
-
 // Add keyboard controls
 document.addEventListener('keydown', (event) => {
     if ((event.key === 'd' || event.key === 'D') && !event.repeat) {
         event.preventDefault(); // Prevent page scrolling
-        
+
         const drawButton = document.getElementById('btnDrawTile');
         const discardButton = document.getElementById('btnDiscardTile');
-        
+
         // If discard is enabled and a tile is selected, discard it
         if (discardButton && !discardButton.disabled && store.selectedTileForDiscard) {
             discardButton.click();
@@ -63,7 +58,7 @@ document.addEventListener('keydown', (event) => {
 });
 
 window.onload = () => {
-  initializeEventListeners();
-  handleReset();
-  initializeGame();
+    initializeEventListeners();
+    handleReset();
+    initializeGame();
 };

@@ -50,7 +50,12 @@ function createTileElement(tile) {
             if (confirm(`Declare a hidden Kong with ${tile.suit} ${tile.value}?`)) {
                 const tileData = { suit: tile.suit, value: tile.value };
                 try {
-                    const result = await eel.eel_player_declares_hidden_kong(tileData)();
+                    const response = await fetch('/api/player_declares_hidden_kong', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tile_info: tileData })
+                    });
+                    const result = await response.json();
                     if (result && result.success) {
                         displayHand(result.hand);
                         displayRevealedSets(result.revealed_sets);

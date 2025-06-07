@@ -1,14 +1,14 @@
-import { store, elements } from './gameStore.js';
-import { displayHand, displayRevealedSets } from './tileDisplay.js';
 import { hideClaimPrompt, showClaimPrompt } from './claimsHandler.js';
-import { handleDiscardTileResult  } from './gameActions.js';
+import { handleDiscardTileResult } from './gameActions.js';
+import { elements, store } from './gameStore.js';
+import { displayHand, displayRevealedSets } from './tileDisplay.js';
 
 export async function processAiTurns() {
     if (!store.currentGameInfo || store.currentGameInfo.current_player_id === undefined) {
         console.log("Waiting for game state...");
         return;
     }
-    
+
     if (store.currentGameInfo.winner_found) {
         handleGameOver();
         return;
@@ -42,7 +42,7 @@ export async function processAiTurns() {
 
 function handleGameOver() {
     if (elements.playerConsoleEl) {
-        elements.playerConsoleEl.textContent = 
+        elements.playerConsoleEl.textContent =
             `Game over. Player ${store.currentGameInfo.winning_player_id} has won. Please reset.`;
     }
     if (elements.gameInfoEl && store.currentGameInfo.winning_player_id !== undefined) {
@@ -56,14 +56,15 @@ async function processSingleAiTurn() {
     updateUIForAiTurn();
 
     try {
-        const ai_turn_result = await eel.eel_request_ai_turn()();
+        const response = await fetch('/api/request_ai_turn', { method: 'POST' });
+        const ai_turn_result = await response.json();
         if (!ai_turn_result) {
             throw new Error("No result from AI turn");
         }
         console.log("AI turn result:", ai_turn_result);
         handleDiscardTileResult(ai_turn_result);
         updateGameState(ai_turn_result);
-        
+
         if (ai_turn_result.success) {
             return handleSuccessfulAiTurn(ai_turn_result);
         } else {
@@ -81,18 +82,18 @@ async function processSingleAiTurn() {
 
 function updateUIForAiTurn() {
     if (elements.playerConsoleEl) {
-        elements.playerConsoleEl.textContent = 
+        elements.playerConsoleEl.textContent =
             `Player ${store.currentGameInfo.current_player_id} (AI) is thinking...`;
     }
-    
-    if(elements.btnDrawTile) elements.btnDrawTile.disabled = true;
-    if(elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+
+    if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
+    if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
     hideClaimPrompt();
 }
 
 function updateGameState(result) {
     if (!result) return;
-    
+
     if (result.winner_found !== undefined) {
         store.currentGameInfo.winner_found = result.winner_found;
     }
@@ -111,7 +112,7 @@ function handleSuccessfulAiTurn(result) {
         handleGameOver();
         return true;
     }
-    
+
     if (result.discarded_tile) {
         if (elements.playerConsoleEl) {
             let displayText = `AI Player ${result.ai_player_id} discarded ${result.discarded_tile.unicode}`;
@@ -121,7 +122,7 @@ function handleSuccessfulAiTurn(result) {
             elements.playerConsoleEl.textContent = displayText
         }
     }
-    
+
     return result.next_player_id !== 0 && !result.human_can_claim;
 }
 
@@ -132,19 +133,19 @@ function handleFailedAiTurn(result) {
         elements.playerConsoleEl.textContent = "Waiting for your action.";
     }
 
-    if(result?.player0_hand) displayHand(result.player0_hand);
-    if(result?.player0_revealed_sets) displayRevealedSets(result.player0_revealed_sets);
+    if (result?.player0_hand) displayHand(result.player0_hand);
+    if (result?.player0_revealed_sets) displayRevealedSets(result.player0_revealed_sets);
 
     handleGameStateAfterFailedTurn(result);
 }
 
 function handleGameStateAfterFailedTurn(result) {
-    if(store.currentGameInfo.winner_found) {
+    if (store.currentGameInfo.winner_found) {
         handleGameOver();
-    } else if(result?.human_can_claim) {
+    } else if (result?.human_can_claim) {
         showClaimPrompt(result.claimable_tile, result?.human_can_claim);
     } else if (!store.currentGameInfo.winner_found) {
-        if(elements.btnDrawTile) elements.btnDrawTile.disabled = false;
-        if(elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+        if (elements.btnDrawTile) elements.btnDrawTile.disabled = false;
+        if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
     }
 }
