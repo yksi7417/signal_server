@@ -4,7 +4,7 @@ from mahjong_engine.game_state import GameState
 from mahjong_engine.player_agent import AIPlayerAgent
 
 # Initialize Flask app
-app = Flask(__name__, static_folder='static/game', template_folder='static/game')
+app = Flask(__name__, static_folder='static', template_folder='static/game')
 current_game_state = GameState()
 
 
@@ -479,18 +479,21 @@ def discard_tile():
             hand_serializable = [
                 {"unicode": t.unicode, "suit": t.suit, "value": t.value}
                 for t in discarding_player_object.hand
-            ]
+            ]        # Handle potential None current_discard
+        discarded_tile_info = None
+        if current_game_state.current_discard:
+            discarded_tile_info = {
+                "unicode": current_game_state.current_discard.unicode,
+                "suit": current_game_state.current_discard.suit,
+                "value": current_game_state.current_discard.value,
+            }
 
         response = {
             "success": True,
             "discarded_by_player_id": discarding_player_id,
             "updated_hand": hand_serializable,
             "next_player_id": next_player_id,
-            "discarded_tile": {
-                "unicode": current_game_state.current_discard.unicode,
-                "suit": current_game_state.current_discard.suit,
-                "value": current_game_state.current_discard.value,
-            },
+            "discarded_tile": discarded_tile_info,
             "winner_found": current_game_state.winner_found,
             "remaining_tiles": len(current_game_state.wall)
         }

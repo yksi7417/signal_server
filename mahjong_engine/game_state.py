@@ -1,10 +1,12 @@
 import random
 
-from .constants import (INIT_HAND_SIZE, NUM_COPIES_PER_TILE, NUM_PLAYERS,
-                        TILE_CATEGORIES_FOR_GENERATION, WIND_EAST)
-from .hand_validator import (can_form_kong_with_discard,
-                             can_form_pung_with_discard, can_form_self_kong,
-                             check_standard_win)
+from .constants import INIT_HAND_SIZE, NUM_COPIES_PER_TILE, NUM_PLAYERS, TILE_CATEGORIES_FOR_GENERATION, WIND_EAST
+from .hand_validator import (
+    can_form_kong_with_discard,
+    can_form_pung_with_discard,
+    can_form_self_kong,
+    check_standard_win,
+)
 from .melds import Kong, Pung
 from .player import Player
 from .player_agent import AIPlayerAgent, HumanPlayerAgent
@@ -476,9 +478,7 @@ class GameState:
         tile_to_discard_by_ai = ai_player.agent.choose_discard(
             self, ai_player.hand, drawn_tile)
         if tile_to_discard_by_ai is None:
-            print(
-                f"Error: AI Player {
-                    ai_player.player_id} failed to choose a discard.")
+            print(f"Error: AI Player {ai_player.player_id} failed to choose a discard.")
             if ai_player.hand:
                 tile_to_discard_by_ai = random.choice(ai_player.hand)
             else:

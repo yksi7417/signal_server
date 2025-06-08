@@ -269,32 +269,37 @@ class TestAPIEndpointsIntegration:
         assert "discarded_tile" in data
         assert "next_player_id" in data
         assert "winner_found" in data
-    
     @pytest.mark.timeout(20)
     def test_request_ai_turn_api(self, global_flask_server):
         """Test the request_ai_turn API endpoint."""
         process, base_url = global_flask_server
         # Start a new game and make it an AI player's turn
         requests.post(f"{base_url}/api/start_new_game")
-        
-        # Draw and discard a tile to advance to AI player's turn
+
+        # Draw and discard a tile to advance to AI player's turn (Player 1)
         draw_response = requests.post(f"{base_url}/api/draw_tile")
         hand = draw_response.json()["hand"]
         tile_to_discard = hand[0]
-        
-        requests.post(
+
+        discard_response = requests.post(
             f"{base_url}/api/discard_tile",
             json={"tile_to_discard": tile_to_discard},
             headers={"Content-Type": "application/json"}
         )
         
-        # Now request AI turn
+        # Verify the discard was successful first
+        assert discard_response.status_code == 200, f"Discard failed: {discard_response.text}"
+        discard_data = discard_response.json()
+        assert discard_data["success"] is True, f"Discard not successful: {discard_data}"
+        
+        # Now it should be Player 1's turn (AI), so request AI turn should work
         response = requests.post(f"{base_url}/api/request_ai_turn")
         assert response.status_code == 200
-        
+
         data = response.json()
         assert "success" in data
         assert "winner_found" in data
+        # Note: This might fail if the current player is not AI, which is expected behavior
 
 
 class TestJavaScriptModulesIntegration:
@@ -316,14 +321,13 @@ class TestJavaScriptModulesIntegration:
         # Verify it contains ES6 module syntax
         assert "import" in response.text
         assert "export" in response.text or "from" in response.text
-    
     @pytest.mark.timeout(20)
     def test_all_js_modules_serve_correctly(self, global_flask_server):
         """Test that all JavaScript modules are served correctly."""
         process, base_url = global_flask_server
         js_modules = [
             "/static/game/js/gameActions.js",
-            "/static/game/js/claimsHandler.js",
+            "/static/game/js/claimsHandler.js", 
             "/static/game/js/tileDisplay.js",
             "/static/game/js/aiTurnHandler.js",
             "/static/game/js/celebrationScreen.js",
@@ -337,7 +341,8 @@ class TestJavaScriptModulesIntegration:
             content_type = response.headers.get("Content-Type", "")
             assert any(js_type in content_type for js_type in [
                 "application/javascript", 
-                "text/javascript"            ]), f"Module {module_path} should have JavaScript MIME type, got: {content_type}"
+                "text/javascript"
+            ]), f"Module {module_path} should have JavaScript MIME type, got: {content_type}"
     
     @pytest.mark.timeout(20)
     def test_security_headers_present(self, global_flask_server):

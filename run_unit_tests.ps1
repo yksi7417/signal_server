@@ -5,7 +5,8 @@ pytest -m "not integration" -v
 # Check exit code
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Unit tests passed!" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "Unit tests failed!" -ForegroundColor Red
     exit $LASTEXITCODE
 }
