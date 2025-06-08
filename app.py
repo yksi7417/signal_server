@@ -44,7 +44,9 @@ def start_new_game():
             current_game_state.current_player_index
         ].player_id,
         "winner_found": False,
-        "remaining_tiles": len(current_game_state.wall)
+        "remaining_tiles": len(current_game_state.wall),
+        "dealer_index": current_game_state.dealer_index,
+        "round_wind": current_game_state.round_wind
     }
 
     return jsonify(game_info)

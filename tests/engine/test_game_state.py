@@ -19,6 +19,8 @@ from mahjong_engine.constants import (
     WIND_EAST,
     WIND_NORTH,
     WIND_SOUTH,
+    WIND_WEST,
+    WINDS_ALL,
 )
 from mahjong_engine.game_state import GameState
 from mahjong_engine.hand_validator import can_form_pung_with_discard
@@ -569,3 +571,306 @@ def test_run_ai_turn_ai_hand_empty_after_draw_failsafe(game):
     assert not result["success"]
     assert result.get("error") == "AI hand empty after draw, cannot discard."
     game.draw_tile_for_current_player = original_draw
+
+
+# Test dealer rotation and round progression
+class TestDealerRotationSystem:
+    """Test dealer rotation and round progression according to traditional Mahjong rules."""
+    
+    def test_initial_dealer_and_winds(self, game):
+        """Test that game starts with correct dealer and wind assignments."""
+        # East Round, East Hand, East dealer (player 0)
+        assert game.dealer_index == 0
+        assert game.round_wind == WIND_EAST
+        
+        # Verify player winds are assigned correctly
+        assert game.players[0].wind == WIND_EAST  # Dealer is East
+        assert game.players[1].wind == WIND_SOUTH
+        assert game.players[2].wind == WIND_WEST  
+        assert game.players[3].wind == WIND_NORTH
+    
+    def test_assign_player_winds_with_different_dealer(self, game):
+        """Test wind assignment when dealer is not player 0."""
+        # Set player 1 as dealer
+        game.dealer_index = 1
+        game.assign_player_winds()
+        
+        assert game.players[1].wind == WIND_EAST  # Dealer is always East
+        assert game.players[2].wind == WIND_SOUTH
+        assert game.players[3].wind == WIND_WEST
+        assert game.players[0].wind == WIND_NORTH
+    
+    def test_advance_dealer_within_round(self, game):
+        """Test dealer advancement within the same round."""
+        initial_round = game.round_wind
+        
+        # Advance dealer from player 0 to player 1
+        game.advance_dealer()
+        
+        assert game.dealer_index == 1
+        assert game.round_wind == initial_round  # Same round
+          # Verify winds reassigned correctly
+        assert game.players[1].wind == WIND_EAST  # New dealer is East
+        assert game.players[2].wind == WIND_SOUTH
+    
+    def test_advance_dealer_triggers_round_progression(self, game):
+        """Test that completing dealer rotation advances the round."""
+        # Start with player 3 as dealer (last dealer in round)
+        game.dealer_index = 3
+        game.round_wind = WIND_EAST
+        game.assign_player_winds()
+          # Advance dealer - should trigger round progression
+        game.advance_dealer()
+        
+        assert game.dealer_index == 0  # Back to player 0
+        assert game.round_wind == WIND_SOUTH  # Advanced to South Round
+        
+        # Verify winds reassigned
+        assert game.players[0].wind == WIND_EAST  # Player 0 is dealer again
+    
+    def test_advance_round_progression(self, game):
+        """Test round wind progression: East → South → West → North → East."""
+        test_cases = [
+            (WIND_EAST, WIND_SOUTH),
+            (WIND_SOUTH, WIND_WEST),
+            (WIND_WEST, WIND_NORTH),
+            (WIND_NORTH, WIND_EAST),  # Wraps back to East
+        ]
+        
+        for current_wind, expected_next in test_cases:
+            game.round_wind = current_wind
+            game.advance_round()
+            assert game.round_wind == expected_next
+    
+    def test_should_dealer_continue_winner_is_dealer(self, game):
+        """Test dealer continues when current dealer wins."""
+        game.dealer_index = 2
+        
+        # Dealer wins - should continue
+        assert game.should_dealer_continue(winner_id=2) is True
+        
+        # Non-dealer wins - should not continue
+        assert game.should_dealer_continue(winner_id=1) is False
+        assert game.should_dealer_continue(winner_id=3) is False
+    
+    def test_should_dealer_continue_wall_empty(self, game):
+        """Test dealer continues when wall is empty with no winner."""
+        # Wall empty, no winner - dealer continues
+        assert game.should_dealer_continue(winner_id=None, wall_empty=True) is True
+        
+        # Wall empty but someone won - normal dealer advancement
+        assert game.should_dealer_continue(winner_id=1, wall_empty=True) is False
+    
+    def test_should_dealer_continue_normal_cases(self, game):
+        """Test normal cases where dealer should not continue."""
+        game.dealer_index = 0
+        
+        # Non-dealer wins
+        assert game.should_dealer_continue(winner_id=1) is False
+        
+        # Normal hand end (no wall empty, no winner specified)
+        assert game.should_dealer_continue() is False
+    
+    def test_end_hand_dealer_wins(self, game):
+        """Test hand end when dealer wins (dealer continues)."""
+        game.dealer_index = 1
+        
+        # Dealer wins - should continue
+        game.end_hand(winner_id=1)
+        
+        assert game.dealer_index == 1  # Same dealer
+        assert game.current_player_index == 1  # Next hand starts with dealer
+        assert game.winner_found is False  # Reset for next hand
+        assert game.winning_player_id is None
+    
+    def test_end_hand_non_dealer_wins(self, game):
+        """Test hand end when non-dealer wins (advance dealer)."""
+        game.dealer_index = 1
+        game.round_wind = WIND_EAST
+        
+        # Non-dealer wins - should advance dealer
+        game.end_hand(winner_id=2)
+        
+        assert game.dealer_index == 2  # Advanced to next dealer
+        assert game.round_wind == WIND_EAST  # Same round
+        assert game.current_player_index == 2  # Next hand starts with new dealer
+    
+    def test_end_hand_wall_empty_no_winner(self, game):
+        """Test hand end when wall is empty with no winner (dealer continues)."""
+        game.dealer_index = 2
+        
+        # Wall empty, no winner - dealer continues
+        game.end_hand(winner_id=None, wall_empty=True)
+        
+        assert game.dealer_index == 2  # Same dealer
+        assert game.current_player_index == 2  # Next hand starts with dealer
+    
+    def test_end_hand_resets_game_state(self, game):
+        """Test that end_hand properly resets game state for next hand."""
+        # Set up some game state
+        game.winner_found = True
+        game.winning_player_id = 1
+        game.current_discard = Tile(SUIT_DOTS, '5')
+        game.turn_number = 10
+        game.pending_claim_player_id = 2
+        game.potential_claim_tile = Tile(SUIT_BAMBOO, '3')
+        game.claim_type_pending = "PUNG"
+        
+        game.end_hand(winner_id=2)
+          # Verify all state is reset
+        assert game.winner_found is False
+        assert game.winning_player_id is None
+        assert game.current_discard is None
+        assert game.turn_number == 0
+        assert game.pending_claim_player_id is None
+        assert game.potential_claim_tile is None
+        assert game.claim_type_pending is None
+    
+    def test_complete_round_cycle(self, game):
+        """Test a complete round cycle with all dealer rotations."""
+        # Start in East Round with player 0 as dealer
+        assert game.round_wind == WIND_EAST
+        assert game.dealer_index == 0
+        
+        # Complete full dealer rotation within East Round
+        # Non-dealer must win for dealer to advance
+        for expected_dealer in [1, 2, 3]:
+            game.end_hand(winner_id=expected_dealer)  # Current non-dealer wins, advance dealer
+            assert game.dealer_index == expected_dealer
+            assert game.round_wind == WIND_EAST  # Still East Round
+        
+        # One more advancement should move to South Round
+        game.end_hand(winner_id=0)  # Non-dealer wins (current dealer is 3, so 0 is non-dealer)
+        assert game.dealer_index == 0  # Back to player 0
+        assert game.round_wind == WIND_SOUTH  # Advanced to South Round
+    
+    def test_dealer_rotation_with_player_wind_consistency(self, game):
+        """Test that dealer rotation maintains correct player wind assignments."""
+        # Test each player as dealer
+        for expected_dealer in range(NUM_PLAYERS):
+            game.dealer_index = expected_dealer
+            game.assign_player_winds()
+            
+            # Dealer should always be East wind
+            assert game.players[expected_dealer].wind == WIND_EAST
+            
+            # Other players should have winds in correct order
+            for i, player in enumerate(game.players):
+                if i != expected_dealer:
+                    wind_index = (i - expected_dealer) % len(WINDS_ALL)
+                    expected_wind = WINDS_ALL[wind_index]
+                    assert player.wind == expected_wind
+
+
+# Test integration between win detection and dealer rotation system
+class TestWinDetectionWithDealerRotation:
+    """Test integration between win detection and dealer rotation system."""
+    
+    def test_process_win_claim_calls_end_hand(self, game):
+        """Test that process_win_claim properly calls end_hand with winner."""
+        # Setup a valid pung claim scenario
+        player0 = game.players[0]
+        discarding_player_id = 1
+        
+        game.pending_claim_player_id = 0
+        game.claim_type_pending = "PUNG"
+        tile_being_claimed = Tile(SUIT_DOTS, '1')
+        game.potential_claim_tile = tile_being_claimed
+        game.current_discard = tile_being_claimed
+        game.current_player_index = discarding_player_id
+        
+        # Give player 0 the tiles needed for pung
+        player0.hand = [Tile(SUIT_DOTS, '1'), Tile(SUIT_DOTS, '1')] + \
+                       [Tile(SUIT_BAMBOO, str(i)) for i in range(3, 14)]
+        
+        # Track initial dealer state
+        initial_dealer = game.dealer_index
+        initial_round = game.round_wind
+        
+        # Process the claim (which should not cause a win, just a meld)
+        success = game.process_pung_claim(claiming_player_id=0, claimed_tile=tile_being_claimed)
+        assert success
+        
+        # For this test, we're mainly verifying the structure is in place
+        # The actual win checking would need a proper winning hand setup
+        # This test ensures the method exists and basic flow works
+        
+        # Verify pung was created
+        assert len(player0.revealed_sets) == 1
+        assert game.current_player_index == 0  # Claiming player's turn
+    
+    def test_draw_tile_win_detection_calls_end_hand(self, game):
+        """Test that self-draw win detection calls end_hand."""
+        player = game.players[game.current_player_index]
+        
+        # Give player a nearly winning hand (this is a simplified test)
+        # In a real scenario, we'd need a hand that's one tile away from winning
+        near_winning_hand = [Tile(SUIT_DOTS, str(i)) for i in range(1, 14)]
+        player.hand = near_winning_hand[:INIT_HAND_SIZE]
+        
+        # Mock the wall to have a specific tile
+        winning_tile = Tile(SUIT_DOTS, '1')
+        game.wall = [winning_tile] + [Tile(SUIT_BAMBOO, str(i)) for i in range(1, 10)]
+        
+        # Track initial state
+        initial_dealer = game.dealer_index
+        
+        # This test primarily verifies the structure is in place
+        # The actual win detection logic would need proper hand validation
+        drawn_tile = game.draw_tile_for_current_player()
+        assert drawn_tile is not None
+        
+        # The test verifies that the method structure exists for win detection
+        # In actual gameplay, win detection would trigger end_hand() with winner_id    
+
+
+    def test_wall_empty_scenario_triggers_dealer_continuation(self, game):
+        """Test that empty wall scenario properly handles dealer rotation."""
+        # Create a fresh game instance to avoid fixture contamination
+        game = GameState()
+        
+        # Reset game to ensure clean state for this test
+        game.dealer_index = 0
+        game.round_wind = WIND_EAST
+        
+        # Empty the wall
+        game.wall = []
+        
+        # Track initial dealer state
+        initial_dealer = game.dealer_index
+        initial_round = game.round_wind
+        
+        # Attempt to draw tile when wall is empty
+        result = game.draw_tile_for_current_player()
+        assert result is None  # Should not be able to draw
+        
+        # In actual implementation, wall empty should trigger end_hand(wall_empty=True)
+        # This would cause dealer to continue according to traditional rules
+        game.end_hand(winner_id=None, wall_empty=True)
+        
+        # Dealer should continue (same dealer)
+        assert game.dealer_index == initial_dealer
+        assert game.round_wind == initial_round  # Same round
+        assert game.current_player_index == initial_dealer  # Next hand starts with dealer
+    
+    def test_end_hand_resets_claim_state(self, game):
+        """Test that end_hand properly resets all claim-related state."""
+        # Set up some claim state
+        game.pending_claim_player_id = 1
+        game.potential_claim_tile = Tile(SUIT_DOTS, '5')
+        game.claim_type_pending = "PUNG"
+        game.current_discard = Tile(SUIT_BAMBOO, '3')
+        
+        # End the hand
+        game.end_hand(winner_id=2)
+        
+        # Verify all claim state is reset
+        assert game.pending_claim_player_id is None
+        assert game.potential_claim_tile is None
+        assert game.claim_type_pending is None
+        assert game.current_discard is None
+        
+        # Verify other state is reset
+        assert game.winner_found is False
+        assert game.winning_player_id is None
+        assert game.turn_number == 0

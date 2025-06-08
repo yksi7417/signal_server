@@ -213,11 +213,21 @@ class TestAPIEndpointsIntegration:
         assert "winner_found" in data
         assert "remaining_tiles" in data
         
+        # Verify dealer rotation fields are included
+        assert "dealer_index" in data
+        assert "round_wind" in data
+
+        
         # Verify player hand has tiles
         assert len(data["player_hand"]) > 0
         assert data["remaining_tiles"] > 0
         assert data["current_player_id"] == 0
         assert data["winner_found"] is False
+        
+        # Verify initial dealer rotation state
+        assert data["dealer_index"] == 0  # East dealer starts
+        assert data["round_wind"] == "East"  # East Round starts
+
     
     @pytest.mark.timeout(20)
     def test_reset_game_api(self, global_flask_server):
@@ -359,7 +369,7 @@ class TestAPIEndpointsIntegration:
         
         # 4. AI player takes a turn (should decrease remaining_tiles by 1 more)
         response = requests.post(f"{base_url}/api/request_ai_turn")
-        assert response.status_code == 200
+        assert response.status_code == 200, f"AI turn request failed: {response.text}"
         
         ai_result = response.json()
         assert ai_result.get("success") is True
@@ -372,7 +382,7 @@ class TestAPIEndpointsIntegration:
         
         # 5. Another AI player takes a turn (should decrease remaining_tiles by 1 more)
         response = requests.post(f"{base_url}/api/request_ai_turn")
-        assert response.status_code == 200
+        assert response.status_code == 200, f"Second AI turn request failed: {response.text}"
         
         ai_result2 = response.json()
         if ai_result2.get("success"):
@@ -571,6 +581,119 @@ class TestDeploymentReadiness:
         for static_file in static_files:
             response = requests.get(f"{base_url}{static_file}")
             assert response.status_code == 200, f"Static file {static_file} should be accessible"
+
+
+class TestDealerRotationIntegration:
+    """Test dealer rotation system through API endpoints."""
+    
+    @pytest.mark.timeout(30)
+    def test_start_new_game_dealer_info(self, global_flask_server):
+        """Test that start_new_game includes correct dealer rotation information."""
+        process, base_url = global_flask_server
+        
+        response = requests.post(f"{base_url}/api/start_new_game")
+        assert response.status_code == 200
+        
+        data = response.json()
+        
+        # Verify all dealer rotation fields are present
+        assert "dealer_index" in data
+        assert "round_wind" in data
+
+        
+        # Verify initial values follow traditional Mahjong rules
+        assert data["dealer_index"] == 0  # East dealer starts (player 0)
+        assert data["round_wind"] == "East"  # East Round starts
+
+        
+        # Verify game_wind is consistent with traditional setup
+        assert data["game_wind"] == "East"  # Should match round_wind initially
+    
+    @pytest.mark.timeout(30)
+    def test_reset_game_resets_dealer_info(self, global_flask_server):
+        """Test that reset_game properly resets dealer rotation state."""
+        process, base_url = global_flask_server
+        
+        # Start a game
+        start_response = requests.post(f"{base_url}/api/start_new_game")
+        assert start_response.status_code == 200
+        start_data = start_response.json()
+        
+        # Verify initial state
+        assert start_data["dealer_index"] == 0
+        assert start_data["round_wind"] == "East"
+
+        
+        # Reset the game
+        reset_response = requests.post(f"{base_url}/api/reset_game")
+        assert reset_response.status_code == 200
+        assert reset_response.json() is True
+        
+        # Start new game after reset
+        new_start_response = requests.post(f"{base_url}/api/start_new_game")
+        assert new_start_response.status_code == 200
+        new_start_data = new_start_response.json()
+        
+        # Verify dealer rotation state is reset to initial values
+        assert new_start_data["dealer_index"] == 0
+        assert new_start_data["round_wind"] == "East"
+
+    
+    @pytest.mark.timeout(30)
+    def test_dealer_info_consistency_across_endpoints(self, global_flask_server):
+        """Test that dealer info is consistent across different API endpoints."""
+        process, base_url = global_flask_server
+        
+        # Start new game and get initial dealer info
+        start_response = requests.post(f"{base_url}/api/start_new_game")
+        assert start_response.status_code == 200
+        start_data = start_response.json()
+        
+        initial_dealer = start_data["dealer_index"]
+        initial_round = start_data["round_wind"]
+
+        
+        # Make a few game moves and check if dealer info is preserved
+        # (since dealer rotation only happens on hand completion)
+        
+        # Draw a tile
+        draw_response = requests.post(f"{base_url}/api/draw_tile")
+        assert draw_response.status_code == 200
+        draw_data = draw_response.json()
+        
+        # Note: Not all endpoints may include dealer info, 
+        # but the game state should remain consistent
+        # This test validates that the state doesn't randomly change
+        
+        # Discard a tile
+        if "hand" in draw_data and len(draw_data["hand"]) > 0:
+            tile_to_discard = draw_data["hand"][0]
+            discard_response = requests.post(
+                f"{base_url}/api/discard_tile",
+                json={"tile_to_discard": tile_to_discard},
+                headers={"Content-Type": "application/json"}
+            )
+            assert discard_response.status_code == 200
+            discard_data = discard_response.json()
+            assert discard_data["success"] is True
+        
+        # AI turn
+        ai_response = requests.post(f"{base_url}/api/request_ai_turn")
+        assert ai_response.status_code == 200
+        ai_data = ai_response.json()
+        
+        # During normal gameplay (no hand completion), dealer info should remain the same
+        # We can't easily test dealer rotation in integration tests without simulating
+        # complete hands or wins, but we can verify the info is maintained consistently
+        
+        # Start another game to verify reset works
+        final_start_response = requests.post(f"{base_url}/api/start_new_game")
+        assert final_start_response.status_code == 200
+        final_start_data = final_start_response.json()
+        
+        # Should return to initial dealer state
+        assert final_start_data["dealer_index"] == 0
+        assert final_start_data["round_wind"] == "East"
 
 
 if __name__ == "__main__":

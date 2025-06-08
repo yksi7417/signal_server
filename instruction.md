@@ -251,6 +251,67 @@ class TestCodeQuality:
     def test_print_statements_are_complete(self):
 ```
 
+## Code Generation Guidelines
+
+### 1. Always Include Proper Newlines in Generated Code
+
+**CRITICAL RULE**: When AI generates new code, always ensure proper newlines between code blocks to prevent compilation errors.
+
+**Common "Missing Newline" Issues**:
+1. **Method-to-Method**: Missing newline between method definitions
+2. **Class-to-Class**: Missing newline between class definitions  
+3. **Import-to-Code**: Missing newline after import statements
+4. **Function-to-Function**: Missing newline between function definitions
+
+**Required Newline Patterns**:
+```python
+# ✅ CORRECT: Proper newlines between methods
+class GameState:
+    def method_one(self):
+        pass
+    
+    def method_two(self):  # <- Newline before method definition
+        pass
+
+# ✅ CORRECT: Proper newlines between functions
+def function_one():
+    pass
+
+def function_two():  # <- Newline before function definition
+    pass
+
+# ✅ CORRECT: Newline after imports
+from mahjong_engine.constants import WIND_EAST
+
+class GameState:  # <- Newline after imports
+    pass
+```
+
+**Compilation Error Prevention**:
+```python
+# ❌ WRONG: Missing newline causes syntax error
+class GameState:
+    def assign_player_winds(self):
+        pass
+    def deal_tiles(self):  # <- Missing newline before this line
+        pass
+
+# ✅ CORRECT: Proper newline prevents syntax error
+class GameState:
+    def assign_player_winds(self):
+        pass
+    
+    def deal_tiles(self):  # <- Proper newline before this line
+        pass
+```
+
+**Code Review Checklist**:
+- [ ] Newline before each method definition
+- [ ] Newline before each function definition  
+- [ ] Newline before each class definition
+- [ ] Newline after import blocks
+- [ ] Newline at end of file
+
 ## API Development Guidelines
 
 ### 1. Always Write Integration Tests for New Endpoints
@@ -553,3 +614,501 @@ Every Flask API endpoint has corresponding integration tests that validate:
 - **Error Handling**: Graceful degradation and error messages
 
 This comprehensive testing approach provides confidence in both individual components and the complete system, enabling safe deployment to production environments.
+
+# Python Code Style and Indentation Standards
+
+## Indentation Standards
+
+To maintain code quality and prevent indentation errors, this project follows strict Python indentation standards based on PEP 8.
+
+### Core Indentation Rules
+
+#### 1. Spaces Only - No Tabs
+- **ALWAYS use 4 spaces for indentation**
+- **NEVER mix tabs and spaces**
+- Configure your editor to show whitespace characters
+- Set editor to insert spaces when Tab key is pressed
+
+```python
+# ✅ CORRECT - 4 spaces
+def example_function():
+    if condition:
+        return True
+    else:
+        return False
+
+# ❌ WRONG - mixed tabs and spaces (will cause IndentationError)
+def bad_function():
+    if condition:  # 4 spaces
+	return True    # tab character
+```
+#### 2. Class Definition Standards
+```python
+# ✅ CORRECT - Class with proper indentation
+class GameState:
+    """Game state management class."""
+    
+    def __init__(self):
+        self.dealer_index = 0
+        self.round_wind = WIND_EAST
+    
+    def advance_dealer(self):
+        """Advance to next dealer."""
+        self.dealer_index = (self.dealer_index + 1) % len(self.players)
+        
+        if self.dealer_index == 0:
+            self.advance_round()
+            
+        self.assign_player_winds()
+```
+#### 3. Method Definition Standards
+```python
+# ✅ CORRECT - Method indentation
+class TestDealerRotationSystem:
+    """Test class for dealer rotation."""
+    
+    def test_initial_dealer_and_winds(self, game):
+        """Test initial game state."""
+        # 8 spaces from left margin (4 for class + 4 for method)
+        assert game.dealer_index == 0
+        assert game.round_wind == WIND_EAST
+        
+        # 8 spaces for method body content
+        for i, player in enumerate(game.players):
+            # 12 spaces for nested content (4 + 4 + 4)
+            expected_wind = WINDS_ALL[i]
+            assert player.wind == expected_wind
+    
+    def test_advance_dealer_within_round(self, game):
+        """Test dealer advancement."""
+        # 8 spaces for method body
+        initial_round = game.round_wind
+        
+        # 8 spaces for method statements
+        game.advance_dealer()
+        
+        # 8 spaces for assertions
+        assert game.dealer_index == 1
+        assert game.round_wind == initial_round
+```
+#### 4. Control Flow Indentation
+```python
+# ✅ CORRECT - Consistent indentation for control structures
+def process_game_action(game, action):
+    """Process game actions with proper indentation."""
+    if action == "draw":
+        # 4 spaces for if block
+        tile = game.draw_tile_for_current_player()
+        if tile is not None:
+            # 8 spaces for nested if
+            game.current_player().hand.append(tile)
+            return True
+        else:
+            # 8 spaces for else block
+            return False
+    elif action == "discard":
+        # 4 spaces for elif block  
+        if len(game.current_player().hand) > INIT_HAND_SIZE:
+            # 8 spaces for nested condition
+            return game.discard_tile_for_current_player()
+        else:
+            # 8 spaces for nested else
+            return False
+    else:
+        # 4 spaces for final else
+        raise ValueError(f"Unknown action: {action}")
+```
+#### 5. Long Line Handling
+```python
+# ✅ CORRECT - Breaking long lines with proper indentation
+def create_complex_assertion(game, expected_dealer, expected_wind, 
+                           expected_player_count):
+    """Function with long parameter list."""
+    # When breaking function parameters, align with opening parenthesis
+    # OR use hanging indent (4 additional spaces)
+    
+    # ✅ CORRECT - Hanging indent for long assertions
+    assert (game.dealer_index == expected_dealer and
+            game.round_wind == expected_wind and
+            len(game.players) == expected_player_count)
+
+# ✅ CORRECT - Alternative: Each parameter on new line
+def create_complex_assertion_alt(
+        game, 
+        expected_dealer, 
+        expected_wind,
+        expected_player_count):
+    """Alternative formatting for long parameter lists."""
+    pass
+```
+
+### Common Indentation Error Patterns to Avoid
+
+#### 1. Inconsistent Method Indentation
+```python
+# ❌ WRONG - Inconsistent indentation
+class TestExample:
+  def test_method_one(self):  # Only 2 spaces instead of 4
+      pass
+    
+    def test_method_two(self):  # 4 spaces (correct)
+        pass
+      def test_method_three(self):  # 6 spaces (wrong alignment)
+          pass
+```
+#### 2. Missing Blank Lines
+```python
+# ❌ WRONG - Missing separation between methods
+class TestExample:
+    def test_method_one(self):
+        assert True
+    def test_method_two(self):  # Missing blank line
+        assert True
+        
+# ✅ CORRECT - Proper separation
+class TestExample:
+    def test_method_one(self):
+        assert True
+    
+    def test_method_two(self):  # Blank line separates methods
+        assert True
+```
+#### 3. Incorrect Multi-line Statement Indentation
+```python
+# ❌ WRONG - Poor multi-line formatting
+assert (game.dealer_index == 0 and 
+game.round_wind == WIND_EAST)  # Continuation line not indented
+
+# ✅ CORRECT - Proper multi-line indentation
+assert (game.dealer_index == 0 and 
+        game.round_wind == WIND_EAST)
+```
+
+### Editor Configuration
+
+#### VS Code Settings
+Add to your `.vscode/settings.json`:
+```json
+{
+    "python.defaultInterpreterPath": "./venv/bin/python",
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
+    "editor.detectIndentation": false,
+    "editor.renderWhitespace": "boundary",
+    "python.linting.enabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.formatting.provider": "black",
+    "files.trimTrailingWhitespace": true
+}
+```
+
+#### PyCharm Settings
+1. File → Settings → Editor → Code Style → Python
+2. Set "Tab size" to 4
+3. Set "Indent" to 4
+4. Check "Use tab character" to UNCHECKED
+5. Enable "Show whitespace"
+
+### Validation Tools
+
+#### 1. Pre-commit Hooks
+Install tools to catch indentation errors before commit:
+```bash
+pip install black flake8 isort
+```
+
+#### 2. Automated Checks
+Add to your development workflow:
+```bash
+# Check indentation and style
+flake8 --select=E1,W1 .
+
+# Auto-format code
+black .
+
+# Sort imports
+isort .
+```
+
+#### 3. Test Integration
+The project includes automated indentation validation:
+```python
+def test_file_indentation_consistency():
+    """Validate that all Python files use consistent indentation."""
+    for python_file in glob.glob("**/*.py", recursive=True):
+        with open(python_file, 'r') as f:
+            content = f.read()
+            # Check for tab characters
+            assert '\t' not in content, f"File {python_file} contains tab characters"
+```
+
+### Quick Indentation Checklist
+
+Before committing code, verify:
+- [ ] All indentation uses 4 spaces
+- [ ] No tab characters in Python files
+- [ ] Methods separated by blank lines
+- [ ] Consistent indentation throughout classes
+- [ ] Long lines broken with proper continuation indentation
+- [ ] Control flow blocks properly indented
+- [ ] No trailing whitespace
+
+### Error Recovery
+
+If you encounter `IndentationError: unindent does not match any outer indentation level`:
+
+1. **Check for mixed tabs/spaces**: Use editor's "Show Whitespace" feature
+2. **Verify consistent indentation**: Count spaces manually if needed
+3. **Use automated tools**: Run `black` or similar formatter
+4. **Compare with working examples**: Look at existing properly formatted code
+5. **Start fresh if needed**: Copy content to new file and re-indent properly
+
+Following these standards will prevent the indentation errors we've encountered and maintain consistent, readable code throughout the project.
+
+## Testing Code Standards
+
+### Test Method Indentation Standards
+
+#### 1. Test Class Structure
+```python
+# ✅ CORRECT - Proper test class indentation
+class TestDealerRotationSystem:
+    """Test dealer rotation and round progression."""
+    
+    def test_initial_dealer_and_winds(self, game):
+        """Test that game starts with correct dealer and wind assignments."""
+        # Method body indented 8 spaces (4 for class + 4 for method)
+        assert game.dealer_index == 0
+        assert game.round_wind == WIND_EAST
+        
+        # Comments and assertions at same indentation level
+        # Verify player winds are assigned correctly
+        assert game.players[0].wind == WIND_EAST
+        assert game.players[1].wind == WIND_SOUTH
+        assert game.players[2].wind == WIND_WEST
+        assert game.players[3].wind == WIND_NORTH
+    
+    def test_advance_dealer_within_round(self, game):
+        """Test dealer advancement within the same round."""
+        # Blank line separates methods, content indented 8 spaces
+        initial_round = game.round_wind
+
+        
+        # Action
+        game.advance_dealer()
+        
+        # Assertions
+        assert game.dealer_index == 1
+        assert game.round_wind == initial_round
+
+```
+#### 2. Complex Test Logic Indentation
+```python
+# ✅ CORRECT - Nested logic in tests
+def test_complete_round_cycle(self, game):
+    """Test a complete round cycle with all dealer rotations."""
+    # Initial state verification (8 spaces)
+    assert game.round_wind == WIND_EAST
+    assert game.dealer_index == 0
+    
+    # Loop with proper indentation (8 spaces for loop, 12 for body)
+    for expected_dealer in [1, 2, 3]:
+        # 12 spaces for loop body
+        game.end_hand(winner_id=expected_dealer)
+        assert game.dealer_index == expected_dealer
+        assert game.round_wind == WIND_EAST
+    
+    # Final assertions (8 spaces)
+    game.end_hand(winner_id=0)
+    assert game.dealer_index == 0
+    assert game.round_wind == WIND_SOUTH
+```
+#### 3. Test Setup and Teardown
+```python
+# ✅ CORRECT - Setup method indentation
+@pytest.fixture
+def game():
+    """Fixture to provide a fresh GameState instance for each test."""
+    # Fixture body indented 4 spaces
+    return GameState()
+
+class TestGameStateFeature:
+    """Test specific game state features."""
+    
+    def setup_method(self):
+        """Setup run before each test method."""
+        # Setup code indented 8 spaces
+        self.test_data = {
+            "dealer_index": 0,
+            "round_wind": WIND_EAST,
+
+        }
+    
+    def test_feature_behavior(self, game):
+        """Test specific feature behavior."""
+        # Test implementation indented 8 spaces
+        game.dealer_index = self.test_data["dealer_index"]
+        assert game.dealer_index == 0
+```
+### Test Assertion Standards
+
+#### 1. Multi-line Assertion Formatting
+```python
+# ✅ CORRECT - Multi-line assertions with proper indentation
+def test_complex_game_state(self, game):
+    """Test complex game state validation."""
+    # When assertions are too long, break them properly
+    assert (game.dealer_index == 0 and
+            game.round_wind == WIND_EAST and
+
+            len(game.players) == 4)
+    
+    # Alternative: Multiple single assertions (often clearer)
+    assert game.dealer_index == 0
+    assert game.round_wind == WIND_EAST
+
+    assert len(game.players) == 4
+```
+
+#### 2. Test Documentation and Comments
+```python
+# ✅ CORRECT - Well-documented test with proper indentation
+def test_dealer_continuation_rules(self, game):
+    """Test that dealer continues according to traditional Mahjong rules."""
+    # Setup: Configure game state for dealer continuation test
+    # (Comments aligned with code they describe)
+    game.dealer_index = 2
+    game.round_wind = WIND_SOUTH
+
+    
+    # Test Case 1: Dealer wins, should continue
+    should_continue = game.should_dealer_continue(winner_id=2)
+    assert should_continue is True
+    
+    # Test Case 2: Non-dealer wins, dealer should advance
+    should_continue = game.should_dealer_continue(winner_id=1)
+    assert should_continue is False
+    
+    # Test Case 3: Wall empty, dealer should continue
+    should_continue = game.should_dealer_continue(wall_empty=True)
+    assert should_continue is True
+```
+
+### Common Test Indentation Mistakes
+
+#### 1. Inconsistent Method Spacing
+```python
+# ❌ WRONG - Inconsistent spacing between methods
+class TestExample:
+    def test_one(self):
+        assert True
+def test_two(self):  # Wrong: not properly indented in class
+        assert True
+
+# ✅ CORRECT - Consistent class method indentation
+class TestExample:
+    def test_one(self):
+        assert True
+    
+    def test_two(self):
+        assert True
+```
+#### 2. Improper Fixture Indentation
+```python
+# ❌ WRONG - Fixture not properly aligned
+@pytest.fixture
+def game():
+"""Bad docstring indentation."""
+return GameState()
+
+# ✅ CORRECT - Proper fixture formatting
+@pytest.fixture
+def game():
+    """Fixture to provide a fresh GameState instance for each test."""
+    return GameState()
+```
+#### 3. Mixed Indentation in Test Logic
+```python
+# ❌ WRONG - Mixed indentation levels
+def test_mixed_indentation(self, game):
+    """Test with inconsistent indentation."""
+        assert game.dealer_index == 0  # 8 spaces (wrong for first line)
+    assert game.round_wind == WIND_EAST    # 4 spaces (inconsistent)
+
+
+# ✅ CORRECT - Consistent indentation
+def test_consistent_indentation(self, game):
+    """Test with proper indentation."""
+    assert game.dealer_index == 0          # 8 spaces (correct)
+    assert game.round_wind == WIND_EAST    # 8 spaces (consistent)
+
+```
+
+### Test File Organization Standards
+
+#### 1. Import Organization
+```python
+# ✅ CORRECT - Proper import organization and indentation
+import ast
+import collections
+import inspect
+import pytest
+import re
+
+from unittest.mock import MagicMock
+
+from mahjong_engine.constants import (
+    INIT_HAND_SIZE,
+    NUM_COPIES_PER_TILE,
+    NUM_PLAYERS,
+    SUIT_BAMBOO,
+    WIND_EAST,
+    WIND_NORTH,
+    WIND_SOUTH,
+    WIND_WEST,
+    WINDS_ALL,
+)
+from mahjong_engine.game_state import GameState
+from mahjong_engine.tile import Tile
+```
+#### 2. Test Class Organization
+```python
+# ✅ CORRECT - Logical test class organization
+class TestBasicGameState:
+    """Test basic game state functionality."""
+    
+    def test_initialization(self, game):
+        """Test game initialization."""
+        pass
+    
+    def test_player_setup(self, game):
+        """Test player setup."""
+        pass
+
+
+class TestDealerRotationSystem:
+    """Test dealer rotation and round progression."""
+    
+    def test_initial_dealer_and_winds(self, game):
+        """Test initial dealer setup."""
+        pass
+    
+    def test_advance_dealer_within_round(self, game):
+        """Test dealer advancement."""
+        pass
+
+
+class TestWinDetectionWithDealerRotation:
+    """Test integration between win detection and dealer rotation."""
+    
+    def test_process_win_claim_calls_end_hand(self, game):
+        """Test win claim integration."""
+        pass
+```
+
+Following these testing standards ensures:
+- Consistent, readable test code
+- Easy maintenance and debugging
+- Clear separation of test concerns
+- Proper integration with pytest framework
+- Reduced indentation errors during development
