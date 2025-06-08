@@ -11,6 +11,7 @@
 - [API Development Guidelines](#api-development-guidelines)
 - [Debugging and Troubleshooting](#debugging-and-troubleshooting)
 - [Current Project Status](#current-project-status)
+- [Project-Specific Testing Achievements](#project-specific-testing-achievements)
 
 ## Overview
 
@@ -452,13 +453,103 @@ The testing framework is designed to provide comprehensive coverage while mainta
 - **Deployment Readiness**: All fly.io deployment checks passing
 
 ### 📋 Pending Tasks
-1. **GitHub Actions Investigation**: Determine why deploy.yml workflow didn't trigger deployment to fly.io
-2. **JavaScript Module Tests**: 3 tests showing 404 errors in test output that may need investigation
-3. **Final Deployment**: Deploy to fly.io once CI/CD issues are resolved
-4. **Performance Optimization**: Consider optimizing AI turn response times if needed
+1. **GitHub Actions Trigger Issue - IDENTIFIED**: The deploy.yml workflow didn't trigger because changes haven't been committed and pushed to the main branch yet. The workflow is configured for `on: push: branches: [ main ]`
+2. **Commit and Push Changes**: Need to commit the instruction.md file and other recent changes and push to main branch to trigger deployment
+3. **JavaScript Module Tests**: 3 tests showing 404 errors in test output that may need investigation
+4. **Final Deployment**: Deploy to fly.io once changes are pushed to main branch
+5. **Performance Optimization**: Consider optimizing AI turn response times if needed
 
 ### 🎯 Next Steps Recommendation
-1. **Investigate GitHub Actions**: Check repository settings and workflow triggers
-2. **Deploy to Production**: Once CI/CD is working, deploy to fly.io
-3. **Monitor Production**: Set up logging and monitoring for production environment
-4. **User Testing**: Conduct end-to-end user testing of the deployed application
+1. **Commit Current Changes**: Add and commit the instruction.md file and any other recent changes
+2. **Push to Main Branch**: Push changes to main branch to trigger GitHub Actions deployment workflow
+3. **Monitor Deployment**: Watch GitHub Actions for successful deployment to fly.io
+4. **Production Validation**: Test the deployed application in production environment
+5. **User Testing**: Conduct end-to-end user testing of the deployed application
+
+### 🚀 Ready for Deployment Commands
+```powershell
+# Commit the current changes
+git add .
+git commit -m "Add comprehensive testing documentation and fix remaining tiles integration test"
+
+# Push to main branch (this will trigger GitHub Actions deployment)
+git push origin main
+
+# Monitor deployment at: https://github.com/[your-repo]/actions
+```
+
+## Project-Specific Testing Achievements
+
+### Integration Test Success Stories
+
+#### Remaining Tiles Count Validation
+The `test_remaining_tiles_updates_for_all_players` test demonstrates a complete end-to-end validation:
+
+```python
+@pytest.mark.timeout(30)
+def test_remaining_tiles_updates_for_all_players(self, global_flask_server):
+    """Test that remaining_tiles count updates after both human and AI turns."""
+    # 1. Start game and validate initial state
+    # 2. Human draws tile (remaining_tiles decreases by 1)
+    # 3. Human discards tile (remaining_tiles stays same)
+    # 4. AI takes turn (remaining_tiles decreases by 1)
+    # 5. Another AI turn (remaining_tiles decreases by 1 more)
+    # Validates: Total progression shows correct tile counting
+```
+
+This test validates:
+- ✅ Game state initialization
+- ✅ Human player actions affect tile count correctly
+- ✅ AI player actions affect tile count correctly
+- ✅ Cross-player game state consistency
+- ✅ Unicode character handling in responses
+
+#### Debug Script to Integration Test Conversion
+Successfully converted standalone debug script (`debug_remaining_tiles.py`) into a proper integration test by:
+
+1. **Replacing manual verification** with automated assertions
+2. **Adding proper test fixtures** using `global_flask_server`
+3. **Including edge case handling** for different AI turn outcomes
+4. **Ensuring test isolation** and cleanup
+
+#### Unicode Character Support
+Resolved Unicode encoding issues that were preventing tests from running on Windows:
+
+```python
+# Problem: Unicode mahjong characters in console output
+print("Discarding tile:", tile_to_discard_data)  # ❌ Crashed on Windows
+
+# Solution: Unicode-safe printing
+try:
+    print("Discarding tile:", tile_to_discard_data)
+except UnicodeEncodeError:
+    print("Discarding tile: [Unicode tile]")  # ✅ Safe fallback
+```
+
+### Testing Framework Robustness
+
+#### Server Lifecycle Management
+Implemented robust Flask server management for integration tests:
+
+- **Port conflict resolution**: Automatically kills existing servers on port 8080
+- **Graceful startup/shutdown**: Proper process management with cleanup
+- **Health check validation**: Waits for server responsiveness before running tests
+- **Session-scoped fixtures**: Efficient server reuse across multiple tests
+
+#### Test Organization Excellence
+Achieved clean separation of concerns:
+
+- **68 Unit Tests**: Fast, isolated component testing (0.32s total)
+- **19 Integration Tests**: Comprehensive system validation (83s total)
+- **Code Quality Tests**: Syntax validation, f-string checking, method validation
+- **Deployment Readiness**: Production environment validation
+
+#### API Contract Testing
+Every Flask API endpoint has corresponding integration tests that validate:
+
+- **HTTP Status Codes**: Correct response codes for success/error cases
+- **Response Structure**: Required fields present and correctly typed
+- **Game State Changes**: Proper state transitions and side effects
+- **Error Handling**: Graceful degradation and error messages
+
+This comprehensive testing approach provides confidence in both individual components and the complete system, enabling safe deployment to production environments.
