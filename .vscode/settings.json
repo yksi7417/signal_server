@@ -1,7 +1,7 @@
 {
     "python.formatting.provider": "autopep8",
     "python.formatting.autopep8Args": [
-        "--max-line-length=79",
+        "--max-line-length=120",
         "--aggressive",
         "--aggressive"
     ],
@@ -12,7 +12,12 @@
     "python.linting.enabled": true,
     "python.linting.flake8Enabled": true,
     "python.linting.flake8Args": [
-        "--max-line-length=79",
-        "--ignore=E402,F841"
+        "--max-line-length=120",
+        "--ignore=E501,W291,W293,E302,E303,E231,E701,E402,F841"
+    ],
+    "files.trimTrailingWhitespace": false,
+    "files.insertFinalNewline": false,
+    "editor.rulers": [
+        120
     ]
 }

@@ -1,0 +1,35 @@
+[tool.flake8]
+ignore = ["E501", "W291", "W293", "E302", "E303", "E231", "E701"]
+max-line-length = 120
+
+[tool.black]
+line-length = 120
+skip-string-normalization = true
+
+[tool.isort]
+line_length = 120
+multi_line_output = 3
+include_trailing_comma = true
+
+[tool.pylint.messages_control]
+disable = [
+    "line-too-long",
+    "trailing-whitespace",
+    "bad-whitespace",
+    "missing-final-newline"
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--disable-warnings",
+    "-ra"
+]

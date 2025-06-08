@@ -4,7 +4,7 @@ from mahjong_engine.game_state import GameState
 from mahjong_engine.player_agent import AIPlayerAgent
 
 # Initialize Flask app
-app = Flask(__name__, static_folder='static', template_folder='static/game')
+app = Flask(__name__, static_folder='static/game', template_folder='static/game')
 current_game_state = GameState()
 
 
@@ -535,12 +535,14 @@ def request_ai_turn():
     current_player_id = current_game_state.players[
         current_game_state.current_player_index
     ].player_id
-
     current_player_agent_type = type(
         current_game_state.players[current_game_state.current_player_index].agent
-    )
+    )    
     if current_player_agent_type == AIPlayerAgent:
         result = current_game_state.run_ai_turn()
+
+        # Add winner_found to the result
+        result["winner_found"] = current_game_state.winner_found
 
         player0_hand_serializable = []
         if current_game_state.players:
@@ -565,6 +567,30 @@ def request_ai_turn():
         result["player0_revealed_sets"] = player0_revealed_sets_serializable
         print(f"AI {current_player_id} turn result:", result)
         return jsonify(result)
+    else:
+        return jsonify({
+            "success": False,
+            "error": f"Player {current_player_id} is not an AI player.",
+        })
+
+
+# Add proper headers for static files and security
+@app.after_request
+def after_request(response):
+    # Set proper MIME types for JavaScript files
+    if request.path.endswith('.js'):
+        response.headers['Content-Type'] = 'application/javascript'
+    
+    # Add CORS headers if needed
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    
+    # Add security headers but allow local storage
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    
+    return response
 
 
 if __name__ == "__main__":
