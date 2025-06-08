@@ -4,7 +4,7 @@ from mahjong_engine.game_state import GameState
 from mahjong_engine.player_agent import AIPlayerAgent
 
 # Initialize Flask app
-app = Flask(__name__, static_folder='static', template_folder='static/game')
+app = Flask(__name__, static_folder='static/game', template_folder='static/game')
 current_game_state = GameState()
 
 
