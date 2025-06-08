@@ -1,7 +1,7 @@
 import { hideClaimPrompt, showClaimPrompt } from './claimsHandler.js';
 import { handleDiscardTileResult } from './gameActions.js';
 import { elements, store } from './gameStore.js';
-import { displayHand, displayRevealedSets } from './tileDisplay.js';
+import { displayGameInfo, displayHand, displayRevealedSets } from './tileDisplay.js';
 
 export async function processAiTurns() {
     if (!store.currentGameInfo || store.currentGameInfo.current_player_id === undefined) {
@@ -100,6 +100,15 @@ function updateGameState(result) {
     if (result.winning_player_id !== undefined) {
         store.currentGameInfo.winning_player_id = result.winning_player_id;
     }
+    if (result.remaining_tiles !== undefined) {
+        store.currentGameInfo.remaining_tiles = result.remaining_tiles;
+    }
+    if (result.next_player_id !== undefined) {
+        store.currentGameInfo.current_player_id = result.next_player_id;
+    }
+    
+    // Update the game info display to reflect changes
+    displayGameInfo(store.currentGameInfo);
 }
 
 function handleSuccessfulAiTurn(result) {

@@ -311,11 +311,83 @@ class TestAPIEndpointsIntegration:
         # Now it should be Player 1's turn (AI), so request AI turn should work
         response = requests.post(f"{base_url}/api/request_ai_turn")
         assert response.status_code == 200
-
         data = response.json()
         assert "success" in data
         assert "winner_found" in data
         # Note: This might fail if the current player is not AI, which is expected behavior
+
+    @pytest.mark.timeout(30)
+    def test_remaining_tiles_updates_for_all_players(self, global_flask_server):
+        """Test that remaining_tiles count updates after both human and AI turns."""
+        process, base_url = global_flask_server
+        
+        # 1. Start a new game
+        response = requests.post(f"{base_url}/api/start_new_game")
+        assert response.status_code == 200
+        
+        game_data = response.json()
+        initial_remaining_tiles = game_data.get('remaining_tiles')
+        assert initial_remaining_tiles is not None
+        assert initial_remaining_tiles > 0
+        
+        # 2. Human player draws a tile (should decrease remaining_tiles by 1)
+        response = requests.post(f"{base_url}/api/draw_tile")
+        assert response.status_code == 200
+        
+        draw_data = response.json()
+        assert draw_data["success"] is True
+        remaining_after_human_draw = draw_data.get('remaining_tiles')
+        assert remaining_after_human_draw == initial_remaining_tiles - 1
+        
+        # 3. Human player discards a tile (remaining_tiles should stay the same)
+        hand = draw_data.get("hand", [])
+        assert len(hand) > 0
+        
+        tile_to_discard = hand[0]
+        discard_data = {"tile_to_discard": tile_to_discard}
+        response = requests.post(
+            f"{base_url}/api/discard_tile",
+            json=discard_data,
+            headers={"Content-Type": "application/json"}
+        )
+        assert response.status_code == 200
+        
+        discard_result = response.json()
+        assert discard_result["success"] is True
+        remaining_after_human_discard = discard_result.get('remaining_tiles')
+        assert remaining_after_human_discard == remaining_after_human_draw
+        
+        # 4. AI player takes a turn (should decrease remaining_tiles by 1 more)
+        response = requests.post(f"{base_url}/api/request_ai_turn")
+        assert response.status_code == 200
+        
+        ai_result = response.json()
+        assert ai_result.get("success") is True
+        remaining_after_first_ai = ai_result.get('remaining_tiles')
+        assert remaining_after_first_ai == remaining_after_human_discard - 1
+        
+        # Verify AI discarded a tile
+        assert "discarded_tile" in ai_result
+        assert ai_result["discarded_tile"] is not None
+        
+        # 5. Another AI player takes a turn (should decrease remaining_tiles by 1 more)
+        response = requests.post(f"{base_url}/api/request_ai_turn")
+        assert response.status_code == 200
+        
+        ai_result2 = response.json()
+        if ai_result2.get("success"):
+            # If AI turn succeeded, remaining_tiles should decrease by 1
+            remaining_after_second_ai = ai_result2.get('remaining_tiles')
+            assert remaining_after_second_ai == remaining_after_first_ai - 1
+            
+            # Verify the progression: each draw reduces remaining_tiles by 1
+            total_draws = 3  # human + first AI + second AI
+            expected_remaining = initial_remaining_tiles - total_draws
+            assert remaining_after_second_ai == expected_remaining
+        else:
+            # If AI turn failed (e.g., back to human player), that's also valid
+            # Just verify the first AI turn worked correctly
+            assert remaining_after_first_ai == initial_remaining_tiles - 2
 
 
 class TestJavaScriptModulesIntegration:

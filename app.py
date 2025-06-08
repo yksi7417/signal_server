@@ -555,10 +555,10 @@ def request_ai_turn():
         current_game_state.players[current_game_state.current_player_index].agent
     )    
     if current_player_agent_type == AIPlayerAgent:
-        result = current_game_state.run_ai_turn()
-
-        # Add winner_found to the result
+        result = current_game_state.run_ai_turn()        # Add winner_found to the result
         result["winner_found"] = current_game_state.winner_found
+        # Add remaining tiles count
+        result["remaining_tiles"] = len(current_game_state.wall)
 
         player0_hand_serializable = []
         if current_game_state.players:
