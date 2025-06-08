@@ -2,6 +2,12 @@ from flask import Flask, jsonify, render_template, request
 
 from mahjong_engine.game_state import GameState
 from mahjong_engine.player_agent import AIPlayerAgent
+from mahjong_engine.game_session import (
+    get_dealer_rotation_state,
+    reset_dealer_rotation_state,
+    advance_dealer_rotation,
+    get_current_dealer_info
+)
 
 # Initialize Flask app
 app = Flask(__name__, static_folder='static/game', template_folder='static/game')
@@ -20,6 +26,7 @@ def game():
 
 @app.route('/api/reset_game', methods=['POST'])
 def reset_game():
+    """Reset only the game state (hands, tiles), keeping dealer rotation intact"""
     global current_game_state
     current_game_state = GameState()
     return jsonify(True)
@@ -27,6 +34,7 @@ def reset_game():
 
 @app.route('/api/start_new_game', methods=['POST'])
 def start_new_game():
+    """Start a new game hand, preserving dealer rotation state"""
     global current_game_state
     current_game_state = GameState()
 
@@ -35,8 +43,9 @@ def start_new_game():
         player0 = current_game_state.players[0]
         player0_hand_serializable = [
             {"unicode": tile.unicode, "suit": tile.suit, "value": tile.value} for tile in player0.hand
-        ]
-
+        ]    # Get current dealer info from global state
+    dealer_info = get_current_dealer_info()
+    
     game_info = {
         "player_hand": player0_hand_serializable,
         "game_wind": current_game_state.game_wind,
@@ -45,11 +54,51 @@ def start_new_game():
         ].player_id,
         "winner_found": False,
         "remaining_tiles": len(current_game_state.wall),
-        "dealer_index": current_game_state.dealer_index,
-        "round_wind": current_game_state.round_wind
+        "dealer_index": dealer_info["dealer_index"],
+        "round_wind": dealer_info["round_wind"]
     }
 
     return jsonify(game_info)
+
+
+@app.route('/api/reset_dealer_rotation', methods=['POST'])
+def reset_dealer_rotation():
+    """Reset dealer rotation back to initial state (dealer=0, round=East)"""
+    reset_dealer_rotation_state()
+    dealer_info = get_current_dealer_info()
+    return jsonify({
+        "success": True,
+        "message": "Dealer rotation reset to initial state",
+        "dealer_index": dealer_info["dealer_index"],
+        "round_wind": dealer_info["round_wind"]
+    })
+
+
+@app.route('/api/advance_dealer', methods=['POST'])
+def advance_dealer():
+    """Advance to the next dealer/round based on game outcome"""
+    data = request.get_json()
+    dealer_won = data.get('dealer_won', False)
+    
+    advance_dealer_rotation(dealer_won)
+    dealer_info = get_current_dealer_info()
+    
+    return jsonify({
+        "success": True,
+        "message": f"Advanced to next {'hand' if dealer_won else 'dealer/round'}",
+        "dealer_index": dealer_info["dealer_index"],
+        "round_wind": dealer_info["round_wind"],
+        "dealer_won": dealer_won
+    })
+
+
+@app.route('/api/get_dealer_info', methods=['GET'])
+def get_dealer_info():
+    """Get current dealer and round information"""
+    dealer_info = get_current_dealer_info()
+    return jsonify({
+        "dealer_index": dealer_info["dealer_index"],
+        "round_wind": dealer_info["round_wind"]    })
 
 
 @app.route('/api/player_claims_pung', methods=['POST'])

@@ -23,6 +23,7 @@ from mahjong_engine.constants import (
     WINDS_ALL,
 )
 from mahjong_engine.game_state import GameState
+from mahjong_engine.game_session import reset_dealer_rotation_state
 from mahjong_engine.hand_validator import can_form_pung_with_discard
 from mahjong_engine.melds import MeldType, Pung
 from mahjong_engine.player import Player
@@ -33,6 +34,8 @@ from mahjong_engine.tile import Tile
 @pytest.fixture
 def game():
     """Fixture to provide a fresh GameState instance for each test."""
+    # Reset global dealer rotation state before each test
+    reset_dealer_rotation_state()
     return GameState()
 
 

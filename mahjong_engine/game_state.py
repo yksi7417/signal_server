@@ -1,6 +1,7 @@
 import random
 
 from .constants import INIT_HAND_SIZE, NUM_COPIES_PER_TILE, NUM_PLAYERS, TILE_CATEGORIES_FOR_GENERATION, WIND_EAST, WINDS_ALL
+from .game_session import get_dealer_rotation_state, assign_player_winds_globally, advance_dealer_rotation, get_current_dealer_info, set_dealer_rotation_state
 from .hand_validator import (
     can_form_kong_with_discard,
     can_form_pung_with_discard,
@@ -36,19 +37,46 @@ class GameState:
 
         self.deal_tiles()
         self.rules = DefaultRuleSet()  # Instantiated DefaultRuleSet        
-        self.current_player_index = 0
+        
+        # Get current dealer info from global state
+        dealer_info = get_current_dealer_info()
+        self.current_player_index = dealer_info["dealer_index"]  # Start with current dealer
         self.game_wind = WIND_EAST
         self.current_discard = None
         self.turn_number = 0
         self.pending_claim_player_id = None
         self.potential_claim_tile = None
-        self.claim_type_pending = None        # Dealer rotation and round tracking
-        self.dealer_index = 0  # Start with East dealer (player 0)
-        self.round_wind = WIND_EAST  # Current round wind
+        self.claim_type_pending = None
 
         self.winner_found = False
-        self.winning_player_id = None        # Assign initial player winds based on dealer position
-        self.assign_player_winds()
+        self.winning_player_id = None
+        
+        # Assign player winds based on global dealer rotation state
+        assign_player_winds_globally(self.players)
+
+    @property
+    def dealer_index(self):
+        """Get current dealer index from global dealer rotation state."""
+        return get_dealer_rotation_state().dealer_index
+    
+    @dealer_index.setter
+    def dealer_index(self, value):
+        """Set current dealer index in global dealer rotation state."""
+        # This setter is primarily for testing purposes
+        current_round = self.round_wind
+        set_dealer_rotation_state(value, current_round)
+    
+    @property
+    def round_wind(self):
+        """Get current round wind from global dealer rotation state."""
+        return get_dealer_rotation_state().round_wind
+    
+    @round_wind.setter
+    def round_wind(self, value):
+        """Set current round wind in global dealer rotation state."""
+        # This setter is primarily for testing purposes
+        current_dealer = self.dealer_index
+        set_dealer_rotation_state(current_dealer, value)
 
     def deal_tiles(self):
         for player in self.players:
@@ -503,52 +531,46 @@ class GameState:
                 "ai_player_id": ai_player.player_id,
                 "discarded_tile": {"suit": self.current_discard.suit,
                                    "value": self.current_discard.value,
-                                   "unicode": self.current_discard.unicode} if self.current_discard else None,
-                "next_player_id": self.players[self.current_player_index].player_id,                "human_can_claim": self.claim_type_pending if self.pending_claim_player_id == 0 else None,
+                                   "unicode": self.current_discard.unicode} if self.current_discard else None,                "next_player_id": self.players[self.current_player_index].player_id,
+                "human_can_claim": self.claim_type_pending if self.pending_claim_player_id == 0 else None,
                 "claimable_tile": {"suit": self.potential_claim_tile.suit,
                                    "value": self.potential_claim_tile.value} if self.potential_claim_tile and self.pending_claim_player_id == 0 else None}
 
     def assign_player_winds(self):
         """Assign winds to players based on current dealer position."""
-        for i, player in enumerate(self.players):
-            # Calculate wind index relative to dealer
-            wind_index = (i - self.dealer_index) % len(WINDS_ALL)
-            player.wind = WINDS_ALL[wind_index]
+        # Use global dealer rotation state to assign player winds
+        assign_player_winds_globally(self.players)
 
 
     def advance_dealer(self):
         """Advance to next dealer following traditional Mahjong rotation."""
-        self.dealer_index = (self.dealer_index + 1) % len(self.players)
+        # Use global dealer rotation state to advance dealer
+        dealer_rotation_state = get_dealer_rotation_state()
+        dealer_rotation_state.advance_dealer()
         
-        # When we complete a full dealer rotation (back to player 0 as dealer)
-        if self.dealer_index == 0:
-            self.advance_round()
-            
+        # Reassign player winds after dealer advancement
         self.assign_player_winds()
 
 
     def advance_round(self):
         """Advance to next round wind."""
-        current_round_index = WINDS_ALL.index(self.round_wind)
-        next_round_index = (current_round_index + 1) % len(WINDS_ALL)
-        self.round_wind = WINDS_ALL[next_round_index]
+        # Use global dealer rotation state to advance round
+        dealer_rotation_state = get_dealer_rotation_state()
+        dealer_rotation_state.advance_round()
 
 
     def should_dealer_continue(self, winner_id=None, wall_empty=False):
         """Check if dealer should continue based on Mahjong rules."""
-        # Dealer continues if:
-        # 1. Current hand wins (winner is current dealer)
-        # 2. Wall is empty with no winner (draw situation)
-        if winner_id == self.dealer_index or (wall_empty and winner_id is None):
-            return True
-        return False
+        # Use global dealer rotation state to check if dealer should continue
+        dealer_rotation_state = get_dealer_rotation_state()
+        return dealer_rotation_state.should_dealer_continue(winner_id, wall_empty)
 
 
     def end_hand(self, winner_id=None, wall_empty=False):
         """End current hand and handle dealer rotation."""
-        if not self.should_dealer_continue(winner_id, wall_empty):
-            self.advance_dealer()
-            
+        # Use global dealer rotation to advance dealer if needed
+        advance_dealer_rotation(winner_id, wall_empty)
+        
         # Reset game state for next hand
         self.current_player_index = self.dealer_index  # Next hand starts with dealer
         self.winner_found = False
