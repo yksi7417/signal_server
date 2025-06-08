@@ -69,8 +69,7 @@ class GameState:
         hand_size = len(player.hand)
 
         if hand_size % 3 != 1:
-            msg = (f"Player {player.player_id} cannot draw with "
-                   f"{hand_size} tiles in hand.")
+            msg = (f"Player {player.player_id} cannot draw with {hand_size} tiles in hand.")
             print(msg)
             return None
 
@@ -137,9 +136,7 @@ class GameState:
                     self.claim_type_pending = "WIN"
                     # self.potential_claim_tile is already self.current_discard
                     print(
-                        f"Player {
-                            other_player.player_id} (Human) can WIN with {
-                            self.current_discard}. Waiting for UI.")
+                        f"Player {other_player.player_id} (Human) can WIN with {self.current_discard}. Waiting for UI.")
                     return True  # Human win claim takes priority
                 # Optional: Logic for AI win claim can be added here if needed in future.
                 # For now, if an AI can win, it doesn't immediately halt flow for UI.
@@ -162,9 +159,7 @@ class GameState:
                         self.pending_claim_player_id = other_player.player_id
                         self.claim_type_pending = "KONG"
                         print(
-                            f"Player {
-                                other_player.player_id} can Kong {
-                                self.potential_claim_tile}")
+                            f"Player {other_player.player_id} can Kong {self.potential_claim_tile}")
                         return True
                     elif isinstance(other_player.agent, AIPlayerAgent):
                         # TODO: Implement AI Kong decision
@@ -180,9 +175,7 @@ class GameState:
                         self.pending_claim_player_id = other_player.player_id
                         self.claim_type_pending = "PUNG"
                         print(
-                            f"Player {
-                                other_player.player_id} (Human) can Pung {
-                                self.potential_claim_tile}. Waiting for UI.")
+                            f"Player {other_player.player_id} (Human) can Pung {self.potential_claim_tile}. Waiting for UI.")
                         return True
                     # elif isinstance(other_player.agent, AIPlayerAgent): pass
                         # AI Pung claim logic could be triggered here if AI should pre-emptively claim.
@@ -226,10 +219,8 @@ class GameState:
                 tiles_to_remove_for_pung.append(tile_in_hand)
 
         if len(tiles_to_remove_for_pung) != 2:
-
             print(
-                f"Error: Could not identify 2 matching tiles for Pung from player {claiming_player_id}'s hand. Found {
-                    len(tiles_to_remove_for_pung)}.")
+                f"Error: Could not identify 2 matching tiles for Pung from player {claiming_player_id}'s hand. Found {len(tiles_to_remove_for_pung)}.")
             return False
 
         for tile_to_remove in tiles_to_remove_for_pung:
@@ -251,11 +242,7 @@ class GameState:
         self.pending_claim_player_id = None
         self.claim_type_pending = None
 
-        print(
-            f"Player {
-                claiming_player.player_id}'s turn. Hand size: {
-                len(
-                    claiming_player.hand)}. Must discard.")
+        print(f"Player {claiming_player.player_id}'s turn. Hand size: {len(claiming_player.hand)}. Must discard.")
         return True
 
     def process_win_claim(self, claiming_player_id, claimed_tile):
@@ -367,14 +354,12 @@ class GameState:
                 "value": replacement_tile.value
             }
 
-        message = f"Hidden Kong with {kong_tile_obj} declared. Replacement tile drawn: {
-            replacement_tile.unicode if replacement_tile else 'None'}. Your turn to discard."
+        message = f"Hidden Kong with {kong_tile_obj} declared. Replacement tile drawn: {replacement_tile.unicode if replacement_tile else 'None'}. Your turn to discard."
 
         if self.winner_found and self.winning_player_id == player_id:
             # This condition would be true if draw_tile_for_current_player()
             # resulted in a win
-            message = f"Hidden Kong with {kong_tile_obj}. Drew {
-                replacement_tile.unicode if replacement_tile else 'None'}. Player {player_id} WINS by self-draw after Kong!"
+            message = f"Hidden Kong with {kong_tile_obj}. Drew {replacement_tile.unicode if replacement_tile else 'None'}. Player {player_id} WINS by self-draw after Kong!"
         elif replacement_tile is None:
             # This is a problem case - wall empty before discard turn after Kong.
             # Game might end in a draw or other specific rule.
@@ -471,8 +456,7 @@ class GameState:
             return {"success": False, "error": "Wall empty, AI cannot draw."}
         if self.winner_found and self.winning_player_id == ai_player.player_id:
             print(
-                f"AI Player {
-                    ai_player.player_id} has won by self-draw after drawing {drawn_tile}!")
+                f"AI Player {ai_player.player_id} has won by self-draw after drawing {drawn_tile}!")
             return {
                 "success": True,
                 "ai_player_id": ai_player.player_id,
@@ -507,8 +491,7 @@ class GameState:
 
         if not discard_success:
             print(
-                f"Error: AI Player {
-                    ai_player.player_id} failed to discard {tile_to_discard_by_ai} properly.")
+                f"Error: AI Player {ai_player.player_id} failed to discard {tile_to_discard_by_ai} properly.")
             return {"success": False, "error": "AI failed to execute discard."}
 
         return {"success": True,

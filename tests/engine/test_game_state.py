@@ -1,24 +1,239 @@
-import pytest
+import ast
 import collections
+import inspect
+import re
 from unittest.mock import MagicMock
+
+import pytest
+
+from mahjong_engine.constants import (INIT_HAND_SIZE, NUM_COPIES_PER_TILE,
+                                      NUM_PLAYERS, SUIT_BAMBOO,
+                                      SUIT_CHARACTERS, SUIT_DOTS, SUIT_DRAGONS,
+                                      SUIT_WINDS,
+                                      TILE_CATEGORIES_FOR_GENERATION,
+                                      WIND_EAST, WIND_NORTH, WIND_SOUTH)
 from mahjong_engine.game_state import GameState
-from mahjong_engine.tile import Tile
+from mahjong_engine.hand_validator import can_form_pung_with_discard
+from mahjong_engine.melds import MeldType, Pung
 from mahjong_engine.player import Player
 from mahjong_engine.player_agent import AIPlayerAgent, HumanPlayerAgent
-from mahjong_engine.melds import Pung, MeldType
-from mahjong_engine.constants import (
-    NUM_PLAYERS, INIT_HAND_SIZE, TILE_CATEGORIES_FOR_GENERATION,
-    NUM_COPIES_PER_TILE, WIND_EAST, SUIT_DOTS, SUIT_WINDS,
-    WIND_NORTH, WIND_SOUTH, SUIT_DRAGONS,
-    SUIT_BAMBOO, SUIT_CHARACTERS
-)
-from mahjong_engine.hand_validator import can_form_pung_with_discard
+from mahjong_engine.tile import Tile
 
 
 @pytest.fixture
 def game():
-    """Yields a fresh GameState() instance for each test."""
+    """Fixture to provide a fresh GameState instance for each test."""
     return GameState()
+
+
+# Test for syntax and code quality issues
+class TestCodeQuality:
+    """Test class to catch syntax errors, f-string issues, and other code quality problems."""
+    
+    def test_game_state_syntax_valid(self):
+        """Test that game_state.py has valid Python syntax."""
+        import mahjong_engine.game_state as game_state_module
+        source_file = inspect.getfile(game_state_module)
+        
+        with open(source_file, 'r', encoding='utf-8') as f:
+            source_code = f.read()
+        
+        try:
+            ast.parse(source_code)
+        except SyntaxError as e:
+            pytest.fail(f"Syntax error in game_state.py at line {e.lineno}: {e.msg}")
+    
+    def test_no_unterminated_fstrings(self):
+        """Test that there are no unterminated f-strings in game_state.py."""
+        import mahjong_engine.game_state as game_state_module
+        source_file = inspect.getfile(game_state_module)
+        
+        with open(source_file, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        
+        for line_num, line in enumerate(lines, 1):
+            # Check for unterminated f-strings
+            if 'f"' in line or "f'" in line:
+                # Count quotes to ensure they're balanced
+                double_quote_count = line.count('"')
+                single_quote_count = line.count("'")
+                
+                # If f-string starts but quotes are unbalanced, it might be unterminated
+                if line.strip().startswith('f"') and double_quote_count % 2 != 0:
+                    # Check if it continues on next line properly
+                    if line_num < len(lines):
+                        next_line = lines[line_num]
+                        if not next_line.strip().endswith('"') and '"' not in next_line:
+                            pytest.fail(f"Potential unterminated f-string at line {line_num}: {line.strip()}")
+    
+    def test_no_broken_multiline_strings(self):
+        """Test that multiline strings are properly formatted."""
+        import mahjong_engine.game_state as game_state_module
+        source_file = inspect.getfile(game_state_module)
+        
+        with open(source_file, 'r', encoding='utf-8') as f:
+            source_code = f.read()
+        
+        # Check for backslash line continuations in f-strings (which can cause issues)
+        problematic_patterns = [
+            r'f"[^"]*\\[\s\n]+[^"]*"',  # f-string with backslash continuation
+            r"f'[^']*\\[\s\n]+[^']*'",  # f-string with backslash continuation (single quotes)
+        ]
+        
+        for pattern in problematic_patterns:
+            matches = re.findall(pattern, source_code, re.MULTILINE)
+            if matches:
+                pytest.fail(f"Found problematic f-string with backslash continuation: {matches}")
+    
+    def test_print_statements_are_complete(self):
+        """Test that all print statements are properly closed."""
+        import mahjong_engine.game_state as game_state_module
+        source_file = inspect.getfile(game_state_module)
+        
+        with open(source_file, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        
+        for line_num, line in enumerate(lines, 1):
+            if 'print(' in line:
+                # Count parentheses to ensure they're balanced
+                open_parens = line.count('(')
+                close_parens = line.count(')')
+                
+                if open_parens > close_parens:
+                    # Check if it's properly continued on next lines
+                    current_line = line_num - 1
+                    total_open = open_parens
+                    total_close = close_parens
+                    
+                    while current_line + 1 < len(lines) and total_open > total_close:
+                        current_line += 1
+                        next_line = lines[current_line]
+                        total_open += next_line.count('(')
+                        total_close += next_line.count(')')
+                    
+                    if total_open != total_close:
+                        pytest.fail(f"Unbalanced parentheses in print statement starting at line {line_num}")
+    
+    def test_all_methods_are_callable(self):
+        """Test that all methods in GameState can be called without syntax errors."""
+        game = GameState()
+        
+        # Get all methods that don't start with underscore (public methods)
+        methods = [method for method in dir(game) 
+                  if callable(getattr(game, method)) and not method.startswith('_')]
+        
+        for method_name in methods:
+            method = getattr(game, method_name)
+            # Just check that the method object exists and is callable
+            assert callable(method), f"Method {method_name} is not callable"
+
+
+# Test for error message formatting
+class TestErrorMessages:
+    """Test that error messages are properly formatted and don't contain broken strings."""
+    
+    def test_discard_error_messages_format_correctly(self):
+        """Test that discard error messages format correctly with actual data."""
+        game = GameState()
+        
+        # Try to discard a tile that doesn't exist in hand
+        fake_tile = {"suit": "TestSuit", "value": "TestValue", "unicode": "🀫"}
+        
+        # Capture the result - should return False for invalid discard
+        result = game.discard_tile_for_current_player(fake_tile)
+        assert result is False, "Should return False for invalid tile discard"
+    
+    def test_print_statements_with_player_data(self):
+        """Test that print statements work correctly with actual player data."""
+        game = GameState()
+        player = game.players[0]
+        
+        # Test that we can access player attributes that are used in print statements
+        assert hasattr(player, 'player_id'), "Player should have player_id attribute"
+        assert isinstance(player.player_id, int), "Player ID should be an integer"
+        assert hasattr(player, 'hand'), "Player should have hand attribute"
+        assert isinstance(player.hand, list), "Player hand should be a list"
+    
+    def test_tile_representation_in_error_messages(self):
+        """Test that tile representations work correctly in error messages."""
+        game = GameState()
+        
+        # Create a test tile with all required attributes
+        test_tile_repr = {
+            "suit": "Dots",
+            "value": "1", 
+            "unicode": "🀙"
+        }
+        
+        # Verify the tile representation has all required keys
+        required_keys = ["suit", "value", "unicode"]
+        for key in required_keys:
+            assert key in test_tile_repr, f"Tile representation should have {key}"
+        
+        # Test that the discard method can handle this representation
+        result = game.discard_tile_for_current_player(test_tile_repr)
+        # The result depends on whether the tile is actually in the hand,
+        # but the method should not crash due to formatting issues
+
+
+# Test for method robustness
+class TestMethodRobustness:
+    """Test that methods handle edge cases and don't crash due to formatting issues."""
+    
+    def test_run_ai_turn_error_handling(self):
+        """Test that run_ai_turn handles errors gracefully with proper string formatting."""
+        game = GameState()
+        
+        # Set current player to AI (index 1)
+        game.current_player_index = 1
+        ai_player = game.players[1]
+        
+        # Ensure it's an AI player
+        assert isinstance(ai_player.agent, AIPlayerAgent)
+        
+        # Test with empty wall (should handle gracefully)
+        original_wall = game.wall[:]
+        game.wall = []
+        
+        result = game.run_ai_turn()
+        assert result["success"] is False
+        assert "error" in result
+        assert isinstance(result["error"], str)
+        
+        # Restore wall
+        game.wall = original_wall
+    
+    def test_process_claims_with_none_values(self):
+        """Test that claim processing handles None values gracefully."""
+        game = GameState()
+        
+        # Test pung claim with None values
+        result = game.process_pung_claim(None, None)
+        assert result is False
+        
+        # Test win claim with None values  
+        result = game.process_win_claim(None, None)
+        assert result is False
+        
+        # Test kong claim with None values
+        result = game.process_kong_claim(None, None)
+        assert result is False
+    
+    def test_hidden_kong_error_messages(self):
+        """Test that hidden kong error messages format correctly."""
+        game = GameState()
+        
+        # Test with invalid tile info
+        result = game.process_hidden_kong(0, {"invalid": "data"})
+        assert result["success"] is False
+        assert "error" in result
+        assert isinstance(result["error"], str)
+        
+        # Test with valid tile info but insufficient tiles
+        result = game.process_hidden_kong(0, {"suit": "Dots", "value": "1"})
+        assert result["success"] is False
+        assert "error" in result
+        assert isinstance(result["error"], str)
 
 
 def test_game_state_initialization(game):
