@@ -1,6 +1,6 @@
 # Run only integration tests
 Write-Host "Running integration tests only..." -ForegroundColor Yellow
-pytest -m "integration" -v
+pytest -m "integration" -v tests/integration/
 
 # Check exit code
 if ($LASTEXITCODE -eq 0) {

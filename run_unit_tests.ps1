@@ -1,6 +1,6 @@
 # Run only unit tests (skip integration tests)
 Write-Host "Running unit tests only (skipping integration tests)..." -ForegroundColor Green
-pytest -m "not integration" -v
+pytest -m "not integration" -v tests/engine
 
 # Check exit code
 if ($LASTEXITCODE -eq 0) {
