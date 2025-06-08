@@ -267,11 +267,15 @@ class TestAPIEndpointsIntegration:
             "tile_to_discard": tile_to_discard
         }
         
+        print(discard_data)
+
         response = requests.post(
             f"{base_url}/api/discard_tile",
             json=discard_data,
             headers={"Content-Type": "application/json"}
         )
+
+        print(response.json())
         
         assert response.status_code == 200
         

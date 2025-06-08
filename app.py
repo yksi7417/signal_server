@@ -446,19 +446,20 @@ def discard_tile():
         global current_game_state
         data = request.get_json()
         tile_to_discard_data = data.get('tile_to_discard', {})
-        
-        print("Discarding tile:", tile_to_discard_data)
+          # Debug output - avoid Unicode console errors on Windows
+        try:
+            print("Discarding tile:", tile_to_discard_data)
+        except UnicodeEncodeError:
+            print("Discarding tile: [Unicode tile data]")
 
         discarding_player_id = current_game_state.players[
             current_game_state.current_player_index
         ].player_id
         print("Current player ID:", discarding_player_id)
 
-        if (
-            not isinstance(tile_to_discard_data, dict)
+        if (not isinstance(tile_to_discard_data, dict)
             or "suit" not in tile_to_discard_data
-            or "value" not in tile_to_discard_data
-        ):
+            or "value" not in tile_to_discard_data):
             return jsonify({"success": False, "error": "Invalid tile data for discard."})
 
         success = current_game_state.discard_tile_for_current_player(
@@ -576,11 +577,14 @@ def request_ai_turn():
                     "tiles": [
                         {"unicode": t.unicode, "suit": t.suit, "value": t.value} for t in meld.raw_tiles
                     ],
-                }
-                for meld in player0.revealed_sets
+                }                for meld in player0.revealed_sets
             ]
         result["player0_revealed_sets"] = player0_revealed_sets_serializable
-        print(f"AI {current_player_id} turn result:", result)
+        # Debug output - avoid Unicode console errors on Windows
+        try:
+            print(f"AI {current_player_id} turn result:", result)
+        except UnicodeEncodeError:
+            print(f"AI {current_player_id} turn result: [Unicode result data]")
         return jsonify(result)
     else:
         return jsonify({
@@ -611,4 +615,4 @@ def after_request(response):
 if __name__ == "__main__":
     import os
     port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=True)
