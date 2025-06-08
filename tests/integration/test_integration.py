@@ -82,13 +82,21 @@ def start_flask_server():
     # Change to project directory
     os.chdir(project_root)
     
-    # Start Flask server in background
-    process = subprocess.Popen(
-        [sys.executable, "app.py"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
-    )
+    # Start Flask server in background with proper output handling
+    if os.name == 'nt':  # Windows
+        process = subprocess.Popen(
+            [sys.executable, "app.py"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+        )
+    else:  # Unix-like
+        process = subprocess.Popen(
+            [sys.executable, "app.py"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            preexec_fn=os.setsid
+        )
     
     return process
 
@@ -98,9 +106,11 @@ def stop_flask_server(process):
     if process and process.poll() is None:
         try:
             if os.name == 'nt':  # Windows
-                process.send_signal(signal.CTRL_BREAK_EVENT)
+                # Kill the entire process group
+                subprocess.run(['taskkill', '/F', '/T', '/PID', str(process.pid)], 
+                             capture_output=True, check=False)
             else:  # Unix-like
-                process.terminate()
+                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
             
             # Wait for graceful shutdown
             try:
@@ -245,8 +255,7 @@ class TestAPIEndpointsIntegration:
     @pytest.mark.timeout(20)
     def test_discard_tile_api(self, global_flask_server):
         """Test the discard_tile API endpoint."""
-        process, base_url = global_flask_server
-        # Start a new game and draw a tile
+        process, base_url = global_flask_server        # Start a new game and draw a tile
         requests.post(f"{base_url}/api/start_new_game")
         draw_response = requests.post(f"{base_url}/api/draw_tile")
         hand = draw_response.json()["hand"]
@@ -262,6 +271,7 @@ class TestAPIEndpointsIntegration:
             json=discard_data,
             headers={"Content-Type": "application/json"}
         )
+        
         assert response.status_code == 200
         
         data = response.json()
@@ -269,6 +279,7 @@ class TestAPIEndpointsIntegration:
         assert "discarded_tile" in data
         assert "next_player_id" in data
         assert "winner_found" in data
+
     @pytest.mark.timeout(20)
     def test_request_ai_turn_api(self, global_flask_server):
         """Test the request_ai_turn API endpoint."""

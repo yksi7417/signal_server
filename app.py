@@ -475,11 +475,14 @@ def discard_tile():
                 break
 
         hand_serializable = []
+
         if discarding_player_object:
             hand_serializable = [
                 {"unicode": t.unicode, "suit": t.suit, "value": t.value}
                 for t in discarding_player_object.hand
-            ]        # Handle potential None current_discard
+            ]
+        
+        # Handle potential None current_discard
         discarded_tile_info = None
         if current_game_state.current_discard:
             discarded_tile_info = {

@@ -6,12 +6,20 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from mahjong_engine.constants import (INIT_HAND_SIZE, NUM_COPIES_PER_TILE,
-                                      NUM_PLAYERS, SUIT_BAMBOO,
-                                      SUIT_CHARACTERS, SUIT_DOTS, SUIT_DRAGONS,
-                                      SUIT_WINDS,
-                                      TILE_CATEGORIES_FOR_GENERATION,
-                                      WIND_EAST, WIND_NORTH, WIND_SOUTH)
+from mahjong_engine.constants import (
+    INIT_HAND_SIZE,
+    NUM_COPIES_PER_TILE,
+    NUM_PLAYERS,
+    SUIT_BAMBOO,
+    SUIT_CHARACTERS,
+    SUIT_DOTS,
+    SUIT_DRAGONS,
+    SUIT_WINDS,
+    TILE_CATEGORIES_FOR_GENERATION,
+    WIND_EAST,
+    WIND_NORTH,
+    WIND_SOUTH,
+)
 from mahjong_engine.game_state import GameState
 from mahjong_engine.hand_validator import can_form_pung_with_discard
 from mahjong_engine.melds import MeldType, Pung
