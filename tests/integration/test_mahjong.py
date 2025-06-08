@@ -34,9 +34,10 @@ def kill_existing_servers(port=8080):
     killed_processes = []
     
     try:
-        for proc in psutil.process_iter(['pid', 'name', 'connections']):
+        for proc in psutil.process_iter(['pid', 'name']):
             try:
-                connections = proc.info['connections']
+                # Get connections for this specific process
+                connections = proc.connections()
                 if connections:
                     for conn in connections:
                         if hasattr(conn, 'laddr') and conn.laddr and conn.laddr.port == port:
@@ -152,8 +153,7 @@ def global_flask_server():
     if not wait_for_server_start(base_url, max_attempts=30):
         stop_flask_server(process)
         pytest.fail("Flask server failed to start within 30 seconds")
-    
-    print("4. Flask server is ready for testing!")
+    print(f"4. Flask server is ready for testing! pid={process.pid}")
     print("="*60)
     
     yield process, base_url
@@ -259,6 +259,7 @@ class TestAPIEndpointsIntegration:
         requests.post(f"{base_url}/api/start_new_game")
         draw_response = requests.post(f"{base_url}/api/draw_tile")
         hand = draw_response.json()["hand"]
+        print(hand)
         
         # Discard the first tile in hand (use correct API format)
         tile_to_discard = hand[0]
@@ -485,9 +486,9 @@ class TestDeploymentReadiness:
         """Test that static files are accessible for deployment."""
         process, base_url = global_flask_server
         static_files = [
-            "/static/game/index.html",
-            "/static/game/main.js",
-            "/static/game/js/gameActions.js"
+            "/",
+            "/game/main.js",
+            "/game/js/gameActions.js"
         ]
         
         for static_file in static_files:
