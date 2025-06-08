@@ -111,12 +111,28 @@ function handleWinAfterDraw(result) {
     displayHand(result.hand);
 }
 
+function handleWallEmpty(result) {
+    store.currentGameInfo.winner_found = false;
+    store.currentGameInfo.game_ended = true;
+
+    if (elements.playerConsoleEl) {
+        elements.playerConsoleEl.textContent = result.message || "Wall empty - game ends in a draw!";
+    }
+
+    if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
+    if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+
+    displayHand(result.hand);
+}
+
 function handleDrawTileResult(result) {
     if (result && result.success) {
         updateGameStateAfterDraw(result);
 
         if (result.action === "win" && result.winner_found) {
             handleWinAfterDraw(result);
+        } else if (result.action === "wall_empty") {
+            handleWallEmpty(result);
         } else if (!result.winner_found) {
             handleSuccessfulDraw(result);
         }

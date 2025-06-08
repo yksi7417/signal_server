@@ -482,11 +482,13 @@ def draw_tile():
             for t in current_player_hand
         ]
         return jsonify({
-            "success": False,
-            "error": "Failed to draw tile (wall empty or hand full?)",
+            "success": True,
+            "action": "wall_empty",
+            "winner_found": False,
+            "game_ended": True,
+            "message": "Wall empty - game ends in a draw",
             "hand": hand_serializable,
             "player_id": player_id,
-            "winner_found": current_game_state.winner_found,
             "remaining_tiles": len(current_game_state.wall)
         })
 
@@ -593,8 +595,7 @@ def discard_tile():
 @app.route('/api/request_ai_turn', methods=['POST'])
 def request_ai_turn():
     global current_game_state
-    if current_game_state.pending_claim_player_id is not None:
-        return jsonify({
+    if current_game_state.pending_claim_player_id is not None:        return jsonify({
             "success": False,
             "error": "Human claim pending. AI turn cannot run yet.",
         })
@@ -602,11 +603,15 @@ def request_ai_turn():
     current_player_id = current_game_state.players[
         current_game_state.current_player_index
     ].player_id
+    
     current_player_agent_type = type(
         current_game_state.players[current_game_state.current_player_index].agent
-    )    
+    )
+    
     if current_player_agent_type == AIPlayerAgent:
-        result = current_game_state.run_ai_turn()        # Add winner_found to the result
+        result = current_game_state.run_ai_turn()
+        
+        # Add winner_found to the result
         result["winner_found"] = current_game_state.winner_found
         # Add remaining tiles count
         result["remaining_tiles"] = len(current_game_state.wall)

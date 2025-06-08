@@ -17,10 +17,10 @@ export async function processAiTurns() {
     try {
         let next_player_is_ai = store.currentGameInfo.current_player_id !== 0;
 
-        while (next_player_is_ai && !store.currentGameInfo.winner_found) {
+        while (next_player_is_ai && !store.currentGameInfo.winner_found && !store.currentGameInfo.game_ended) {
             try {
                 next_player_is_ai = await processSingleAiTurn();
-                if (next_player_is_ai && !store.currentGameInfo.winner_found) {
+                if (next_player_is_ai && !store.currentGameInfo.winner_found && !store.currentGameInfo.game_ended) {
                     await new Promise(resolve => setTimeout(resolve, 500));
                 }
             } catch (error) {
@@ -29,7 +29,7 @@ export async function processAiTurns() {
             }
         }
 
-        if (store.currentGameInfo.winner_found) {
+        if (store.currentGameInfo.winner_found || store.currentGameInfo.game_ended) {
             handleGameOver();
         }
     } catch (error) {
@@ -41,15 +41,71 @@ export async function processAiTurns() {
 }
 
 function handleGameOver() {
-    if (elements.playerConsoleEl) {
-        elements.playerConsoleEl.textContent =
-            `Game over. Player ${store.currentGameInfo.winning_player_id} has won. Please reset.`;
+    if (store.currentGameInfo.winner_found) {
+        if (elements.playerConsoleEl) {
+            elements.playerConsoleEl.textContent =
+                `Game over. Player ${store.currentGameInfo.winning_player_id} has won. Please reset.`;
+        }
+        if (elements.gameInfoEl && store.currentGameInfo.winning_player_id !== undefined) {
+            elements.gameInfoEl.innerHTML += `<br><b>Player ${store.currentGameInfo.winning_player_id} WINS!</b>`;
+        }
+    } else if (store.currentGameInfo.game_ended) {
+        if (elements.playerConsoleEl) {
+            elements.playerConsoleEl.textContent = "Draw game - Wall empty. Click 'Start New Hand' to continue.";
+        }
+        if (elements.gameInfoEl) {
+            elements.gameInfoEl.innerHTML += `<br><b>DRAW GAME - Wall Empty!</b>`;
+        }
+        
+        // For draw games, offer to start a new hand
+        addStartNewHandButton();
     }
-    if (elements.gameInfoEl && store.currentGameInfo.winning_player_id !== undefined) {
-        elements.gameInfoEl.innerHTML += `<br><b>Player ${store.currentGameInfo.winning_player_id} WINS!</b>`;
-    }
+    
     if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
     if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+}
+
+function addStartNewHandButton() {
+    // Check if button already exists
+    if (document.getElementById('btnStartNewHand')) {
+        return;
+    }
+    
+    const newHandButton = document.createElement('button');
+    newHandButton.id = 'btnStartNewHand';
+    newHandButton.textContent = 'Start New Hand';
+    newHandButton.className = 'btn btn-primary';
+    newHandButton.style.marginLeft = '10px';
+    
+    newHandButton.onclick = async () => {
+        try {
+            // Advance dealer rotation (dealer stays same for draw games in some variants)
+            const advanceResponse = await fetch('/api/advance_dealer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dealer_won: false }) // Draw = dealer didn't win
+            });
+            
+            if (advanceResponse.ok) {
+                // Start new game
+                const newGameResponse = await fetch('/api/start_new_game', { method: 'POST' });
+                const gameData = await newGameResponse.json();
+                
+                // Update the UI with new game data
+                window.location.reload(); // Simple approach - reload the page
+            }
+        } catch (error) {
+            console.error('Error starting new hand:', error);
+            if (elements.playerConsoleEl) {
+                elements.playerConsoleEl.textContent = 'Error starting new hand. Please refresh the page.';
+            }
+        }
+    };
+    
+    // Add the button to the UI
+    if (elements.btnDrawTile && elements.btnDrawTile.parentNode) {
+        elements.btnDrawTile.parentNode.appendChild(newHandButton);
+    }
 }
 
 async function processSingleAiTurn() {
@@ -106,6 +162,9 @@ function updateGameState(result) {
     if (result.next_player_id !== undefined) {
         store.currentGameInfo.current_player_id = result.next_player_id;
     }
+    if (result.game_ended !== undefined) {
+        store.currentGameInfo.game_ended = result.game_ended;
+    }
     
     // Update the game info display to reflect changes
     displayGameInfo(store.currentGameInfo);
@@ -122,6 +181,16 @@ function handleSuccessfulAiTurn(result) {
         return true;
     }
 
+    if (result.action === "wall_empty") {
+        if (elements.playerConsoleEl) {
+            elements.playerConsoleEl.textContent = result.message || "Wall empty - game ends in a draw!";
+        }
+        if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
+        if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+        store.currentGameInfo.game_ended = true;
+        return true; // Stop AI turns
+    }
+
     if (result.discarded_tile) {
         if (elements.playerConsoleEl) {
             let displayText = `AI Player ${result.ai_player_id} discarded ${result.discarded_tile.unicode}`;
@@ -136,6 +205,19 @@ function handleSuccessfulAiTurn(result) {
 }
 
 function handleFailedAiTurn(result) {
+    // Check if this is actually a wall empty condition that erroneously returned success: false
+    if (result && result.error && result.error.includes("Wall empty")) {
+        // Treat this as a successful wall empty condition
+        if (elements.playerConsoleEl) {
+            elements.playerConsoleEl.textContent = "Wall empty - game ends in a draw!";
+        }
+        if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
+        if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+        store.currentGameInfo.game_ended = true;
+        handleGameOver();
+        return;
+    }
+    
     if (elements.playerConsoleEl && result && result.error) {
         elements.playerConsoleEl.textContent = "AI turn issue: " + result.error;
     } else if (elements.playerConsoleEl && !store.currentGameInfo.winner_found) {

@@ -203,15 +203,17 @@ class TestMethodRobustness:
         
         # Ensure it's an AI player
         assert isinstance(ai_player.agent, AIPlayerAgent)
-        
-        # Test with empty wall (should handle gracefully)
+          # Test with empty wall (should handle gracefully)
         original_wall = game.wall[:]
         game.wall = []
         
         result = game.run_ai_turn()
-        assert result["success"] is False
-        assert "error" in result
-        assert isinstance(result["error"], str)
+        assert result["success"] is True
+        assert result["action"] == "wall_empty"
+        assert result["game_ended"] == True
+        assert "message" in result
+        assert isinstance(result["message"], str)
+        assert "Wall empty" in result["message"]
         
         # Restore wall
         game.wall = original_wall
@@ -504,8 +506,10 @@ def test_run_ai_turn_wall_empty(game):
     game.wall = []
     result = game.run_ai_turn()
 
-    assert not result["success"]
-    assert "Wall empty" in result.get("error", "")
+    assert result["success"]
+    assert result["action"] == "wall_empty"
+    assert result["game_ended"] == True
+    assert "Wall empty" in result.get("message", "")
     assert len(ai_player.hand) == INIT_HAND_SIZE
 
 

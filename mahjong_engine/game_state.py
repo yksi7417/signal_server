@@ -483,13 +483,27 @@ class GameState:
 
     def run_ai_turn(self):
         ai_player = self.players[self.current_player_index]
+        
         if not isinstance(ai_player.agent, AIPlayerAgent):
             print(
                 f"Error: run_ai_turn called for non-AI player {ai_player.player_id}")
             return {"success": False, "error": "Not an AI player."}
+        
         drawn_tile = self.draw_tile_for_current_player()
         if drawn_tile is None:
-            return {"success": False, "error": "Wall empty, AI cannot draw."}
+            # Wall is empty - end the game as a draw
+            return {
+                "success": True,
+                "action": "wall_empty",
+                "winner_found": False,
+                "game_ended": True,
+                "message": "Wall empty - game ends in a draw",
+                "ai_player_id": ai_player.player_id,
+                "discarded_tile": None,
+                "next_player_id": None,
+                "human_can_claim": None,
+                "claimable_tile": None
+            }
         if self.winner_found and self.winning_player_id == ai_player.player_id:
             print(
                 f"AI Player {ai_player.player_id} has won by self-draw after drawing {drawn_tile}!")
@@ -530,8 +544,9 @@ class GameState:
         return {"success": True,
                 "ai_player_id": ai_player.player_id,
                 "discarded_tile": {"suit": self.current_discard.suit,
-                                   "value": self.current_discard.value,
-                                   "unicode": self.current_discard.unicode} if self.current_discard else None,                "next_player_id": self.players[self.current_player_index].player_id,
+                "value": self.current_discard.value,
+                "unicode": self.current_discard.unicode} if self.current_discard else None,
+                "next_player_id": self.players[self.current_player_index].player_id,
                 "human_can_claim": self.claim_type_pending if self.pending_claim_player_id == 0 else None,
                 "claimable_tile": {"suit": self.potential_claim_tile.suit,
                                    "value": self.potential_claim_tile.value} if self.potential_claim_tile and self.pending_claim_player_id == 0 else None}
