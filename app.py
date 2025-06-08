@@ -442,91 +442,100 @@ def draw_tile():
 
 @app.route('/api/discard_tile', methods=['POST'])
 def discard_tile():
-    global current_game_state
-    data = request.get_json()
-    tile_to_discard_data = data.get('tile_to_discard', {})
-    
-    print("Discarding tile:", tile_to_discard_data)
+    try:
+        global current_game_state
+        data = request.get_json()
+        tile_to_discard_data = data.get('tile_to_discard', {})
+        
+        print("Discarding tile:", tile_to_discard_data)
 
-    discarding_player_id = current_game_state.players[
-        current_game_state.current_player_index
-    ].player_id
-    print("Current player ID:", discarding_player_id)
-
-    if (
-        not isinstance(tile_to_discard_data, dict)
-        or "suit" not in tile_to_discard_data
-        or "value" not in tile_to_discard_data
-    ):
-        return jsonify({"success": False, "error": "Invalid tile data for discard."})
-
-    success = current_game_state.discard_tile_for_current_player(
-        tile_to_discard_data)
-
-    if success:
-        next_player_id = current_game_state.players[
+        discarding_player_id = current_game_state.players[
             current_game_state.current_player_index
         ].player_id
-
-        discarding_player_object = None
-        for p in current_game_state.players:
-            if p.player_id == discarding_player_id:
-                discarding_player_object = p
-                break
-
-        hand_serializable = []
-
-        if discarding_player_object:
-            hand_serializable = [
-                {"unicode": t.unicode, "suit": t.suit, "value": t.value}
-                for t in discarding_player_object.hand
-            ]
-        
-        # Handle potential None current_discard
-        discarded_tile_info = None
-        if current_game_state.current_discard:
-            discarded_tile_info = {
-                "unicode": current_game_state.current_discard.unicode,
-                "suit": current_game_state.current_discard.suit,
-                "value": current_game_state.current_discard.value,
-            }
-
-        response = {
-            "success": True,
-            "discarded_by_player_id": discarding_player_id,
-            "updated_hand": hand_serializable,
-            "next_player_id": next_player_id,
-            "discarded_tile": discarded_tile_info,
-            "winner_found": current_game_state.winner_found,
-            "remaining_tiles": len(current_game_state.wall)
-        }
+        print("Current player ID:", discarding_player_id)
 
         if (
-            current_game_state.pending_claim_player_id == 0
-            and current_game_state.potential_claim_tile
-            and current_game_state.claim_type_pending
+            not isinstance(tile_to_discard_data, dict)
+            or "suit" not in tile_to_discard_data
+            or "value" not in tile_to_discard_data
         ):
-            response["human_can_claim"] = current_game_state.claim_type_pending
-            response["claimable_tile"] = {
-                "unicode": current_game_state.potential_claim_tile.unicode,
-                "suit": current_game_state.potential_claim_tile.suit,
-                "value": current_game_state.potential_claim_tile.value,
+            return jsonify({"success": False, "error": "Invalid tile data for discard."})
+
+        success = current_game_state.discard_tile_for_current_player(
+            tile_to_discard_data)
+
+        if success:
+            next_player_id = current_game_state.players[
+                current_game_state.current_player_index
+            ].player_id
+
+            discarding_player_object = None
+            for p in current_game_state.players:
+                if p.player_id == discarding_player_id:
+                    discarding_player_object = p
+                    break
+
+            hand_serializable = []
+
+            if discarding_player_object:
+                hand_serializable = [
+                    {"unicode": t.unicode, "suit": t.suit, "value": t.value}
+                    for t in discarding_player_object.hand
+                ]
+            
+            # Handle potential None current_discard
+            discarded_tile_info = None
+            if current_game_state.current_discard:
+                discarded_tile_info = {
+                    "unicode": current_game_state.current_discard.unicode,
+                    "suit": current_game_state.current_discard.suit,
+                    "value": current_game_state.current_discard.value,
+                }
+
+            response = {
+                "success": True,
+                "discarded_by_player_id": discarding_player_id,
+                "updated_hand": hand_serializable,
+                "next_player_id": next_player_id,
+                "discarded_tile": discarded_tile_info,
+                "winner_found": current_game_state.winner_found,
+                "remaining_tiles": len(current_game_state.wall)
             }
+
+            if (
+                current_game_state.pending_claim_player_id == 0
+                and current_game_state.potential_claim_tile
+                and current_game_state.claim_type_pending
+            ):
+                response["human_can_claim"] = current_game_state.claim_type_pending
+                response["claimable_tile"] = {
+                    "unicode": current_game_state.potential_claim_tile.unicode,
+                    "suit": current_game_state.potential_claim_tile.suit,
+                    "value": current_game_state.potential_claim_tile.value,
+                }
+            else:
+                response["human_can_claim"] = None
+            return jsonify(response)
         else:
-            response["human_can_claim"] = None
-        return jsonify(response)
-    else:
-        current_player_obj = current_game_state.players[discarding_player_id]
-        hand_serializable = [{"unicode": t.unicode,
-                              "suit": t.suit,
-                              "value": t.value} for t in current_player_obj.hand]
+            current_player_obj = current_game_state.players[discarding_player_id]
+            hand_serializable = [{"unicode": t.unicode,
+                                  "suit": t.suit,
+                                  "value": t.value} for t in current_player_obj.hand]
+            return jsonify({
+                "success": False,
+                "error": "Failed to discard tile (tile not in hand, or wrong hand size?)",
+                "hand": hand_serializable,
+                "player_id": discarding_player_id,
+                "winner_found": current_game_state.winner_found,
+            })
+    except Exception as e:
+        import traceback
+        print(f"Error in discard_tile: {e}")
+        print(f"Traceback: {traceback.format_exc()}")
         return jsonify({
             "success": False,
-            "error": "Failed to discard tile (tile not in hand, or wrong hand size?)",
-            "hand": hand_serializable,
-            "player_id": discarding_player_id,
-            "winner_found": current_game_state.winner_found,
-        })
+            "error": f"Internal server error: {str(e)}"
+        }), 500
 
 
 @app.route('/api/request_ai_turn', methods=['POST'])

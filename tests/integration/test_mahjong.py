@@ -377,13 +377,13 @@ class TestGameFlowIntegration:
         process, base_url = global_flask_server
         # Start new game
         start_response = requests.post(f"{base_url}/api/start_new_game")
-        assert start_response.status_code == 200
+        assert start_response.status_code == 200, "Failed to start new game"
         start_data = start_response.json()
         initial_tiles = start_data["remaining_tiles"]
         
         # Draw a tile
         draw_response = requests.post(f"{base_url}/api/draw_tile")
-        assert draw_response.status_code == 200
+        assert draw_response.status_code == 200, "Failed to draw new game"
         draw_data = draw_response.json()
         assert draw_data["success"] is True
         assert draw_data["remaining_tiles"] == initial_tiles - 1
@@ -394,19 +394,20 @@ class TestGameFlowIntegration:
         discard_data = {
             "tile_to_discard": tile_to_discard
         }
+        print(discard_data)
         
         discard_response = requests.post(
             f"{base_url}/api/discard_tile",
             json=discard_data,
             headers={"Content-Type": "application/json"}
         )
-        assert discard_response.status_code == 200
+        assert discard_response.status_code == 200, "Failed to discard a tile"
         discard_data = discard_response.json()
         assert discard_data["success"] is True
         
         # Request AI turn
         ai_response = requests.post(f"{base_url}/api/request_ai_turn")
-        assert ai_response.status_code == 200
+        assert ai_response.status_code == 200, "Failed to request AI turn"
         ai_data = ai_response.json()
         
         # Verify the game state progressed        assert "success" in ai_data
