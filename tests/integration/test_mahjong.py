@@ -321,7 +321,7 @@ class TestJavaScriptModulesIntegration:
     def test_main_js_serves_correctly(self, global_flask_server):
         """Test that main.js is served with correct MIME type."""
         process, base_url = global_flask_server
-        response = requests.get(f"{base_url}/static/game/main.js")
+        response = requests.get(f"{base_url}/game/main.js")
         assert response.status_code == 200
         
         content_type = response.headers.get("Content-Type", "")
@@ -338,12 +338,12 @@ class TestJavaScriptModulesIntegration:
         """Test that all JavaScript modules are served correctly."""
         process, base_url = global_flask_server
         js_modules = [
-            "/static/game/js/gameActions.js",
-            "/static/game/js/claimsHandler.js", 
-            "/static/game/js/tileDisplay.js",
-            "/static/game/js/aiTurnHandler.js",
-            "/static/game/js/celebrationScreen.js",
-            "/static/game/js/gameStore.js"
+            "/game/js/gameActions.js",
+            "/game/js/claimsHandler.js", 
+            "/game/js/tileDisplay.js",
+            "/game/js/aiTurnHandler.js",
+            "/game/js/celebrationScreen.js",
+            "/game/js/gameStore.js"
         ]
         
         for module_path in js_modules:
@@ -360,7 +360,7 @@ class TestJavaScriptModulesIntegration:
     def test_security_headers_present(self, global_flask_server):
         """Test that security headers are present in responses."""
         process, base_url = global_flask_server
-        response = requests.get(f"{base_url}/static/game/main.js")
+        response = requests.get(f"{base_url}/game/main.js")
         assert response.status_code == 200
         
         # Check for CORS headers
