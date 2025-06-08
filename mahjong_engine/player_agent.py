@@ -1,6 +1,6 @@
-from abc import ABC, abstractmethod
-import random
 import collections
+import random
+from abc import ABC, abstractmethod
 
 
 class PlayerAgent(ABC):
@@ -39,16 +39,14 @@ class PlayerAgent(ABC):
 class HumanPlayerAgent(PlayerAgent):
     def choose_discard(self, game_state, hand):
         print(
-            f"Warning: HumanPlayerAgent.choose_discard called for player {
-                self.player_id}. This should be UI driven.")
+            f"Warning: HumanPlayerAgent.choose_discard called for player {self.player_id}. This should be UI driven.")
         if hand:
             return hand[-1]
         return None
 
     def decide_claim(self, game_state, discarded_tile, claim_options):
         print(
-            f"Warning: HumanPlayerAgent.decide_claim called for player {
-                self.player_id}. This should be UI driven.")
+            f"Warning: HumanPlayerAgent.decide_claim called for player {self.player_id}. This should be UI driven.")
         return None
 
 
