@@ -1,14 +1,11 @@
 .discard-area {
   width: 100%;
   min-height: 150px;
-  max-height: 300px;
+  max-height: 150px;
   border: 2px solid #ddd;
   border-radius: 8px;
-  padding: 15px;
-  margin: 20px 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
   justify-content: center;
   align-items: flex-start;
   background-color: #f5f5f5;
@@ -24,29 +21,49 @@
   display: flex;
   width: 98%;
   max-width: 1200px;
-  margin: 5px auto;      /* centers and gives vertical spacing */
-  gap: 5px;              /* optional spacing between columns */
+  margin: 1px auto;      /* centers and gives vertical spacing */
+  gap: 1px;              /* optional spacing between columns */
 }
 
 #game-info,
 #remaining-tiles {
   flex: 0 0 100px;        /* “don’t grow or shrink, always be 100px” */
-  margin-top: 10px;
+  margin-top: 1px;
 }
 
 #remaining-tiles {
   font-weight: bold;
 }
 
+#selected-tile-display {
+  flex: 0 0 100px;        /* "don't grow or shrink, always be 100px" */
+  margin-top: 1px;
+  font-weight: bold;
+}
+
 #player-console {
   flex: 1;                /* take up all remaining space */
-  margin-top: 10px;
+  margin-top: 1px;
   color: green;
+}
+
+#game-info {
+  width: 98%;
+  max-width: 1200px;
+  margin: 1px auto;      /* centers and gives vertical spacing */
+  gap: 1px;              /* optional spacing between columns */
 }
 
 #game-hand-group {
   width: 98%;
   max-width: 1200px;
-  margin: 5px auto;      /* centers and gives vertical spacing */
-  gap: 5px;              /* optional spacing between columns */
+  margin: 1px auto;      /* centers and gives vertical spacing */
+  gap: 1px;              /* optional spacing between columns */
+}
+
+#button-group {
+  width: 98%;
+  max-width: 1200px;
+  margin: 1px auto;      /* centers and gives vertical spacing */
+  gap: 1px;              /* optional spacing between columns */
 }

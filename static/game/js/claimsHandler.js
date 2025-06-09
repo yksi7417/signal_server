@@ -188,7 +188,7 @@ export function enableHumanTurn() {
 function updateGameInfoAfterDecline(result) {
     if (elements.gameInfoEl && result.next_player_id !== undefined && result.discarded_tile) {
         elements.gameInfoEl.innerHTML = `
-            Game Wind: ${store.currentGameInfo.game_wind || 'N/A'}<br> 
+            Wind: ${store.currentGameInfo.game_wind || 'N/A'}<br> 
         `;
     }
 }

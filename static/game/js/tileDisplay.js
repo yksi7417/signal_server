@@ -191,7 +191,7 @@ function handleTileClick(tile, tileEl) {
     if (elements.btnDiscardTile && !elements.btnDiscardTile.disabled) {
         store.selectedTileForDiscard = tile;
         if (elements.selectedTileDisplayEl) {
-            elements.selectedTileDisplayEl.textContent = `Selected Tile: ${tile.unicode}`;
+            elements.selectedTileDisplayEl.textContent = `Selected: ${tile.unicode}`;
         }
         document.querySelectorAll('#player-hand span').forEach(el => {
             el.style.backgroundColor = 'transparent';
@@ -217,14 +217,14 @@ export function displayRevealedSets(revealed_sets_data) {
     if (!elements.revealedSetsEl) return;
 
     if (!revealed_sets_data || revealed_sets_data.length === 0) {
-        elements.revealedSetsEl.textContent = "Revealed Sets: None";
+        elements.revealedSetsEl.textContent = "";
         return;
     }
 
     let html = "";
     revealed_sets_data.forEach(meld => {
         const tilesString = meld.tiles.map(t => `${t.unicode}`).join(' ');
-        html += `(${tilesString})`;
+        html += `[${tilesString}]`;
     });
     elements.revealedSetsEl.innerHTML = html;
 }
@@ -237,13 +237,13 @@ export function displayGameInfo(info) {
     }
 
     elements.gameInfoEl.innerHTML = `
-        Game Wind: ${info.game_wind || 'N/A'}<br>
+        Wind: ${info.game_wind || 'N/A'}<br>
     `;
 
     // Update remaining tiles count
     const remainingTilesEl = document.getElementById('remaining-tiles');
     if (remainingTilesEl && typeof info.remaining_tiles !== 'undefined') {
-        remainingTilesEl.textContent = `Remaining Tiles: ${info.remaining_tiles}`;
+        remainingTilesEl.textContent = `Tiles: ${info.remaining_tiles}`;
     }
 
     if (info) {

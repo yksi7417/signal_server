@@ -145,7 +145,7 @@ function updateGameInfoDisplay(result) {
     if (elements.gameInfoEl &&
         result.next_player_id !== undefined &&
         result.discarded_tile) {
-        elements.gameInfoEl.innerHTML = `Game Wind: ${store.currentGameInfo.game_wind || 'N/A'}<br>`;
+        elements.gameInfoEl.innerHTML = `Wind: ${store.currentGameInfo.game_wind || 'N/A'}<br>`;
     }
 }
 
@@ -210,7 +210,7 @@ export async function handleReset() {
         elements.playerConsoleEl.textContent = "Game reset. New game started.";
     }
     if (elements.selectedTileDisplayEl) {
-        elements.selectedTileDisplayEl.textContent = "Selected Tile: None";
+        elements.selectedTileDisplayEl.textContent = "Selected:";
     }
     store.discardedTiles = [];
     displayDiscardedTiles();
