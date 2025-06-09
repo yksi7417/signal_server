@@ -4,19 +4,19 @@ import { elements, store } from './gameStore.js';
 import { displayHand, displayRevealedSets } from './tileDisplay.js';
 
 export function showClaimPrompt(tile, claimType) {
-    if (!elements.claimPromptEl || !elements.claimMessageEl) return;
     store.activeClaimType = claimType;
-    elements.claimMessageEl.textContent =
+    elements.playerConsoleEl.textContent =
         `Player discarded ${tile.suit} ${tile.value}. Do you want to claim ${claimType}?`;
-    elements.claimPromptEl.style.display = 'block';
 
     if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
     if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+    if (elements.btnClaimNo) elements.btnClaimNo.disabled = false;
+    if (elements.btnClaimYes) elements.btnClaimYes.disabled = false;
 }
 
 export function hideClaimPrompt() {
-    if (!elements.claimPromptEl) return;
-    elements.claimPromptEl.style.display = 'none';
+    if (elements.btnClaimNo) elements.btnClaimNo.disabled = true;
+    if (elements.btnClaimYes) elements.btnClaimYes.disabled = true;
 }
 
 export async function handleClaimYes() {

@@ -10,8 +10,97 @@ export function displayHand(tiles) {
     if (!elements.playerHandEl) return;
     store.currentHandTiles = tiles || [];
 
-    if (store.currentHandTiles.length === 0) {
-        elements.playerHandEl.textContent = "No tiles in hand.";
+    if (store.currentHandTiles.length === 0) {        
+        elements.playerHandEl.innerHTML = `
+            <div style="text-align: center; padding: 20px;">
+                <p style="font-size: 18px; margin-bottom: 15px;">No tiles in hand.</p>
+                <button id="next-game-btn" style="
+                    padding: 12px 24px;
+                    font-size: 16px;
+                    font-weight: bold;
+                    background-color: #4CAF50;
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    margin-top: 10px;
+                    transition: background-color 0.3s ease;
+                " onmouseover="this.style.backgroundColor='#45a049'" 
+                   onmouseout="this.style.backgroundColor='#4CAF50'">Continue to Next Game</button>
+            </div>
+        `;
+        
+        // Add click handler for the next game button
+        const nextGameBtn = document.getElementById('next-game-btn');
+        if (nextGameBtn) {
+            nextGameBtn.onclick = async () => {
+                try {
+                    // Advance dealer rotation - assume it was a draw (no winner)
+                    const advanceResponse = await fetch('/api/advance_dealer', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ dealer_won: false })
+                    });
+                    
+                    if (advanceResponse.ok) {
+                        // Start new game
+                        const newGameResponse = await fetch('/api/start_new_game', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        
+                        if (newGameResponse.ok) {
+                            const gameInfo = await newGameResponse.json();
+                            
+                            // Update the display with new game info
+                            displayHand(gameInfo.player_hand);
+                            displayGameInfo(gameInfo);
+                            
+                            // Clear discard area
+                            store.discardedTiles = [];
+                            displayDiscardedTiles();
+                              // Reset revealed sets
+                            displayRevealedSets([]);
+                            
+                            // Clear selected tile
+                            store.selectedTileForDiscard = null;
+                            if (elements.selectedTileDisplayEl) {
+                                elements.selectedTileDisplayEl.textContent = "Selected Tile: None";
+                            }
+                            
+                            // Enable draw tile button and disable discard
+                            if (elements.btnDrawTile) elements.btnDrawTile.disabled = false;
+                            if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+                            
+                            // Update console message
+                            if (elements.playerConsoleEl) {
+                                elements.playerConsoleEl.textContent = "New game started! Draw a tile to begin.";
+                            }
+                            
+                            // Reset game state flags
+                            store.currentGameInfo.winner_found = false;
+                            store.currentGameInfo.game_ended = false;
+                            
+                        } else {
+                            console.error('Failed to start new game');
+                            if (elements.playerConsoleEl) {
+                                elements.playerConsoleEl.textContent = "Error starting new game. Please try again.";
+                            }
+                        }
+                    } else {
+                        console.error('Failed to advance dealer');
+                        if (elements.playerConsoleEl) {
+                            elements.playerConsoleEl.textContent = "Error advancing to next game. Please try again.";
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error continuing to next game:', error);
+                    if (elements.playerConsoleEl) {
+                        elements.playerConsoleEl.textContent = "Error continuing to next game. Please try again.";
+                    }
+                }
+            };
+        }
         return;
     }
 
@@ -167,9 +256,12 @@ export function displayDiscardedTiles() {
     discardArea.innerHTML = '';
     // Add a flex container for each row
     const numTilesPerRow = 16;
+    
+    // Reverse the tiles array so newest tiles appear at top left
+    const reversedTiles = [...store.discardedTiles].reverse();
     let currentRow;
 
-    store.discardedTiles.forEach((tile, index) => {
+    reversedTiles.forEach((tile, index) => {
         if (index % numTilesPerRow === 0) {
             currentRow = document.createElement('div');
             currentRow.style.cssText = `
@@ -197,8 +289,8 @@ export function displayDiscardedTiles() {
             box-shadow: 2px 2px 4px rgba(0,0,0,0.2);
         `;
 
-        // If it's the latest discarded tile, highlight it
-        if (index === store.discardedTiles.length - 1) {
+        // If it's the latest discarded tile (first in reversed array), highlight it
+        if (index === 0) {
             tileElement.style.border = '1px solid #ff6b6b';
             tileElement.style.boxShadow = '0 0 1px rgba(255,107,107,0.5)';
         }

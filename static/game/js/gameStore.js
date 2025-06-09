@@ -25,11 +25,8 @@ export const elements = {
     btnDiscardTile: document.getElementById('btnDiscardTile'),
     playerConsoleEl: document.getElementById('player-console'),
     selectedTileDisplayEl: document.getElementById('selected-tile-display'),
-    claimPromptEl: document.getElementById('claim-prompt'),
-    claimMessageEl: document.getElementById('claim-message'),
     btnClaimYes: document.getElementById('btnClaimYes'),
     btnClaimNo: document.getElementById('btnClaimNo'),
     revealedSetsEl: document.getElementById('revealed-sets-display'),
-    discardArea: document.getElementById('discard-area'),
-    claimTypeEl: document.getElementById('claim-type')
+    discardArea: document.getElementById('discard-area')
 };
