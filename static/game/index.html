@@ -4,16 +4,11 @@
 <head>
   <meta charset="utf-8">
   <title>Mahjong Game</title>
-  <link rel="stylesheet" href="styles/game.css">
+  <link rel="stylesheet" href="game/styles/game.css">
 </head>
 
 <body>
   <div class="game-area">
-    <h1>Mahjong Game</h1>
-    <!-- <button id="draw">Draw a Tile</button> --> <!-- Commented out -->
-    <button id="reset">Reset</button>
-    <div id="game-info">Game information will load here...</div>
-    <div id="remaining-tiles" style="margin-top: 10px; font-weight: bold;">Remaining Tiles: --</div>    <div style="margin: 20px auto; width: 95%; max-width: 1200px;">
       <div id="discard-area" style="
             min-height: 200px;
             max-height: 200px;
@@ -31,16 +26,24 @@
         "></div>
     </div>
 
-    <div id="player-console" style="margin-top: 10px; color: green;"></div>
-    <div id="player-hand" style="margin-top: 20px; font-size: 3em;">Your hand will load here...</div>
-    <div id="revealed-sets-display" style="margin-top: 20px; font-size: 2.5em;">Revealed Sets: None</div>
-    <div style="margin-top: 10px; ">
-      <button id="btnDrawTile">Draw Tile</button>
-      <button id="btnDiscardTile" disabled>Discard Tile</button>
-      <button id="btnClaimYes" disabled>Yes</button>
-      <button id="btnClaimNo" disabled>No</button>
+    <div id="game-info-rows">
+      <div id="game-info">Game information will load here...</div>
+      <div id="remaining-tiles" style="margin-top: 10px; font-weight: bold;">Remaining Tiles: --</div>    
+      <div id="selected-tile-display" style="margin-top: 10px; font-weight: bold;">Selected Tile: None</div>
+      <div id="player-console" style="margin-top: 10px; color: green;"></div>
     </div>
-    <div id="selected-tile-display" style="margin-top: 10px; font-weight: bold;">Selected Tile: None</div>
+
+    <div id="game-hand-group">
+      <div id="player-hand" style="margin-top: 20px; font-size: 3em;">Your hand will load here...</div>
+      <div id="revealed-sets-display" style="margin-top: 20px; font-size: 2.5em;"></div>
+      <div style="margin-top: 10px; ">
+        <button id="btnDrawTile">Draw Tile</button>
+        <button id="btnDiscardTile" disabled>Discard Tile</button>
+        <button id="btnClaimYes" disabled>Yes</button>
+        <button id="btnClaimNo" disabled>No</button>
+        <button id="reset" disabled>Reset</button>
+      </div>
+    </div>
 
     <script type="module" src="{{ url_for('static', filename='main.js') }}"></script>
 
