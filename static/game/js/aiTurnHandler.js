@@ -237,7 +237,9 @@ function handleGameStateAfterFailedTurn(result) {
     } else if (result?.human_can_claim) {
         showClaimPrompt(result.claimable_tile, result?.human_can_claim);
     } else if (!store.currentGameInfo.winner_found) {
-        if (elements.btnDrawTile) elements.btnDrawTile.disabled = false;
-        if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+        // Use enableHumanTurn to auto-draw instead of manually enabling buttons
+        import('./claimsHandler.js').then(module => {
+            module.enableHumanTurn();
+        });
     }
 }

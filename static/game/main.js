@@ -43,16 +43,13 @@ document.addEventListener('keydown', (event) => {
     if ((event.key === 'd' || event.key === 'D') && !event.repeat) {
         event.preventDefault(); // Prevent page scrolling
 
-        const drawButton = document.getElementById('btnDrawTile');
         const discardButton = document.getElementById('btnDiscardTile');
 
         // If discard is enabled and a tile is selected, discard it
         if (discardButton && !discardButton.disabled && store.selectedTileForDiscard) {
             discardButton.click();
-        }
-        // Otherwise, if draw is enabled, draw a tile
-        else if (drawButton && !drawButton.disabled) {
-            drawButton.click();
+        } else if (elements.playerConsoleEl) {
+            elements.playerConsoleEl.textContent = "Select a tile to discard first, or wait for your turn.";
         }
     }
 });

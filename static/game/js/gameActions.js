@@ -65,13 +65,14 @@ async function loadInitialGameState() {
                 if (elements.playerConsoleEl) elements.playerConsoleEl.textContent = `Game over. Player ${store.currentGameInfo.winning_player_id} has won. Please reset.`;
                 if (gameInfoEl && store.currentGameInfo.winning_player_id !== undefined) gameInfoEl.innerHTML += `<br><b>Player ${store.currentGameInfo.winning_player_id} WINS!</b>`;
                 if (btnDrawTile) btnDrawTile.disabled = true;
-                if (btnDiscardTile) btnDiscardTile.disabled = true;
-            } else if (store.currentGameInfo.current_player_id !== 0) {
-                processAiTurns();
-            } else { // Player 0's turn and no winner
-                if (btnDrawTile) btnDrawTile.disabled = false;
-                if (btnDiscardTile) btnDiscardTile.disabled = true;
-                if (elements.playerConsoleEl) elements.playerConsoleEl.textContent = "Game loaded. Your turn to draw.";
+                if (btnDiscardTile) btnDiscardTile.disabled = true;            } else if (store.currentGameInfo.current_player_id !== 0) {
+                processAiTurns();            } else { // Player 0's turn and no winner
+                if (elements.playerConsoleEl) elements.playerConsoleEl.textContent = "Game loaded. Auto-drawing tile...";
+                // Auto-draw instead of waiting for manual draw
+                setTimeout(async () => {
+                    console.log("Starting auto-draw for player turn...");
+                    await handleDrawTile();
+                }, 100); // Small delay to ensure UI is ready
             }
         } else {
             console.error("Did not receive game info from backend.");
@@ -191,7 +192,7 @@ export function updateGameStateAfterDiscard(result) {
     }
     store.selectedTileForDiscard = null;
     if (elements.selectedTileDisplayEl) {
-        elements.selectedTileDisplayEl.textContent = "Selected Tile: None";
+        elements.selectedTileDisplayEl.textContent = "Selected:";
     }
 
     store.currentGameInfo.current_player_id = result.next_player_id;
@@ -221,6 +222,5 @@ export async function handleReset() {
     if (store.currentGameInfo) {
         store.currentGameInfo.winner_found = false;
     }
-    if (elements.btnDrawTile) elements.btnDrawTile.disabled = false;
-    if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+    // The loadInitialGameState() function will handle auto-drawing when appropriate
 }

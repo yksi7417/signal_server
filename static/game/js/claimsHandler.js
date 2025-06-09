@@ -181,8 +181,32 @@ function enableDiscardAfterClaim() {
 }
 
 export function enableHumanTurn() {
-    if (elements.btnDrawTile) elements.btnDrawTile.disabled = false;
+    if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;  // Disable manual draw
     if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+    
+    // Auto-draw when it's the player's turn
+    autoDrawTile();
+}
+
+async function autoDrawTile() {
+    if (elements.playerConsoleEl) {
+        elements.playerConsoleEl.textContent = "Your turn - automatically drawing tile...";
+    }
+    
+    console.log("Auto-drawing tile for player turn...");
+    
+    try {
+        // Import and call the draw tile function
+        const { handleDrawTile } = await import('./gameActions.js');
+        await handleDrawTile();
+    } catch (error) {
+        console.error("Error during auto-draw:", error);
+        if (elements.playerConsoleEl) {
+            elements.playerConsoleEl.textContent = "Error auto-drawing tile. Try manually.";
+        }
+        // Fallback to manual mode
+        if (elements.btnDrawTile) elements.btnDrawTile.disabled = false;
+    }
 }
 
 function updateGameInfoAfterDecline(result) {

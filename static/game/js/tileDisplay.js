@@ -65,21 +65,31 @@ export function displayHand(tiles) {
                             // Clear selected tile
                             store.selectedTileForDiscard = null;
                             if (elements.selectedTileDisplayEl) {
-                                elements.selectedTileDisplayEl.textContent = "Selected Tile: None";
+                                elements.selectedTileDisplayEl.textContent = "Selected:";
                             }
-                            
-                            // Enable draw tile button and disable discard
-                            if (elements.btnDrawTile) elements.btnDrawTile.disabled = false;
-                            if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
-                            
-                            // Update console message
+                              // Update console message and auto-draw
                             if (elements.playerConsoleEl) {
-                                elements.playerConsoleEl.textContent = "New game started! Draw a tile to begin.";
+                                elements.playerConsoleEl.textContent = "New game started! Auto-drawing tile...";
                             }
                             
                             // Reset game state flags
                             store.currentGameInfo.winner_found = false;
                             store.currentGameInfo.game_ended = false;
+                            
+                            // Auto-draw after a short delay to ensure UI is ready
+                            setTimeout(async () => {
+                                try {
+                                    const { handleDrawTile } = await import('./gameActions.js');
+                                    await handleDrawTile();
+                                } catch (error) {
+                                    console.error("Error during auto-draw:", error);
+                                    if (elements.playerConsoleEl) {
+                                        elements.playerConsoleEl.textContent = "Error auto-drawing. You may need to click Draw Tile manually.";
+                                    }
+                                    if (elements.btnDrawTile) elements.btnDrawTile.disabled = false;
+                                    if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+                                }
+                            }, 200);
                             
                         } else {
                             console.error('Failed to start new game');
