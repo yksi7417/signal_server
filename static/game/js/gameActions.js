@@ -3,6 +3,43 @@ import { enableHumanTurn, hideClaimPrompt, showClaimPrompt } from './claimsHandl
 import { elements, store } from './gameStore.js';
 import { displayDiscardedTiles, displayGameInfo, displayHand, displayRevealedSets } from './tileDisplay.js';
 
+function autoSelectDrawnTile(drawnTile) {
+    console.log("Auto-selecting drawn tile:", drawnTile);
+    
+    // Set the drawn tile as selected
+    store.selectedTileForDiscard = drawnTile;
+    
+    // Update the selected tile display
+    if (elements.selectedTileDisplayEl) {
+        elements.selectedTileDisplayEl.textContent = `Selected: ${drawnTile.unicode}`;
+    }
+    
+    // Find the tile element in the DOM and highlight it
+    const tileElements = document.querySelectorAll('#player-hand span');
+    tileElements.forEach(el => {
+        // Reset all tile backgrounds first
+        el.style.backgroundColor = 'transparent';
+        
+        // Find and highlight the drawn tile (last occurrence of this tile type)
+        const tileText = el.textContent;
+        if (tileText === drawnTile.unicode) {
+            // Check if this is the last instance by checking if there are more of the same tile after this one
+            const remainingElements = Array.from(tileElements).slice(Array.from(tileElements).indexOf(el) + 1);
+            const hasMoreOfSameTile = remainingElements.some(remainingEl => remainingEl.textContent === tileText);
+            
+            // If this is the last occurrence of this tile type, it's likely the drawn tile
+            if (!hasMoreOfSameTile) {
+                el.style.backgroundColor = 'lightblue';
+            }
+        }
+    });
+    
+    // Update console message to indicate auto-selection
+    if (elements.playerConsoleEl) {
+        elements.playerConsoleEl.textContent = `Drew: ${drawnTile.suit} ${drawnTile.value}. Auto-selected for discard. Press 'D' or click Discard to proceed.`;
+    }
+}
+
 export async function handleDrawTile() {
     if (elements.playerConsoleEl) elements.playerConsoleEl.textContent = "";
     if (store.currentGameInfo.winner_found) {
@@ -94,6 +131,11 @@ function handleSuccessfulDraw(result) {
         elements.btnDrawTile.disabled = true;
     if (elements.btnDiscardTile)
         elements.btnDiscardTile.disabled = false;
+    
+    // Auto-select the drawn tile
+    if (result.drawn_tile) {
+        autoSelectDrawnTile(result.drawn_tile);
+    }
 }
 
 

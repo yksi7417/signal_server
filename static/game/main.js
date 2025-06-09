@@ -43,10 +43,15 @@ document.addEventListener('keydown', (event) => {
     if ((event.key === 'd' || event.key === 'D') && !event.repeat) {
         event.preventDefault(); // Prevent page scrolling
 
+        const yesButton = document.getElementById('btnClaimYes');
         const discardButton = document.getElementById('btnDiscardTile');
 
-        // If discard is enabled and a tile is selected, discard it
-        if (discardButton && !discardButton.disabled && store.selectedTileForDiscard) {
+        // Priority 1: If a claim prompt is active, trigger the Yes button
+        if (yesButton && !yesButton.disabled) {
+            yesButton.click();
+        }
+        // Priority 2: If discard is enabled and a tile is selected, discard it
+        else if (discardButton && !discardButton.disabled && store.selectedTileForDiscard) {
             discardButton.click();
         } else if (elements.playerConsoleEl) {
             elements.playerConsoleEl.textContent = "Select a tile to discard first, or wait for your turn.";
