@@ -12,16 +12,21 @@
       <div id="discard-area" class="discard-area"></div>
     </div>
 
-    <div id="game-info">Game information will load here...</div>
+    <table id="game-info-group" style="margin-top: 10px; width: 100%; justify-content: left;">
+      <tr>
+        <td id="remaining-tiles">Tiles: --</td>    
+        <td id="game-info">Game information will load here...</td>
+      </tr>
+    </table>
+
     <div id="game-info-rows">
-      <div id="remaining-tiles">Tiles: --</div>    
       <div id="selected-tile-display">Selected: </div>
       <div id="player-console"></div>
     </div>
 
-    <table id="game-hand-group" style="margin-top: 10px; width: 100%; justify-content: left;">
+    <table id="game-hand-group">
       <tr>
-        <td id="revealed-sets-display" style="font-size: 2em;">[]</td>
+        <td id="revealed-sets-display" style="font-size: 2em; padding-right: 1px;">[]</td>
         <td id="player-hand" style="font-size: 3em;">Your hand will load here...</td>
       </tr>
     </table>    

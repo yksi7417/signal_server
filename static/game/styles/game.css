@@ -19,6 +19,7 @@
 
 #game-info-rows {
   display: flex;
+  font-size: 1.5em;
   width: 98%;
   max-width: 1200px;
   margin: 1px auto;      /* centers and gives vertical spacing */
@@ -36,7 +37,7 @@
 }
 
 #selected-tile-display {
-  flex: 0 0 100px;        /* "don't grow or shrink, always be 100px" */
+  flex: 0 0 150px;        /* "don't grow or shrink, always be 100px" */
   margin-top: 1px;
   font-weight: bold;
 }
@@ -47,7 +48,7 @@
   color: green;
 }
 
-#game-info {
+#game-info-group {
   width: 98%;
   max-width: 1200px;
   margin: 1px auto;      /* centers and gives vertical spacing */
@@ -59,6 +60,19 @@
   max-width: 1200px;
   margin: 1px auto;      /* centers and gives vertical spacing */
   gap: 1px;              /* optional spacing between columns */
+  border-collapse: collapse;  /* removes default cell spacing */
+  border-spacing: 0;          /* ensures no spacing between cells */
+}
+
+#game-hand-group td {
+  padding: 0;                 /* removes cell padding */
+  margin: 0;                  /* removes cell margin */
+  border: none;               /* removes cell borders */
+  vertical-align: top;        /* aligns content to top */
+}
+
+#game-hand-group td:first-child {
+  padding-right: 1px;         /* small gap between first and second column */
 }
 
 #button-group {

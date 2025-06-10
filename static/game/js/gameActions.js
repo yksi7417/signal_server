@@ -36,7 +36,7 @@ function autoSelectDrawnTile(drawnTile) {
     
     // Update console message to indicate auto-selection
     if (elements.playerConsoleEl) {
-        elements.playerConsoleEl.textContent = `Drew: ${drawnTile.suit} ${drawnTile.value}. Auto-selected for discard. Press 'D' or click Discard to proceed.`;
+        elements.playerConsoleEl.textContent = `Drew: ${drawnTile.unicode}`;
     }
 }
 
@@ -126,7 +126,7 @@ async function loadInitialGameState() {
 
 function handleSuccessfulDraw(result) {
     if (elements.playerConsoleEl)
-        elements.playerConsoleEl.textContent = `Drew: ${result.drawn_tile.suit} ${result.drawn_tile.value}. You now have 14 tiles. Select one to discard.`;
+        elements.playerConsoleEl.textContent = `Drew: ${result.unicode}`;
     if (elements.btnDrawTile)
         elements.btnDrawTile.disabled = true;
     if (elements.btnDiscardTile)
