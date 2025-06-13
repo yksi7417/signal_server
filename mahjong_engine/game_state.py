@@ -114,13 +114,23 @@ class GameState:
             is_win = self.rules.is_winning_hand(
                 player.hand, player.revealed_sets)
             if is_win:
-                self.winner_found = True
-                self.winning_player_id = player.player_id
-                msg = f"Player {player.player_id} won by self-draw!"
-                print(msg)
-                
-                # Handle dealer rotation based on self-draw win
-                self.end_hand(winner_id=player.player_id)
+                # Check if this is a human player or AI player
+                if isinstance(player.agent, HumanPlayerAgent):
+                    # For human players, set up a pending self-draw win claim
+                    self.pending_claim_player_id = player.player_id
+                    self.claim_type_pending = "SELF_DRAW_WIN"
+                    self.potential_claim_tile = drawn_tile
+                    msg = f"Player {player.player_id} can win by self-draw! Waiting for player decision."
+                    print(msg)
+                else:
+                    # For AI players, automatically declare the win
+                    self.winner_found = True
+                    self.winning_player_id = player.player_id
+                    msg = f"Player {player.player_id} won by self-draw!"
+                    print(msg)
+                    
+                    # Handle dealer rotation based on self-draw win
+                    self.end_hand(winner_id=player.player_id)
 
         return drawn_tile
 
@@ -294,12 +304,10 @@ class GameState:
         if not claiming_player:
             print(
                 f"Error: Claiming player {claiming_player_id} not found for WIN.")
-            return False
-
-        # Add the claimed tile to the player's hand for completeness,
-        # even though validation happened with it conceptually.
-        # This ensures the hand reflects the winning state.
-        claiming_player.hand.append(claimed_tile)
+            return False        # Add the claimed tile to the player's hand for completeness,
+        # but only if it's not a self-draw win (tile already in hand)
+        if self.claim_type_pending != "SELF_DRAW_WIN":
+            claiming_player.hand.append(claimed_tile)
 
         self.winner_found = True
         self.winning_player_id = claiming_player_id

@@ -5,8 +5,14 @@ import { displayHand, displayRevealedSets } from './tileDisplay.js';
 
 export function showClaimPrompt(tile, claimType) {
     store.activeClaimType = claimType;
-    elements.playerConsoleEl.textContent =
-        `Player discarded ${tile.suit} ${tile.value}. Do you want to claim ${claimType}?`;
+    
+    if (claimType === "SELF_DRAW_WIN") {
+        elements.playerConsoleEl.textContent =
+            `You drew ${tile.unicode} and can WIN! Do you want to claim WIN?`;
+    } else {
+        elements.playerConsoleEl.textContent =
+            `Player discarded ${tile.suit} ${tile.value}. Do you want to claim ${claimType}?`;
+    }
 
     if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
     if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
@@ -24,7 +30,7 @@ export async function handleClaimYes() {
         await handleClaimPungYes();
     } else if (store.activeClaimType === 'KONG') {
         await handleClaimKongYes();
-    } else if (store.activeClaimType === 'WIN') {
+    } else if (store.activeClaimType === 'WIN' || store.activeClaimType === 'SELF_DRAW_WIN') {
         await handleClaimWinYes();
     }
 }
@@ -34,7 +40,7 @@ export async function handleClaimNo() {
         await handleClaimPungNo();
     } else if (store.activeClaimType === 'KONG') {
         await handleClaimKongNo();
-    } else if (store.activeClaimType === 'WIN') {
+    } else if (store.activeClaimType === 'WIN' || store.activeClaimType === 'SELF_DRAW_WIN') {
         await handleClaimWinNo();
     }
 }
@@ -265,8 +271,33 @@ async function handleClaimWinNo() {
         elements.playerConsoleEl.textContent = result.message;
     }
 
-    if (result && result.success && result.action === "claim_declined") {
-        handleClaimDeclined(result);
+    // Handle different types of claim declines
+    if (result && result.success) {        if (result.action === "self_draw_win_declined") {
+            // For self-draw win declines, enable discarding
+            if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = false;
+            
+            // Auto-select the last tile (drawn tile) for easy discarding
+            if (store.currentHandTiles && store.currentHandTiles.length > 0) {
+                const lastTile = store.currentHandTiles[store.currentHandTiles.length - 1];
+                store.selectedTileForDiscard = lastTile;
+                
+                // Update the selected tile display
+                if (elements.selectedTileDisplayEl) {
+                    elements.selectedTileDisplayEl.textContent = `Selected: ${lastTile.unicode}`;
+                }
+                
+                // Highlight the last tile in the UI
+                const tileElements = document.querySelectorAll('#player-hand span');
+                tileElements.forEach((el, index) => {
+                    el.style.backgroundColor = 'transparent';
+                    if (index === tileElements.length - 1) {
+                        el.style.backgroundColor = 'lightblue';
+                    }
+                });
+            }
+        } else if (result.action === "claim_declined") {
+            handleClaimDeclined(result);
+        }
     }
 }
 

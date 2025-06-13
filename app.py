@@ -232,8 +232,7 @@ def player_claims_win():
             response = {
                 "success": True,
                 "message": f"Player {claiming_player_id} claimed Win!",
-                "hand": hand_serializable,
-                "revealed_sets": revealed_sets_serializable,
+                "hand": hand_serializable,                "revealed_sets": revealed_sets_serializable,
                 "winner_found": current_game_state.winner_found,
                 "winning_player_id": current_game_state.winning_player_id,
                 "action": "win_claimed"
@@ -243,32 +242,50 @@ def player_claims_win():
             response["winner_found"] = current_game_state.winner_found
     else:
         # Win claim declined
-        discarder_player_id = current_game_state.current_player_index
-
-        current_game_state.potential_claim_tile = None
-        current_game_state.pending_claim_player_id = None
-        current_game_state.claim_type_pending = None
-
-        current_game_state.current_player_index = (
-            discarder_player_id + 1) % len(current_game_state.players)
-        current_game_state.turn_number += 1
-
-        discarded_tile_serializable = None
-        if current_game_state.current_discard:
-            discarded_tile_serializable = {
-                "unicode": current_game_state.current_discard.unicode,
-                "suit": current_game_state.current_discard.suit,
-                "value": current_game_state.current_discard.value,
+        claim_type = current_game_state.claim_type_pending
+        
+        if claim_type == "SELF_DRAW_WIN":
+            # For self-draw win declines, player remains on their turn to discard
+            current_game_state.potential_claim_tile = None
+            current_game_state.pending_claim_player_id = None
+            current_game_state.claim_type_pending = None
+            # Don't advance current_player_index - player can now discard
+            
+            response = {
+                "success": True,
+                "message": "Self-draw win declined. You may now discard.",
+                "action": "self_draw_win_declined",
+                "winner_found": False,
+                "next_player_id": current_game_state.current_player_index
             }
+        else:
+            # Regular win claim decline - advance to next player
+            discarder_player_id = current_game_state.current_player_index
 
-        response = {
-            "success": True,
-            "message": "Win claim declined. Game continues.",
-            "action": "claim_declined",
-            "next_player_id": current_game_state.players[current_game_state.current_player_index].player_id,
-            "discarded_tile": discarded_tile_serializable,
-            "winner_found": current_game_state.winner_found
-        }
+            current_game_state.potential_claim_tile = None
+            current_game_state.pending_claim_player_id = None
+            current_game_state.claim_type_pending = None
+
+            current_game_state.current_player_index = (
+                discarder_player_id + 1) % len(current_game_state.players)
+            current_game_state.turn_number += 1
+
+            discarded_tile_serializable = None
+            if current_game_state.current_discard:
+                discarded_tile_serializable = {
+                    "unicode": current_game_state.current_discard.unicode,
+                    "suit": current_game_state.current_discard.suit,
+                    "value": current_game_state.current_discard.value,
+                }
+
+            response = {
+                "success": True,
+                "message": "Win claim declined. Game continues.",
+                "action": "claim_declined",
+                "next_player_id": current_game_state.players[current_game_state.current_player_index].player_id,
+                "discarded_tile": discarded_tile_serializable,
+                "winner_found": current_game_state.winner_found
+            }
 
     return jsonify(response)
 
@@ -462,8 +479,7 @@ def draw_tile():
                 "hand": hand_serializable,
                 "revealed_sets": revealed_sets_serializable,
                 "drawn_tile": drawn_tile_serializable,
-                "remaining_tiles": len(current_game_state.wall)
-            })
+                "remaining_tiles": len(current_game_state.wall)            })
 
         return jsonify({
             "success": True,
@@ -471,7 +487,9 @@ def draw_tile():
             "hand": hand_serializable,
             "player_id": player_id,
             "winner_found": False,
-            "remaining_tiles": len(current_game_state.wall)
+            "remaining_tiles": len(current_game_state.wall),
+            "human_can_claim": current_game_state.claim_type_pending if current_game_state.pending_claim_player_id == player_id else None,
+            "claimable_tile": drawn_tile_serializable if current_game_state.claim_type_pending == "SELF_DRAW_WIN" else None
         })
     else:
         current_player_hand = current_game_state.players[

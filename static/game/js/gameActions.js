@@ -125,8 +125,17 @@ async function loadInitialGameState() {
 
 
 function handleSuccessfulDraw(result) {
+    // Check for self-draw win claim first
+    if (result.human_can_claim === "SELF_DRAW_WIN") {
+        if (elements.playerConsoleEl) {
+            elements.playerConsoleEl.textContent = `Drew: ${result.drawn_tile.unicode} - You can WIN! Claim it?`;
+        }
+        showClaimPrompt(result.claimable_tile, "SELF_DRAW_WIN");
+        return;
+    }
+    
     if (elements.playerConsoleEl)
-        elements.playerConsoleEl.textContent = `Drew: ${result.unicode}`;
+        elements.playerConsoleEl.textContent = `Drew: ${result.drawn_tile.unicode}. Auto-selected for discard. Press 'D' or click Discard to proceed.`;
     if (elements.btnDrawTile)
         elements.btnDrawTile.disabled = true;
     if (elements.btnDiscardTile)
