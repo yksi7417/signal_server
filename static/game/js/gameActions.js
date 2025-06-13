@@ -48,17 +48,16 @@ function startDiscardCountdown(drawnTile) {
         clearInterval(store.discardCountdownId);
         store.discardCountdownId = null;
     }
-    
-    // Update console with initial countdown
+      // Update console with initial countdown
     if (elements.playerConsoleEl) {
         elements.playerConsoleEl.textContent = `Drew: ${drawnTile.unicode}. Auto-selected for discard. Auto-discard in ${timeLeft}s or press 'D'.`;
     }
-    
-    // Start countdown interval
+      // Start countdown interval
     store.discardCountdownId = setInterval(() => {
         timeLeft--;
+        const selectedTile = store.selectedTileForDiscard || drawnTile;
         if (elements.playerConsoleEl) {
-            elements.playerConsoleEl.textContent = `Drew: ${drawnTile.unicode}. Auto-selected for discard. Auto-discard in ${timeLeft}s or press 'D'.`;
+            elements.playerConsoleEl.textContent = `Selected: ${selectedTile.unicode}. Auto-discard in ${timeLeft}s or press 'D'.`;
         }
         
         if (timeLeft <= 0) {
@@ -66,8 +65,7 @@ function startDiscardCountdown(drawnTile) {
             store.discardCountdownId = null;
         }
     }, 1000);
-    
-    // Set the actual auto-discard timeout
+      // Set the actual auto-discard timeout
     store.discardTimeoutId = setTimeout(async () => {
         // Clear countdown interval
         if (store.discardCountdownId) {
@@ -76,11 +74,36 @@ function startDiscardCountdown(drawnTile) {
         }
         
         console.log("Auto-discarding after 5 seconds");
-        if (elements.playerConsoleEl) {
-            elements.playerConsoleEl.textContent = `Auto-discarded: ${drawnTile.unicode}`;
+        
+        // Check if no tile is selected, then auto-select the rightmost tile
+        if (!store.selectedTileForDiscard && store.currentHandTiles.length > 0) {
+            const rightmostTile = store.currentHandTiles[store.currentHandTiles.length - 1];
+            store.selectedTileForDiscard = rightmostTile;
+            
+            // Update the selected tile display
+            if (elements.selectedTileDisplayEl) {
+                elements.selectedTileDisplayEl.textContent = `Selected: ${rightmostTile.unicode}`;
+            }
+            
+            // Highlight the rightmost tile in the UI
+            const tileElements = document.querySelectorAll('#player-hand span');
+            tileElements.forEach((el, index) => {
+                el.style.backgroundColor = 'transparent';
+                if (index === tileElements.length - 1) {
+                    el.style.backgroundColor = 'lightblue';
+                }
+            });
+            
+            if (elements.playerConsoleEl) {
+                elements.playerConsoleEl.textContent = `Auto-selected and discarded: ${rightmostTile.unicode}`;
+            }
+        } else if (store.selectedTileForDiscard) {
+            if (elements.playerConsoleEl) {
+                elements.playerConsoleEl.textContent = `Auto-discarded: ${store.selectedTileForDiscard.unicode}`;
+            }
         }
         
-        // Trigger discard if tile is still selected
+        // Trigger discard if tile is selected and discard button is enabled
         if (store.selectedTileForDiscard && elements.btnDiscardTile && !elements.btnDiscardTile.disabled) {
             await handleDiscardTile();
         }

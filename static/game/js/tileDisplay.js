@@ -197,15 +197,7 @@ function createTileElement(tile) {
 function handleTileClick(tile, tileEl) {
     if (store.currentGameInfo.winner_found) return;    // Allow tile selection when it's our turn to discard (button is enabled)
     if (elements.btnDiscardTile && !elements.btnDiscardTile.disabled) {
-        // Clear any active discard timeout and countdown when manually selecting a tile
-        if (store.discardTimeoutId) {
-            clearTimeout(store.discardTimeoutId);
-            store.discardTimeoutId = null;
-        }
-        if (store.discardCountdownId) {
-            clearInterval(store.discardCountdownId);
-            store.discardCountdownId = null;
-        }
+        // Don't clear timeouts when manually selecting a tile - let countdown continue
         
         store.selectedTileForDiscard = tile;
         if (elements.selectedTileDisplayEl) {
@@ -218,13 +210,10 @@ function handleTileClick(tile, tileEl) {
                 // If it is self-kongable and selected, lightblue is fine.
                 // If not self-kongable, or self-kongable and selected, apply/remove background.
             }
-        });
-        tileEl.style.backgroundColor = 'lightblue'; // Highlight selected tile
+        });        tileEl.style.backgroundColor = 'lightblue'; // Highlight selected tile
         
-        // Update console message to indicate manual selection
-        if (elements.playerConsoleEl) {
-            elements.playerConsoleEl.textContent = `Selected: ${tile.unicode}. Press 'D' or click Discard to proceed.`;
-        }
+        // Update console message to indicate manual selection (but don't override countdown)
+        // We'll let the countdown message continue to display the time remaining
     } else {
         if (elements.playerConsoleEl) {
             if (elements.btnDrawTile && !elements.btnDrawTile.disabled) {
