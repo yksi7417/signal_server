@@ -1,6 +1,6 @@
 import { processAiTurns } from './aiTurnHandler.js';
 import { enableHumanTurn, hideClaimPrompt, showClaimPrompt } from './claimsHandler.js';
-import { elements, store } from './gameStore.js';
+import { elements, store, clearAllTimeouts } from './gameStore.js';
 import { displayDiscardedTiles, displayGameInfo, displayHand, displayRevealedSets } from './tileDisplay.js';
 
 function autoSelectDrawnTile(drawnTile) {
@@ -64,6 +64,12 @@ export async function handleDrawTile() {
 
 export async function handleDiscardTile(pointerEvent) {
     try {
+        // Clear any active discard timeout when manually discarding
+        if (store.discardTimeoutId) {
+            clearTimeout(store.discardTimeoutId);
+            store.discardTimeoutId = null;
+        }
+        
         if (store.selectedTileForDiscard === null)
             throw new Error("No tile selected for discard.");
 
@@ -87,6 +93,10 @@ export async function handleDiscardTile(pointerEvent) {
 
 async function loadInitialGameState() {
     console.log("Requesting new game state from Python...");
+    
+    // Clear any active timeouts when starting a new game
+    clearAllTimeouts();
+    
     try {
         const response = await fetch('/api/start_new_game', { method: 'POST' });
         const game_info_data = await response.json();
@@ -134,8 +144,14 @@ function handleSuccessfulDraw(result) {
         return;
     }
     
+    // Clear any existing discard timeout
+    if (store.discardTimeoutId) {
+        clearTimeout(store.discardTimeoutId);
+        store.discardTimeoutId = null;
+    }
+    
     if (elements.playerConsoleEl)
-        elements.playerConsoleEl.textContent = `Drew: ${result.drawn_tile.unicode}. Auto-selected for discard. Press 'D' or click Discard to proceed.`;
+        elements.playerConsoleEl.textContent = `Drew: ${result.drawn_tile.unicode}. Auto-selected for discard. Auto-discard in 5s or press 'D'.`;
     if (elements.btnDrawTile)
         elements.btnDrawTile.disabled = true;
     if (elements.btnDiscardTile)
@@ -144,11 +160,26 @@ function handleSuccessfulDraw(result) {
     // Auto-select the drawn tile
     if (result.drawn_tile) {
         autoSelectDrawnTile(result.drawn_tile);
+        
+        // Set timeout to automatically discard the selected tile after 5 seconds
+        store.discardTimeoutId = setTimeout(() => {
+            console.log("Auto-discarding selected tile after 5 seconds");
+            if (store.selectedTileForDiscard && elements.btnDiscardTile && !elements.btnDiscardTile.disabled) {
+                if (elements.playerConsoleEl) {
+                    elements.playerConsoleEl.textContent = `Auto-discarding ${store.selectedTileForDiscard.unicode} due to timeout.`;
+                }
+                // Trigger the discard action
+                handleDiscardTile();
+            }
+        }, store.DISCARD_TIMEOUT_MS);
     }
 }
 
 
 function handleWinAfterDraw(result) {
+    // Clear any active timeouts when game ends
+    clearAllTimeouts();
+    
     store.currentGameInfo.winner_found = true;
     store.currentGameInfo.winning_player_id = result.winning_player_id;
 
@@ -255,6 +286,9 @@ export function updateGameStateAfterDiscard(result) {
 }
 
 export async function handleReset() {
+    // Clear all active timeouts when resetting
+    clearAllTimeouts();
+    
     await fetch('/api/reset_game', { method: 'POST' });
     console.log("Game reset on backend. Reloading initial state...");
     loadInitialGameState();

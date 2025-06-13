@@ -1,17 +1,34 @@
 import { processAiTurns } from './aiTurnHandler.js';
 import { showCelebrationScreen } from './celebrationScreen.js';
-import { elements, store } from './gameStore.js';
+import { elements, store, clearAllTimeouts } from './gameStore.js';
 import { displayHand, displayRevealedSets } from './tileDisplay.js';
 
 export function showClaimPrompt(tile, claimType) {
     store.activeClaimType = claimType;
     
+    // Clear any existing claim timeout
+    if (store.claimTimeoutId) {
+        clearTimeout(store.claimTimeoutId);
+        store.claimTimeoutId = null;
+    }
+    
     if (claimType === "SELF_DRAW_WIN") {
         elements.playerConsoleEl.textContent =
-            `You drew ${tile.unicode} and can WIN! Do you want to claim WIN?`;
+            `You drew ${tile.unicode} and can WIN! Do you want to claim WIN? (5s timeout)`;
+        
+        // No auto-timeout for self-draw wins - let player decide
     } else {
         elements.playerConsoleEl.textContent =
-            `Player discarded ${tile.suit} ${tile.value}. Do you want to claim ${claimType}?`;
+            `Player discarded ${tile.suit} ${tile.value}. Do you want to claim ${claimType}? (Auto-decline in 5s)`;
+        
+        // Set timeout to automatically decline Pung/Kong claims
+        store.claimTimeoutId = setTimeout(() => {
+            console.log(`Auto-declining ${claimType} claim after 5 seconds`);
+            if (elements.playerConsoleEl) {
+                elements.playerConsoleEl.textContent = `Auto-declined ${claimType} claim due to timeout.`;
+            }
+            handleClaimNo();
+        }, store.CLAIM_TIMEOUT_MS);
     }
 
     if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
@@ -21,11 +38,23 @@ export function showClaimPrompt(tile, claimType) {
 }
 
 export function hideClaimPrompt() {
+    // Clear any active claim timeout
+    if (store.claimTimeoutId) {
+        clearTimeout(store.claimTimeoutId);
+        store.claimTimeoutId = null;
+    }
+    
     if (elements.btnClaimNo) elements.btnClaimNo.disabled = true;
     if (elements.btnClaimYes) elements.btnClaimYes.disabled = true;
 }
 
 export async function handleClaimYes() {
+    // Clear any active claim timeout when manually responding
+    if (store.claimTimeoutId) {
+        clearTimeout(store.claimTimeoutId);
+        store.claimTimeoutId = null;
+    }
+    
     if (store.activeClaimType === 'PUNG') {
         await handleClaimPungYes();
     } else if (store.activeClaimType === 'KONG') {
@@ -36,6 +65,12 @@ export async function handleClaimYes() {
 }
 
 export async function handleClaimNo() {
+    // Clear any active claim timeout when manually responding
+    if (store.claimTimeoutId) {
+        clearTimeout(store.claimTimeoutId);
+        store.claimTimeoutId = null;
+    }
+    
     if (store.activeClaimType === 'PUNG') {
         await handleClaimPungNo();
     } else if (store.activeClaimType === 'KONG') {
@@ -232,9 +267,12 @@ async function handleClaimWinYes() {
         body: JSON.stringify({ confirm_claim: true })
     });
     const result = await response.json();
-    hideClaimPrompt();
-
-    if (result && result.success) {
+    hideClaimPrompt();    if (result && result.success) {
+        // Clear timeouts when win is claimed
+        if (result.action === "win_claimed") {
+            clearAllTimeouts();
+        }
+        
         if (elements.playerConsoleEl) {
             elements.playerConsoleEl.textContent = result.message;
         }

@@ -1,4 +1,4 @@
-import { elements, store } from './gameStore.js';
+import { elements, store, clearAllTimeouts } from './gameStore.js';
 
 function sortTiles(tiles) {
     return [...tiles].sort((a, b) => {
@@ -195,10 +195,14 @@ function createTileElement(tile) {
 }
 
 function handleTileClick(tile, tileEl) {
-    if (store.currentGameInfo.winner_found) return;
-
-    // Allow tile selection when it's our turn to discard (button is enabled)
+    if (store.currentGameInfo.winner_found) return;    // Allow tile selection when it's our turn to discard (button is enabled)
     if (elements.btnDiscardTile && !elements.btnDiscardTile.disabled) {
+        // Clear any active discard timeout when manually selecting a tile
+        if (store.discardTimeoutId) {
+            clearTimeout(store.discardTimeoutId);
+            store.discardTimeoutId = null;
+        }
+        
         store.selectedTileForDiscard = tile;
         if (elements.selectedTileDisplayEl) {
             elements.selectedTileDisplayEl.textContent = `Selected: ${tile.unicode}`;
@@ -212,6 +216,11 @@ function handleTileClick(tile, tileEl) {
             }
         });
         tileEl.style.backgroundColor = 'lightblue'; // Highlight selected tile
+        
+        // Update console message to indicate manual selection
+        if (elements.playerConsoleEl) {
+            elements.playerConsoleEl.textContent = `Selected: ${tile.unicode}. Press 'D' or click Discard to proceed.`;
+        }
     } else {
         if (elements.playerConsoleEl) {
             if (elements.btnDrawTile && !elements.btnDrawTile.disabled) {
