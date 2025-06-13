@@ -33,11 +33,58 @@ function autoSelectDrawnTile(drawnTile) {
             }
         }
     });
-    
-    // Update console message to indicate auto-selection
+      // Update console message to indicate auto-selection
     if (elements.playerConsoleEl) {
         elements.playerConsoleEl.textContent = `Drew: ${drawnTile.unicode}`;
     }
+}
+
+// Start the discard countdown timer with visual feedback
+function startDiscardCountdown(drawnTile) {
+    let timeLeft = store.DISCARD_TIMEOUT_MS / 1000; // Convert to seconds
+    
+    // Clear any existing countdown
+    if (store.discardCountdownId) {
+        clearInterval(store.discardCountdownId);
+        store.discardCountdownId = null;
+    }
+    
+    // Update console with initial countdown
+    if (elements.playerConsoleEl) {
+        elements.playerConsoleEl.textContent = `Drew: ${drawnTile.unicode}. Auto-selected for discard. Auto-discard in ${timeLeft}s or press 'D'.`;
+    }
+    
+    // Start countdown interval
+    store.discardCountdownId = setInterval(() => {
+        timeLeft--;
+        if (elements.playerConsoleEl) {
+            elements.playerConsoleEl.textContent = `Drew: ${drawnTile.unicode}. Auto-selected for discard. Auto-discard in ${timeLeft}s or press 'D'.`;
+        }
+        
+        if (timeLeft <= 0) {
+            clearInterval(store.discardCountdownId);
+            store.discardCountdownId = null;
+        }
+    }, 1000);
+    
+    // Set the actual auto-discard timeout
+    store.discardTimeoutId = setTimeout(async () => {
+        // Clear countdown interval
+        if (store.discardCountdownId) {
+            clearInterval(store.discardCountdownId);
+            store.discardCountdownId = null;
+        }
+        
+        console.log("Auto-discarding after 5 seconds");
+        if (elements.playerConsoleEl) {
+            elements.playerConsoleEl.textContent = `Auto-discarded: ${drawnTile.unicode}`;
+        }
+        
+        // Trigger discard if tile is still selected
+        if (store.selectedTileForDiscard && elements.btnDiscardTile && !elements.btnDiscardTile.disabled) {
+            await handleDiscardTile();
+        }
+    }, store.DISCARD_TIMEOUT_MS);
 }
 
 export async function handleDrawTile() {
@@ -64,10 +111,14 @@ export async function handleDrawTile() {
 
 export async function handleDiscardTile(pointerEvent) {
     try {
-        // Clear any active discard timeout when manually discarding
+        // Clear any active discard timeout and countdown when manually discarding
         if (store.discardTimeoutId) {
             clearTimeout(store.discardTimeoutId);
             store.discardTimeoutId = null;
+        }
+        if (store.discardCountdownId) {
+            clearInterval(store.discardCountdownId);
+            store.discardCountdownId = null;
         }
         
         if (store.selectedTileForDiscard === null)
@@ -143,35 +194,22 @@ function handleSuccessfulDraw(result) {
         showClaimPrompt(result.claimable_tile, "SELF_DRAW_WIN");
         return;
     }
-    
-    // Clear any existing discard timeout
+      // Clear any existing discard timeout
     if (store.discardTimeoutId) {
         clearTimeout(store.discardTimeoutId);
         store.discardTimeoutId = null;
     }
     
-    if (elements.playerConsoleEl)
-        elements.playerConsoleEl.textContent = `Drew: ${result.drawn_tile.unicode}. Auto-selected for discard. Auto-discard in 5s or press 'D'.`;
     if (elements.btnDrawTile)
         elements.btnDrawTile.disabled = true;
     if (elements.btnDiscardTile)
         elements.btnDiscardTile.disabled = false;
-    
-    // Auto-select the drawn tile
+      // Auto-select the drawn tile
     if (result.drawn_tile) {
         autoSelectDrawnTile(result.drawn_tile);
         
-        // Set timeout to automatically discard the selected tile after 5 seconds
-        store.discardTimeoutId = setTimeout(() => {
-            console.log("Auto-discarding selected tile after 5 seconds");
-            if (store.selectedTileForDiscard && elements.btnDiscardTile && !elements.btnDiscardTile.disabled) {
-                if (elements.playerConsoleEl) {
-                    elements.playerConsoleEl.textContent = `Auto-discarding ${store.selectedTileForDiscard.unicode} due to timeout.`;
-                }
-                // Trigger the discard action
-                handleDiscardTile();
-            }
-        }, store.DISCARD_TIMEOUT_MS);
+        // Start countdown timer for auto-discard
+        startDiscardCountdown(result.drawn_tile);
     }
 }
 

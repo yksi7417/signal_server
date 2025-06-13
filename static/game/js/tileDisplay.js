@@ -197,10 +197,14 @@ function createTileElement(tile) {
 function handleTileClick(tile, tileEl) {
     if (store.currentGameInfo.winner_found) return;    // Allow tile selection when it's our turn to discard (button is enabled)
     if (elements.btnDiscardTile && !elements.btnDiscardTile.disabled) {
-        // Clear any active discard timeout when manually selecting a tile
+        // Clear any active discard timeout and countdown when manually selecting a tile
         if (store.discardTimeoutId) {
             clearTimeout(store.discardTimeoutId);
             store.discardTimeoutId = null;
+        }
+        if (store.discardCountdownId) {
+            clearInterval(store.discardCountdownId);
+            store.discardCountdownId = null;
         }
         
         store.selectedTileForDiscard = tile;
