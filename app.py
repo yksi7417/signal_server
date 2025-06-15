@@ -342,8 +342,18 @@ def player_claims_kong():
 @app.route('/api/player_declares_hidden_kong', methods=['POST'])
 def player_declares_hidden_kong():
     global current_game_state
+    from mahjong_engine.tile import TileFactory
+
     data = request.get_json()
-    tile_info = data.get('tile_info', {})
+    tile_info_raw = data.get('tile_info', {})
+
+    if isinstance(tile_info_raw, str):
+        tile_obj = TileFactory.from_unicode(tile_info_raw)
+        if not tile_obj:
+            return jsonify({"success": False, "error": "Invalid tile_info provided for Hidden Kong."})
+        tile_info = {"suit": tile_obj.suit, "value": tile_obj.value}
+    else:
+        tile_info = tile_info_raw
     
     response = {
         "success": False,
@@ -469,8 +479,17 @@ def draw_tile():
 def discard_tile():
     try:
         global current_game_state
+        from mahjong_engine.tile import TileFactory
+
         data = request.get_json()
-        tile_to_discard_data = data.get('tile_to_discard', {})
+        tile_raw = data.get('tile_to_discard', {})
+        if isinstance(tile_raw, str):
+            tile_obj = TileFactory.from_unicode(tile_raw)
+            if not tile_obj:
+                return jsonify({"success": False, "error": "Invalid tile data for discard."})
+            tile_to_discard_data = {"suit": tile_obj.suit, "value": tile_obj.value}
+        else:
+            tile_to_discard_data = tile_raw
           # Debug output - avoid Unicode console errors on Windows
         try:
             print("Discarding tile:", tile_to_discard_data)

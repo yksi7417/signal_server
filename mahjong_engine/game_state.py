@@ -18,9 +18,12 @@ from .tile import Tile
 class GameState:
     def _create_full_tile_set(self):
         tiles = []
+        from .tile import TileFactory
+
         for suit, values in TILE_CATEGORIES_FOR_GENERATION:
             for value in values:
-                tiles.extend([Tile(suit, value)] * NUM_COPIES_PER_TILE)
+                tile = TileFactory.get_tile(suit, value)
+                tiles.extend([tile] * NUM_COPIES_PER_TILE)
         return tiles
 
     def __init__(self, num_players=NUM_PLAYERS):
@@ -345,8 +348,9 @@ class GameState:
         # Let's be flexible: player must have 4 of the tiles.
         # A more strict check would be: len(player.hand) == INIT_HAND_SIZE + 1
 
+        from .tile import TileFactory
         try:
-            kong_tile_obj = Tile(tile_info['suit'], tile_info['value'])
+            kong_tile_obj = TileFactory.get_tile(tile_info['suit'], tile_info['value'])
         except Exception as e:
             return {"success": False,
                     "error": f"Invalid tile data for Hidden Kong: {e}"}
