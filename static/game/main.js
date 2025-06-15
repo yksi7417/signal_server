@@ -2,6 +2,7 @@ import { handleClaimNo, handleClaimYes } from './js/claimsHandler.js';
 import { handleDiscardTile, handleDrawTile, handleReset } from './js/gameActions.js';
 import { elements, store } from './js/gameStore.js';
 import { displayDiscardedTiles } from './js/tileDisplay.js';
+import './js/voiceHandler.js';
 
 
 // Initialize button event listeners

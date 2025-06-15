@@ -34,6 +34,10 @@ async function start() {
 
       resultElement.textContent = `Full: ${recognizedText}`;
       console.log(`Recognized command: ${recognizedText}`);
+
+      // Broadcast recognized text so other modules can react
+      const commandEvent = new CustomEvent('voice-command', { detail: recognizedText });
+      window.dispatchEvent(commandEvent);
     }
   });
 
