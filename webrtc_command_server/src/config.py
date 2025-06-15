@@ -25,4 +25,5 @@ COMMAND_LIST = [
     "volume down"
 ]
 
-rack_to_username = {}
+# Mapping from WebRTC track IDs to usernames
+track_to_username = {}
