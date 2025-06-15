@@ -1,7 +1,7 @@
 """
-Integration tests for the Mahjong application.
+- Integration tests for the Mahjong aiohttp application.
 These tests verify that the entire application stack works correctly:
-- server startup and API endpoints
+- aiohttp server startup and API endpoints
 - JavaScript module serving and MIME types
 - Game functionality end-to-end
 - Deployment readiness checks
@@ -64,7 +64,7 @@ def kill_existing_servers(port=8080):
 
 
 def wait_for_server_start(base_url, max_attempts=30, timeout=1):
-    """Wait for the server to start and be responsive."""
+    """Wait for the aiohttp server to start and be responsive."""
     for attempt in range(max_attempts):
         try:
             response = requests.get(f"{base_url}/", timeout=timeout)
@@ -77,12 +77,12 @@ def wait_for_server_start(base_url, max_attempts=30, timeout=1):
     return False
 
 
-def start_flask_server():
-    """Start a fresh server and return the process."""
+def start_test_server():
+    """Start a fresh aiohttp server and return the process."""
     # Change to project directory
     os.chdir(project_root)
     
-    # Start server in background with proper output handling
+    # Start aiohttp server in background with proper output handling
     if os.name == 'nt':  # Windows
         process = subprocess.Popen(
             [sys.executable, "app.py"],
@@ -101,8 +101,8 @@ def start_flask_server():
     return process
 
 
-def stop_flask_server(process):
-    """Stop the server process gracefully."""
+def stop_test_server(process):
+    """Stop the aiohttp server process gracefully."""
     if process and process.poll() is None:
         try:
             if os.name == 'nt':  # Windows
@@ -115,11 +115,11 @@ def stop_flask_server(process):
             # Wait for graceful shutdown
             try:
                 process.wait(timeout=5)
-                print("server stopped gracefully")
+                print("Server stopped gracefully")
             except subprocess.TimeoutExpired:
                 process.kill()
                 process.wait()
-                print("server force killed")
+                print("Server force killed")
                 
         except Exception as e:
             print(f"Error stopping server: {e}")
@@ -132,7 +132,7 @@ def stop_flask_server(process):
 
 @pytest.fixture(scope="session")
 def global_test_server():
-    """Session-wide server fixture that manages server lifecycle."""
+    """Session-wide aiohttp server fixture that manages server lifecycle."""
     base_url = "http://localhost:8080"
     
     print("\n" + "="*60)
@@ -143,16 +143,16 @@ def global_test_server():
     print("1. Killing any existing servers on port 8080...")
     kill_existing_servers(8080)
     
-    # Start fresh server
-    print("2. Starting fresh server...")
-    process = start_flask_server()
+    # Start fresh aiohttp server
+    print("2. Starting fresh aiohttp server...")
+    process = start_test_server()
     
     # Wait for server to be responsive
     print("3. Waiting for server to start...")
     if not wait_for_server_start(base_url, max_attempts=30):
-        stop_flask_server(process)
-        pytest.fail("server failed to start within 30 seconds")
-    print(f"4. server is ready for testing! pid={process.pid}")
+        stop_test_server(process)
+        pytest.fail("Server failed to start within 30 seconds")
+    print(f"4. Server is ready for testing! pid={process.pid}")
     print("="*60)
     
     yield process, base_url
@@ -162,13 +162,13 @@ def global_test_server():
     print("CLEANING UP INTEGRATION TEST ENVIRONMENT")
     print("="*60)
     print("Stopping server...")
-    stop_flask_server(process)
+    stop_test_server(process)
     print("Integration test cleanup complete!")
     print("="*60)
 
 
 class TestServerIntegration:
-    """Test server startup and basic functionality."""
+    """Test aiohttp server startup and basic functionality."""
     
     @pytest.mark.timeout(20)
     def test_server_is_running(self, global_test_server):
@@ -524,7 +524,7 @@ class TestDeploymentReadiness:
     """Test that the application is ready for deployment to fly.io."""
     
     @pytest.mark.timeout(20)
-    def test_flask_app_structure(self):
+    def test_app_structure(self):
         """Test that the app has proper structure for deployment."""
         app_py_path = project_root / "app.py"
         assert app_py_path.exists(), "app.py should exist for deployment"
