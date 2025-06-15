@@ -518,9 +518,7 @@ def test_run_ai_turn_called_on_human_player(game):
     result = game.run_ai_turn()
 
     assert not result["success"]
-    assert not result["success"]
-    assert not result["success"]
-    assert "Not an AI player" in result.get("error", "")
+    assert result.get("error") == "Not an AI player."
 
 #### Disabled test - not implemented in the game logic yet
 # def test_discard_tile_ai_hypothetically_claims_pung(game):
