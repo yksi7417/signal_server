@@ -3,6 +3,7 @@ import os
 import logging
 import mimetypes
 from flask import Flask, Response, send_from_directory, request
+from flask_cors import CORS
 from gevent import pywsgi
 from geventwebsocket.handler import WebSocketHandler
 
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 mimetypes.add_type("application/javascript", ".js")
 
 app = Flask(__name__, static_url_path="/static", static_folder="static")
+CORS(app)
 
 WS_ENDPOINTS = {
     "dev": "ws://localhost:8080/ws",
