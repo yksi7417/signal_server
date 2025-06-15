@@ -9,7 +9,6 @@ certifi==2025.4.26
 cffi==1.17.1
 charset-normalizer==3.4.2
 colorama==0.4.6
-Flask==3.0.0
 frozenlist==1.6.0
 future==1.0.0
 gevent==25.5.1
