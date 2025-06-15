@@ -1,9 +1,7 @@
 import { elements, store, clearAllTimeouts } from './gameStore.js';
 
 function sortTiles(tiles) {
-    return [...tiles].sort((a, b) => {
-        return a.unicode.localeCompare(b.unicode)
-    });
+    return [...tiles].sort((a, b) => a.localeCompare(b));
 }
 
 export function displayHand(tiles) {
@@ -129,14 +127,14 @@ export function displayHand(tiles) {
 
 function createTileElement(tile) {
     const tileEl = document.createElement('span');
-    tileEl.textContent = `${tile.unicode}`;
+    tileEl.textContent = `${tile}`;
     tileEl.style.border = "1px solid #ccc";
     tileEl.style.padding = "1px";
     tileEl.style.margin = "0px";
     tileEl.style.cursor = "pointer";
 
     // Count occurrences of this tile in the hand
-    const tileCount = store.currentHandTiles.filter(t => t.suit === tile.suit && t.value === tile.value).length;
+    const tileCount = store.currentHandTiles.filter(t => t === tile).length;
 
     if (tileCount === 4) {
         tileEl.classList.add('self-kongable'); // Add CSS class for styling
@@ -146,8 +144,8 @@ function createTileElement(tile) {
             // We assume it's the player's turn if this handler is active.
             // Add additional checks if isPlayerTurn is available and relevant here.
 
-            if (confirm(`Declare a hidden Kong with ${tile.suit} ${tile.value}?`)) {
-                const tileData = { suit: tile.suit, value: tile.value };
+            if (confirm(`Declare a hidden Kong with ${tile}?`)) {
+                const tileData = tile;
                 try {
                     const response = await fetch('/api/player_declares_hidden_kong', {
                         method: 'POST',
@@ -167,7 +165,7 @@ function createTileElement(tile) {
                         if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
 
                         if (result.drawn_tile && elements.playerConsoleEl) {
-                            elements.playerConsoleEl.textContent += ` Replacement tile drawn: ${result.drawn_tile.unicode}`;
+                            elements.playerConsoleEl.textContent += ` Replacement tile drawn: ${result.drawn_tile}`;
                         }
 
                     } else if (result && result.error) {
@@ -201,7 +199,7 @@ function handleTileClick(tile, tileEl) {
         
         store.selectedTileForDiscard = tile;
         if (elements.selectedTileDisplayEl) {
-            elements.selectedTileDisplayEl.textContent = `Selected: ${tile.unicode}`;
+            elements.selectedTileDisplayEl.textContent = `Selected: ${tile}`;
         }
         document.querySelectorAll('#player-hand span').forEach(el => {
             el.style.backgroundColor = 'transparent';
@@ -235,7 +233,7 @@ export function displayRevealedSets(revealed_sets_data) {
 
     let html = "";
     revealed_sets_data.forEach(meld => {
-        const tilesString = meld.tiles.map(t => `${t.unicode}`).join(' ');
+        const tilesString = meld.tiles.map(t => `${t}`).join(' ');
         html += `[${tilesString}]`;
     });
     elements.revealedSetsEl.innerHTML = html;
@@ -306,7 +304,7 @@ export function displayDiscardedTiles() {
             tileElement.style.border = '1px solid #ff6b6b';
             tileElement.style.boxShadow = '0 0 1px rgba(255,107,107,0.5)';
         }
-        tileElement.textContent = tile.unicode;
+        tileElement.textContent = tile;
         currentRow.appendChild(tileElement);
     });
 }

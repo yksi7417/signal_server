@@ -121,3 +121,32 @@ class Tile:
 
     def __hash__(self):
         return hash((self.suit, self.value))
+
+
+class TileFactory:
+    """Flyweight factory for Tile objects."""
+
+    _tiles_by_sv = {}
+    _tiles_by_unicode = {}
+
+    @classmethod
+    def _initialize(cls):
+        if cls._tiles_by_sv:
+            return
+        from .constants import TILE_CATEGORIES_FOR_GENERATION
+
+        for suit, values in TILE_CATEGORIES_FOR_GENERATION:
+            for value in values:
+                tile = Tile(suit, value)
+                cls._tiles_by_sv[(suit, value)] = tile
+                cls._tiles_by_unicode[tile.unicode] = tile
+
+    @classmethod
+    def get_tile(cls, suit, value):
+        cls._initialize()
+        return cls._tiles_by_sv[(suit, value)]
+
+    @classmethod
+    def from_unicode(cls, unicode_char):
+        cls._initialize()
+        return cls._tiles_by_unicode.get(unicode_char)

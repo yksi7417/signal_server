@@ -11,7 +11,7 @@ function autoSelectDrawnTile(drawnTile) {
     
     // Update the selected tile display
     if (elements.selectedTileDisplayEl) {
-        elements.selectedTileDisplayEl.textContent = `Selected: ${drawnTile.unicode}`;
+        elements.selectedTileDisplayEl.textContent = `Selected: ${drawnTile}`;
     }
     
     // Find the tile element in the DOM and highlight it
@@ -22,7 +22,7 @@ function autoSelectDrawnTile(drawnTile) {
         
         // Find and highlight the drawn tile (last occurrence of this tile type)
         const tileText = el.textContent;
-        if (tileText === drawnTile.unicode) {
+        if (tileText === drawnTile) {
             // Check if this is the last instance by checking if there are more of the same tile after this one
             const remainingElements = Array.from(tileElements).slice(Array.from(tileElements).indexOf(el) + 1);
             const hasMoreOfSameTile = remainingElements.some(remainingEl => remainingEl.textContent === tileText);
@@ -35,7 +35,7 @@ function autoSelectDrawnTile(drawnTile) {
     });
       // Update console message to indicate auto-selection
     if (elements.playerConsoleEl) {
-        elements.playerConsoleEl.textContent = `Drew: ${drawnTile.unicode}`;
+        elements.playerConsoleEl.textContent = `Drew: ${drawnTile}`;
     }
 }
 
@@ -50,14 +50,14 @@ function startDiscardCountdown(drawnTile) {
     }
       // Update console with initial countdown
     if (elements.playerConsoleEl) {
-        elements.playerConsoleEl.textContent = `Drew: ${drawnTile.unicode}. Auto-selected for discard. Auto-discard in ${timeLeft}s or press 'D'.`;
+        elements.playerConsoleEl.textContent = `Drew: ${drawnTile}. Auto-selected for discard. Auto-discard in ${timeLeft}s or press 'D'.`;
     }
       // Start countdown interval
     store.discardCountdownId = setInterval(() => {
         timeLeft--;
         const selectedTile = store.selectedTileForDiscard || drawnTile;
         if (elements.playerConsoleEl) {
-            elements.playerConsoleEl.textContent = `Selected: ${selectedTile.unicode}. Auto-discard in ${timeLeft}s or press 'D'.`;
+            elements.playerConsoleEl.textContent = `Selected: ${selectedTile}. Auto-discard in ${timeLeft}s or press 'D'.`;
         }
         
         if (timeLeft <= 0) {
@@ -82,7 +82,7 @@ function startDiscardCountdown(drawnTile) {
             
             // Update the selected tile display
             if (elements.selectedTileDisplayEl) {
-                elements.selectedTileDisplayEl.textContent = `Selected: ${rightmostTile.unicode}`;
+                elements.selectedTileDisplayEl.textContent = `Selected: ${rightmostTile}`;
             }
             
             // Highlight the rightmost tile in the UI
@@ -95,11 +95,11 @@ function startDiscardCountdown(drawnTile) {
             });
             
             if (elements.playerConsoleEl) {
-                elements.playerConsoleEl.textContent = `Auto-selected and discarded: ${rightmostTile.unicode}`;
+                elements.playerConsoleEl.textContent = `Auto-selected and discarded: ${rightmostTile}`;
             }
         } else if (store.selectedTileForDiscard) {
             if (elements.playerConsoleEl) {
-                elements.playerConsoleEl.textContent = `Auto-discarded: ${store.selectedTileForDiscard.unicode}`;
+                elements.playerConsoleEl.textContent = `Auto-discarded: ${store.selectedTileForDiscard}`;
             }
         }
         
@@ -212,7 +212,7 @@ function handleSuccessfulDraw(result) {
     // Check for self-draw win claim first
     if (result.human_can_claim === "SELF_DRAW_WIN") {
         if (elements.playerConsoleEl) {
-            elements.playerConsoleEl.textContent = `Drew: ${result.drawn_tile.unicode} - You can WIN! Claim it?`;
+            elements.playerConsoleEl.textContent = `Drew: ${result.drawn_tile} - You can WIN! Claim it?`;
         }
         showClaimPrompt(result.claimable_tile, "SELF_DRAW_WIN");
         return;
@@ -331,7 +331,7 @@ export function updateGameStateAfterDiscard(result) {
     displayHand(result.updated_hand);
     if (elements.playerConsoleEl) {
         elements.playerConsoleEl.textContent =
-            `Discarded ${result.discarded_tile.suit} ${result.discarded_tile.value}.`;
+            `Discarded ${result.discarded_tile}.`;
     }
     store.selectedTileForDiscard = null;
     if (elements.selectedTileDisplayEl) {

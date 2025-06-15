@@ -41,9 +41,8 @@ def start_new_game():
     player0_hand_serializable = []
     if current_game_state.players:
         player0 = current_game_state.players[0]
-        player0_hand_serializable = [
-            {"unicode": tile.unicode, "suit": tile.suit, "value": tile.value} for tile in player0.hand
-        ]    # Get current dealer info from global state
+        player0_hand_serializable = [tile.unicode for tile in player0.hand]
+    # Get current dealer info from global state
     dealer_info = get_current_dealer_info()
     
     game_info = {
@@ -130,15 +129,11 @@ def player_claims_pung():
         )
         if success:
             player = current_game_state.players[claiming_player_id]
-            hand_serializable = [
-                {"unicode": t.unicode, "suit": t.suit, "value": t.value} for t in player.hand
-            ]
+            hand_serializable = [t.unicode for t in player.hand]
             revealed_sets_serializable = [
                 {
                     "type": meld.meld_type.value,
-                    "tiles": [
-                        {"unicode": t.unicode, "suit": t.suit, "value": t.value} for t in meld.raw_tiles
-                    ],
+                    "tiles": [t.unicode for t in meld.raw_tiles],
                 }
                 for meld in player.revealed_sets
             ]
@@ -173,13 +168,7 @@ def player_claims_pung():
             "next_player_id": current_game_state.players[
                 current_game_state.current_player_index
             ].player_id,
-            "discarded_tile": {
-                "unicode": current_game_state.current_discard.unicode,
-                "suit": current_game_state.current_discard.suit,
-                "value": current_game_state.current_discard.value,
-            }
-            if current_game_state.current_discard
-            else None,
+            "discarded_tile": current_game_state.current_discard.unicode if current_game_state.current_discard else None,
             "winner_found": current_game_state.winner_found,
         }
 
@@ -215,24 +204,19 @@ def player_claims_win():
 
         if success:
             player = current_game_state.players[claiming_player_id]
-            hand_serializable = [
-                {"unicode": t.unicode, "suit": t.suit, "value": t.value}
-                for t in player.hand
-            ]
+            hand_serializable = [t.unicode for t in player.hand]
             revealed_sets_serializable = [
                 {
                     "type": meld.meld_type.value,
-                    "tiles": [
-                        {"unicode": t.unicode, "suit": t.suit, "value": t.value}
-                        for t in meld.raw_tiles
-                    ],
+                    "tiles": [t.unicode for t in meld.raw_tiles],
                 }
                 for meld in player.revealed_sets
             ]
             response = {
                 "success": True,
                 "message": f"Player {claiming_player_id} claimed Win!",
-                "hand": hand_serializable,                "revealed_sets": revealed_sets_serializable,
+                "hand": hand_serializable,
+                "revealed_sets": revealed_sets_serializable,
                 "winner_found": current_game_state.winner_found,
                 "winning_player_id": current_game_state.winning_player_id,
                 "action": "win_claimed"
@@ -272,11 +256,7 @@ def player_claims_win():
 
             discarded_tile_serializable = None
             if current_game_state.current_discard:
-                discarded_tile_serializable = {
-                    "unicode": current_game_state.current_discard.unicode,
-                    "suit": current_game_state.current_discard.suit,
-                    "value": current_game_state.current_discard.value,
-                }
+                discarded_tile_serializable = current_game_state.current_discard.unicode
 
             response = {
                 "success": True,
@@ -319,17 +299,11 @@ def player_claims_kong():
 
         if success:
             player = current_game_state.players[claiming_player_id]
-            hand_serializable = [
-                {"unicode": t.unicode, "suit": t.suit, "value": t.value}
-                for t in player.hand
-            ]
+            hand_serializable = [t.unicode for t in player.hand]
             revealed_sets_serializable = [
                 {
                     "type": meld.meld_type.value,
-                    "tiles": [
-                        {"unicode": t.unicode, "suit": t.suit, "value": t.value}
-                        for t in meld.raw_tiles
-                    ],
+                    "tiles": [t.unicode for t in meld.raw_tiles],
                 }
                 for meld in player.revealed_sets
             ]
@@ -368,8 +342,18 @@ def player_claims_kong():
 @app.route('/api/player_declares_hidden_kong', methods=['POST'])
 def player_declares_hidden_kong():
     global current_game_state
+    from mahjong_engine.tile import TileFactory
+
     data = request.get_json()
-    tile_info = data.get('tile_info', {})
+    tile_info_raw = data.get('tile_info', {})
+
+    if isinstance(tile_info_raw, str):
+        tile_obj = TileFactory.from_unicode(tile_info_raw)
+        if not tile_obj:
+            return jsonify({"success": False, "error": "Invalid tile_info provided for Hidden Kong."})
+        tile_info = {"suit": tile_obj.suit, "value": tile_obj.value}
+    else:
+        tile_info = tile_info_raw
     
     response = {
         "success": False,
@@ -398,15 +382,11 @@ def player_declares_hidden_kong():
 
     if result_dict.get("success"):
         player = current_game_state.players[player_id]
-        hand_serializable = [
-            {"unicode": t.unicode, "suit": t.suit, "value": t.value} for t in player.hand
-        ]
+        hand_serializable = [t.unicode for t in player.hand]
         revealed_sets_serializable = [
             {
                 "type": meld.meld_type.value,
-                "tiles": [
-                    {"unicode": t.unicode, "suit": t.suit, "value": t.value} for t in meld.raw_tiles
-                ],
+                "tiles": [t.unicode for t in meld.raw_tiles],
                 "revealed": meld.revealed
             }
             for meld in player.revealed_sets
@@ -439,35 +419,22 @@ def draw_tile():
     drawn_tile_obj = current_game_state.draw_tile_for_current_player()
 
     if drawn_tile_obj:
-        drawn_tile_serializable = {
-            "unicode": drawn_tile_obj.unicode,
-            "suit": drawn_tile_obj.suit,
-            "value": drawn_tile_obj.value,
-        }
+        drawn_tile_serializable = drawn_tile_obj.unicode
 
         current_player_hand = current_game_state.players[
             current_game_state.current_player_index
         ].hand
-        hand_serializable = [
-            {"unicode": t.unicode, "suit": t.suit, "value": t.value} 
-            for t in current_player_hand
-        ]
+        hand_serializable = [t.unicode for t in current_player_hand]
 
         if (
             current_game_state.winner_found
             and current_game_state.winning_player_id == player_id
         ):
-            hand_serializable = [
-                {"unicode": t.unicode, "suit": t.suit, "value": t.value}
-                for t in current_game_state.players[player_id].hand
-            ]
+            hand_serializable = [t.unicode for t in current_game_state.players[player_id].hand]
             revealed_sets_serializable = [
                 {
                     "type": meld.meld_type.value,
-                    "tiles": [
-                        {"unicode": t.unicode, "suit": t.suit, "value": t.value} 
-                        for t in meld.raw_tiles
-                    ],
+                    "tiles": [t.unicode for t in meld.raw_tiles],
                 }
                 for meld in current_game_state.players[player_id].revealed_sets
             ]
@@ -495,10 +462,7 @@ def draw_tile():
         current_player_hand = current_game_state.players[
             current_game_state.current_player_index
         ].hand
-        hand_serializable = [
-            {"unicode": t.unicode, "suit": t.suit, "value": t.value} 
-            for t in current_player_hand
-        ]
+        hand_serializable = [t.unicode for t in current_player_hand]
         return jsonify({
             "success": True,
             "action": "wall_empty",
@@ -515,8 +479,17 @@ def draw_tile():
 def discard_tile():
     try:
         global current_game_state
+        from mahjong_engine.tile import TileFactory
+
         data = request.get_json()
-        tile_to_discard_data = data.get('tile_to_discard', {})
+        tile_raw = data.get('tile_to_discard', {})
+        if isinstance(tile_raw, str):
+            tile_obj = TileFactory.from_unicode(tile_raw)
+            if not tile_obj:
+                return jsonify({"success": False, "error": "Invalid tile data for discard."})
+            tile_to_discard_data = {"suit": tile_obj.suit, "value": tile_obj.value}
+        else:
+            tile_to_discard_data = tile_raw
           # Debug output - avoid Unicode console errors on Windows
         try:
             print("Discarding tile:", tile_to_discard_data)
@@ -550,19 +523,12 @@ def discard_tile():
             hand_serializable = []
 
             if discarding_player_object:
-                hand_serializable = [
-                    {"unicode": t.unicode, "suit": t.suit, "value": t.value}
-                    for t in discarding_player_object.hand
-                ]
+                hand_serializable = [t.unicode for t in discarding_player_object.hand]
             
             # Handle potential None current_discard
             discarded_tile_info = None
             if current_game_state.current_discard:
-                discarded_tile_info = {
-                    "unicode": current_game_state.current_discard.unicode,
-                    "suit": current_game_state.current_discard.suit,
-                    "value": current_game_state.current_discard.value,
-                }
+                discarded_tile_info = current_game_state.current_discard.unicode
 
             response = {
                 "success": True,
@@ -580,19 +546,13 @@ def discard_tile():
                 and current_game_state.claim_type_pending
             ):
                 response["human_can_claim"] = current_game_state.claim_type_pending
-                response["claimable_tile"] = {
-                    "unicode": current_game_state.potential_claim_tile.unicode,
-                    "suit": current_game_state.potential_claim_tile.suit,
-                    "value": current_game_state.potential_claim_tile.value,
-                }
+                response["claimable_tile"] = current_game_state.potential_claim_tile.unicode
             else:
                 response["human_can_claim"] = None
             return jsonify(response)
         else:
             current_player_obj = current_game_state.players[discarding_player_id]
-            hand_serializable = [{"unicode": t.unicode,
-                                  "suit": t.suit,
-                                  "value": t.value} for t in current_player_obj.hand]
+            hand_serializable = [t.unicode for t in current_player_obj.hand]
             return jsonify({
                 "success": False,
                 "error": "Failed to discard tile (tile not in hand, or wrong hand size?)",
@@ -637,9 +597,7 @@ def request_ai_turn():
         player0_hand_serializable = []
         if current_game_state.players:
             player0 = current_game_state.players[0]
-            player0_hand_serializable = [
-                {"unicode": tile.unicode, "suit": tile.suit, "value": tile.value} for tile in player0.hand
-            ]
+            player0_hand_serializable = [tile.unicode for tile in player0.hand]
         result["player0_hand"] = player0_hand_serializable
         
         player0_revealed_sets_serializable = []
@@ -648,9 +606,7 @@ def request_ai_turn():
             player0_revealed_sets_serializable = [
                 {
                     "type": meld.meld_type.value,
-                    "tiles": [
-                        {"unicode": t.unicode, "suit": t.suit, "value": t.value} for t in meld.raw_tiles
-                    ],
+                    "tiles": [t.unicode for t in meld.raw_tiles],
                 }                for meld in player0.revealed_sets
             ]
         result["player0_revealed_sets"] = player0_revealed_sets_serializable

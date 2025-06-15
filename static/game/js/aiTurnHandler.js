@@ -193,7 +193,7 @@ function handleSuccessfulAiTurn(result) {
 
     if (result.discarded_tile) {
         if (elements.playerConsoleEl) {
-            let displayText = `AI Player ${result.ai_player_id} discarded ${result.discarded_tile.unicode}`;
+            let displayText = `AI Player ${result.ai_player_id} discarded ${result.discarded_tile}`;
             if (result.human_can_claim) {
                 displayText += `\n and you can claim it as a ${result.human_can_claim}.`;
                 showClaimPrompt(result.discarded_tile, result.human_can_claim);
