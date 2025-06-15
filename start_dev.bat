@@ -1,2 +1,2 @@
 set APP_ENV=dev 
-python signal_server.py
+python .\app.py
