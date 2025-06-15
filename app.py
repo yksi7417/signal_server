@@ -615,7 +615,7 @@ app.router.add_post("/api/player_declares_hidden_kong", player_declares_hidden_k
 app.router.add_post("/api/draw_tile", draw_tile)
 app.router.add_post("/api/discard_tile", discard_tile)
 app.router.add_post("/api/request_ai_turn", request_ai_turn)
-app.router.add_static("/game", path=STATIC_DIR, name="static")
+app.router.add_static('/static/', path='./static', name='static')
 
 cors = aiohttp_cors.setup(
     app,
