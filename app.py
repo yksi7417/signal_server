@@ -584,22 +584,15 @@ async def request_ai_turn(request: web.Request) -> web.Response:
 
 
 @web.middleware
-async def after_request(request: web.Request, handler):
+async def security_headers(request: web.Request, handler):
     response = await handler(request)
-    if request.path.endswith(".js"):
-        response.content_type = "application/javascript"
-
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "SAMEORIGIN"
-
+    response.headers.setdefault("Cache-Control", "no-cache")
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
     return response
 
 
-app = web.Application(middlewares=[after_request])
+app = web.Application(middlewares=[security_headers])
 
 app.router.add_get("/", index)
 app.router.add_get("/game", game)
