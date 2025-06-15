@@ -23,14 +23,14 @@
 
   <audio id="ding" src="/static/audio/dingdong.mp3" preload="auto"></audio>
 
-  <script src="/static/scripts/Vosklet.js" async defer></script>
-  <script type="module" src="/static/scripts/voice.js"></script>
-  <script type="module" src="/static/scripts/signaling.js"></script>
-  <script src="/static/scripts/hotkey.js"></script>
+  <script src="/static/js/Vosklet.js" async defer></script>
+  <script type="module" src="/static/js/voice.js"></script>
+  <script type="module" src="/static/js/signaling.js"></script>
+  <script src="/static/js/hotkey.js"></script>
   <script src="/env.js"></script>
   <script type="module">
-    import * as signal from '/static/scripts/signaling.js';
-    import { start as startRecognizingCommands } from '/static/scripts/voice.js';
+    import * as signal from '/static/js/signaling.js';
+    import { start as startRecognizingCommands } from '/static/js/voice.js';
 
     document.getElementById('clientIdInput').value = localStorage.getItem('clientId') || signal.myId;
 
