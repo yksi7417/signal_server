@@ -266,15 +266,12 @@ class TestAPIEndpointsIntegration:
         requests.post(f"{base_url}/api/start_new_game")
         draw_response = requests.post(f"{base_url}/api/draw_tile")
         hand = draw_response.json()["hand"]
-        print(hand)
         
         # Discard the first tile in hand (use correct API format)
         tile_to_discard = hand[0]
         discard_data = {
             "tile_to_discard": tile_to_discard
         }
-        
-        print(discard_data)
 
         response = requests.post(
             f"{base_url}/api/discard_tile",
@@ -282,8 +279,6 @@ class TestAPIEndpointsIntegration:
             headers={"Content-Type": "application/json"}
         )
 
-        print(response.json())
-        
         assert response.status_code == 200
         
         data = response.json()
@@ -404,7 +399,7 @@ class TestJavaScriptModulesIntegration:
     def test_main_js_serves_correctly(self, global_test_server):
         """Test that main.js is served with correct MIME type."""
         process, base_url = global_test_server
-        response = requests.get(f"{base_url}/game/main.js")
+        response = requests.get(f"{base_url}/static/game/main.js")
         assert response.status_code == 200
         
         content_type = response.headers.get("Content-Type", "")
@@ -421,12 +416,12 @@ class TestJavaScriptModulesIntegration:
         """Test that all JavaScript modules are served correctly."""
         process, base_url = global_test_server
         js_modules = [
-            "/game/js/gameActions.js",
-            "/game/js/claimsHandler.js", 
-            "/game/js/tileDisplay.js",
-            "/game/js/aiTurnHandler.js",
-            "/game/js/celebrationScreen.js",
-            "/game/js/gameStore.js"
+            "/static/game/js/gameActions.js",
+            "/static/game/js/claimsHandler.js", 
+            "/static/game/js/tileDisplay.js",
+            "/static/game/js/aiTurnHandler.js",
+            "/static/game/js/celebrationScreen.js",
+            "/static/game/js/gameStore.js"
         ]
         
         for module_path in js_modules:
@@ -443,7 +438,7 @@ class TestJavaScriptModulesIntegration:
     def test_security_headers_present(self, global_test_server):
         """Test that security headers are present in responses."""
         process, base_url = global_test_server
-        response = requests.get(f"{base_url}/game/main.js")
+        response = requests.get(f"{base_url}/static/game/main.js")
         assert response.status_code == 200
         
         # Check for CORS headers
@@ -477,7 +472,6 @@ class TestGameFlowIntegration:
         discard_data = {
             "tile_to_discard": tile_to_discard
         }
-        print(discard_data)
         
         discard_response = requests.post(
             f"{base_url}/api/discard_tile",
@@ -571,8 +565,13 @@ class TestDeploymentReadiness:
         process, base_url = global_test_server
         static_files = [
             "/",
-            "/game/main.js",
-            "/game/js/gameActions.js"
+            "/static/game/main.js",
+            "/static/game/js/aiTurnHandler.js",
+            "/static/game/js/celebrationScreen.js",
+            "/static/game/js/claimsHandler.js",
+            "/static/game/js/gameActions.js",
+            "/static/game/js/gameStore.js",
+            "/static/game/js/tileDisplay.js",
         ]
         
         for static_file in static_files:
