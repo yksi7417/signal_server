@@ -212,7 +212,7 @@ def test_example():
 ### 4. Integration Test Fixtures
 ```python
 @pytest.fixture(scope="session")
-def global_flask_server():
+def global_test_server():
     """Session-wide Flask server fixture that manages server lifecycle."""
     # Setup server once for all tests
     yield server_instance
@@ -322,9 +322,9 @@ class GameState:
 ```python
 class TestAPIEndpointsIntegration:
     @pytest.mark.timeout(20)
-    def test_new_endpoint_api(self, global_flask_server):
+    def test_new_endpoint_api(self, global_test_server):
         """Test the new_endpoint API endpoint."""
-        process, base_url = global_flask_server
+        process, base_url = global_test_server
         
         # Test request
         response = requests.post(f"{base_url}/api/new_endpoint", json=test_data)
@@ -352,7 +352,7 @@ For each new endpoint, test:
 
 **Game State Endpoints**:
 ```python
-def test_start_new_game_api(self, global_flask_server):
+def test_start_new_game_api(self, global_test_server):
     """Test the start_new_game API endpoint."""
     response = requests.post(f"{base_url}/api/start_new_game")
     assert response.status_code == 200
@@ -365,7 +365,7 @@ def test_start_new_game_api(self, global_flask_server):
 
 **Game Action Endpoints**:
 ```python
-def test_discard_tile_api(self, global_flask_server):
+def test_discard_tile_api(self, global_test_server):
     """Test the discard_tile API endpoint."""
     # Setup game state
     requests.post(f"{base_url}/api/start_new_game")
@@ -413,9 +413,9 @@ def test_remaining_tiles_updates():
 
 # New integration test (in test_mahjong.py)
 @pytest.mark.timeout(30)
-def test_remaining_tiles_updates_for_all_players(self, global_flask_server):
+def test_remaining_tiles_updates_for_all_players(self, global_test_server):
     """Test that remaining_tiles count updates after both human and AI turns."""
-    process, base_url = global_flask_server
+    process, base_url = global_test_server
     
     # Automated assertions instead of manual verification
     response = requests.post(f"{base_url}/api/start_new_game")
@@ -451,7 +451,7 @@ def kill_existing_servers(port=8080):
 # Problem: Tests affecting each other
 # Solution: Fresh server per test session
 @pytest.fixture(scope="session")
-def global_flask_server():
+def global_test_server():
     # Start fresh server
     # Proper cleanup
 ```
@@ -461,7 +461,7 @@ def global_flask_server():
 Integration tests also serve as performance monitors:
 ```python
 @pytest.mark.timeout(20)  # Fail if endpoint takes > 20 seconds
-def test_ai_turn_performance(self, global_flask_server):
+def test_ai_turn_performance(self, global_test_server):
     """Ensure AI turns complete within reasonable time."""
     start_time = time.time()
     response = requests.post(f"{base_url}/api/request_ai_turn")
@@ -548,7 +548,7 @@ The `test_remaining_tiles_updates_for_all_players` test demonstrates a complete 
 
 ```python
 @pytest.mark.timeout(30)
-def test_remaining_tiles_updates_for_all_players(self, global_flask_server):
+def test_remaining_tiles_updates_for_all_players(self, global_test_server):
     """Test that remaining_tiles count updates after both human and AI turns."""
     # 1. Start game and validate initial state
     # 2. Human draws tile (remaining_tiles decreases by 1)
@@ -569,7 +569,7 @@ This test validates:
 Successfully converted standalone debug script (`debug_remaining_tiles.py`) into a proper integration test by:
 
 1. **Replacing manual verification** with automated assertions
-2. **Adding proper test fixtures** using `global_flask_server`
+2. **Adding proper test fixtures** using `global_test_server`
 3. **Including edge case handling** for different AI turn outcomes
 4. **Ensuring test isolation** and cleanup
 

@@ -1,1 +1,1 @@
-# Integration tests for the Mahjong Flask application
+# Integration tests for the Mahjong application

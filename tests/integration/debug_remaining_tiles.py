@@ -88,6 +88,6 @@ if __name__ == "__main__":
         test_remaining_tiles_updates()
     except requests.RequestException as e:
         print(f"Connection error: {e}")
-        print("Make sure the Flask server is running on localhost:8080")
+        print("Make sure the server is running on localhost:8080")
     except Exception as e:
         print(f"Error: {e}")
