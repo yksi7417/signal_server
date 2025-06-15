@@ -4,10 +4,34 @@
 <head>
   <meta charset="utf-8">
   <title>Mahjong Game</title>
+  <link rel="stylesheet" href="styles/peer.css">
   <link rel="stylesheet" href="game/styles/game.css">
+  <link rel="icon" href="icons/favicon.ico" type="image/x-icon">
 </head>
 
 <body>  
+    <h2>👥 Connected Peers</h2>
+
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <label for="clientIdInput">Your Name:</label>
+      <input id="clientIdInput" value="" />
+      <button id="startButton">init...</button>
+      <label id="serverLocation"></label>
+    </div>
+
+    <ul id="peerList"></ul>
+
+
+    <textarea id="logArea" readonly></textarea>
+    <audio id="ding" src="audio/dingdong.mp3" preload="auto"></audio>
+
+    <script src="scripts/Vosklet.js" async defer></script>
+    <script type="module" src="scripts/voice.js"></script>
+    <script type="module" src="scripts/signaling.js"></script>
+    <script src="scripts/hotkey.js"></script>
+
+
+
     <div class="game-area">      
       <div id="discard-area" class="discard-area"></div>
     </div>
@@ -39,6 +63,18 @@
     </div>
 
     <script type="module" src="{{ url_for('static', filename='main.js') }}"></script>
+    <script type="module">
+      import * as signal from 'scripts/signaling.js';
+      import { start as startRecognizingCommands } from 'scripts/voice.js';
+
+      document.getElementById('clientIdInput').value = localStorage.getItem('clientId') || signal.myId;
+
+      const startButton = document.getElementById('startButton');
+      startButton.onclick = async () => {
+          await signal.handleStartOrEnd();
+          await startRecognizingCommands();
+      };
+    </script>
 
 </body>
 
