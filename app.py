@@ -1,4 +1,6 @@
 import os
+import json
+import logging
 import aiohttp_cors
 from aiohttp import web, WSMsgType
 
@@ -11,9 +13,21 @@ from mahjong_engine.game_session import (
 )
 
 
-STATIC_DIR = os.path.join(os.path.dirname(__file__), "static", "game")
+BASE_DIR = os.path.dirname(__file__)
+STATIC_DIR = os.path.join(BASE_DIR, "static", "game")
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+WS_ENDPOINTS = {
+    "dev": "ws://localhost:8080/ws",
+    "uat": "wss://oracle-free-instance-20230330-1941.tail356fe.ts.net/ws",
+    "prod": "wss://signal-server-eo-7uq.fly.dev/ws",
+}
 
 current_game_state = GameState()
+
+clients = {}
 
 
 async def index(request: web.Request) -> web.FileResponse:
@@ -22,6 +36,79 @@ async def index(request: web.Request) -> web.FileResponse:
 
 async def game(request: web.Request) -> web.FileResponse:
     return web.FileResponse(os.path.join(STATIC_DIR, "index.html"))
+
+
+async def env_js_handler(request: web.Request) -> web.Response:
+    env = os.getenv("APP_ENV", "prod").lower().strip()
+    ws_url = WS_ENDPOINTS.get(env, WS_ENDPOINTS["prod"])
+
+    js_code = (
+        "window.APP_CONFIG = {\n"
+        f"  env: '{env}',\n"
+        f"  wsUrl: '{ws_url}'\n"
+        "};"
+    )
+    return web.Response(text=js_code, content_type="application/javascript")
+
+
+async def voice_handler(request: web.Request) -> web.FileResponse:
+    return web.FileResponse(os.path.join(BASE_DIR, "voice.html"))
+
+
+async def voice_command_handler(request: web.Request) -> web.FileResponse:
+    return web.FileResponse(os.path.join(BASE_DIR, "voice_command.html"))
+
+
+async def websocket_handler(request: web.Request):
+    ws = web.WebSocketResponse()
+    await ws.prepare(request)
+
+    logger.info("Websocket from: %s", request.remote)
+    logger.debug("Headers: %s", dict(request.headers))
+
+    client_id = None
+
+    msg = await ws.receive()
+    if msg.type == WSMsgType.TEXT:
+        try:
+            client_info = json.loads(msg.data)
+            client_id = client_info["id"]
+        except Exception as e:
+            logger.error("Invalid JSON message: %s", e)
+            await ws.close()
+            return ws
+    else:
+        await ws.close()
+        return ws
+
+    clients[client_id] = ws
+
+    for other_id, other_ws in clients.items():
+        if other_ws != ws:
+            await other_ws.send_str(
+                json.dumps({"type": "new-peer", "id": client_id})
+            )
+
+    await ws.send_str(
+        json.dumps({"type": "peer-list", "peers": [pid for pid in clients if pid != client_id]})
+    )
+
+    try:
+        async for msg in ws:
+            if msg.type == WSMsgType.TEXT:
+                data = json.loads(msg.data)
+                to_id = data.get("to")
+                if to_id in clients:
+                    await clients[to_id].send_str(msg.data)
+    finally:
+        if client_id in clients:
+            del clients[client_id]
+            for other_ws in clients.values():
+                await other_ws.send_str(
+                    json.dumps({"type": "peer-disconnect", "id": client_id})
+                )
+
+    return ws
 
 
 async def reset_game(request: web.Request) -> web.Response:
@@ -589,6 +676,8 @@ async def security_headers(request: web.Request, handler):
     response.headers.setdefault("Cache-Control", "no-cache")
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+    response.headers.setdefault("Cross-Origin-Embedder-Policy", "require-corp")
     return response
 
 
@@ -608,6 +697,10 @@ app.router.add_post("/api/player_declares_hidden_kong", player_declares_hidden_k
 app.router.add_post("/api/draw_tile", draw_tile)
 app.router.add_post("/api/discard_tile", discard_tile)
 app.router.add_post("/api/request_ai_turn", request_ai_turn)
+app.router.add_get("/voice.html", voice_handler)
+app.router.add_get("/voice_command.html", voice_command_handler)
+app.router.add_get("/ws", websocket_handler)
+app.router.add_get("/env.js", env_js_handler)
 app.router.add_static('/static/', path='./static', name='static')
 
 cors = aiohttp_cors.setup(
