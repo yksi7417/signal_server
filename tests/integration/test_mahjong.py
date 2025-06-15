@@ -526,16 +526,16 @@ class TestDeploymentReadiness:
     
     @pytest.mark.timeout(20)
     def test_flask_app_structure(self):
-        """Test that Flask app has proper structure for deployment."""
+        """Test that the app has proper structure for deployment."""
         app_py_path = project_root / "app.py"
         assert app_py_path.exists(), "app.py should exist for deployment"
-        
-        # Check that app.py contains Flask app
+
+        # Check that app.py contains aiohttp app
         with open(app_py_path, 'r') as f:
             content = f.read()
-            assert "from flask import" in content
-            assert "app = Flask" in content
-            assert "if __name__ == '__main__':" in content or "app.run" in content
+            assert "from aiohttp import web" in content
+            assert "web.Application" in content
+            assert "web.run_app" in content
     @pytest.mark.timeout(20)
     def test_requirements_file_exists(self):
         """Test that requirements.txt exists with necessary dependencies."""
@@ -544,7 +544,7 @@ class TestDeploymentReadiness:
         
         with open(req_path, 'r') as f:
             requirements = f.read()
-            assert "Flask" in requirements, "Flask should be in requirements.txt"
+            assert "aiohttp" in requirements, "aiohttp should be in requirements.txt"
     
     @pytest.mark.timeout(20)
     def test_fly_toml_configuration(self):
