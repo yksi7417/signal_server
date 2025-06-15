@@ -1,13 +1,12 @@
 """
-Integration tests for the Mahjong Flask application.
+- Integration tests for the Mahjong aiohttp application.
 These tests verify that the entire application stack works correctly:
-- Flask server startup and API endpoints
+- aiohttp server startup and API endpoints
 - JavaScript module serving and MIME types
 - Game functionality end-to-end
 - Deployment readiness checks
 """
 
-import json
 import os
 import signal
 import subprocess
@@ -65,7 +64,7 @@ def kill_existing_servers(port=8080):
 
 
 def wait_for_server_start(base_url, max_attempts=30, timeout=1):
-    """Wait for the Flask server to start and be responsive."""
+    """Wait for the aiohttp server to start and be responsive."""
     for attempt in range(max_attempts):
         try:
             response = requests.get(f"{base_url}/", timeout=timeout)
@@ -78,12 +77,12 @@ def wait_for_server_start(base_url, max_attempts=30, timeout=1):
     return False
 
 
-def start_flask_server():
-    """Start a fresh Flask server and return the process."""
+def start_test_server():
+    """Start a fresh aiohttp server and return the process."""
     # Change to project directory
     os.chdir(project_root)
     
-    # Start Flask server in background with proper output handling
+    # Start aiohttp server in background with proper output handling
     if os.name == 'nt':  # Windows
         process = subprocess.Popen(
             [sys.executable, "app.py"],
@@ -102,8 +101,8 @@ def start_flask_server():
     return process
 
 
-def stop_flask_server(process):
-    """Stop the Flask server process gracefully."""
+def stop_test_server(process):
+    """Stop the aiohttp server process gracefully."""
     if process and process.poll() is None:
         try:
             if os.name == 'nt':  # Windows
@@ -116,14 +115,14 @@ def stop_flask_server(process):
             # Wait for graceful shutdown
             try:
                 process.wait(timeout=5)
-                print("Flask server stopped gracefully")
+                print("Server stopped gracefully")
             except subprocess.TimeoutExpired:
                 process.kill()
                 process.wait()
-                print("Flask server force killed")
+                print("Server force killed")
                 
         except Exception as e:
-            print(f"Error stopping Flask server: {e}")
+            print(f"Error stopping server: {e}")
             try:
                 process.kill()
                 process.wait()
@@ -132,8 +131,8 @@ def stop_flask_server(process):
 
 
 @pytest.fixture(scope="session")
-def global_flask_server():
-    """Session-wide Flask server fixture that manages server lifecycle."""
+def global_test_server():
+    """Session-wide aiohttp server fixture that manages server lifecycle."""
     base_url = "http://localhost:8080"
     
     print("\n" + "="*60)
@@ -144,16 +143,16 @@ def global_flask_server():
     print("1. Killing any existing servers on port 8080...")
     kill_existing_servers(8080)
     
-    # Start fresh Flask server
-    print("2. Starting fresh Flask server...")
-    process = start_flask_server()
+    # Start fresh aiohttp server
+    print("2. Starting fresh aiohttp server...")
+    process = start_test_server()
     
     # Wait for server to be responsive
     print("3. Waiting for server to start...")
     if not wait_for_server_start(base_url, max_attempts=30):
-        stop_flask_server(process)
-        pytest.fail("Flask server failed to start within 30 seconds")
-    print(f"4. Flask server is ready for testing! pid={process.pid}")
+        stop_test_server(process)
+        pytest.fail("Server failed to start within 30 seconds")
+    print(f"4. Server is ready for testing! pid={process.pid}")
     print("="*60)
     
     yield process, base_url
@@ -162,47 +161,47 @@ def global_flask_server():
     print("\n" + "="*60)
     print("CLEANING UP INTEGRATION TEST ENVIRONMENT")
     print("="*60)
-    print("Stopping Flask server...")
-    stop_flask_server(process)
+    print("Stopping server...")
+    stop_test_server(process)
     print("Integration test cleanup complete!")
     print("="*60)
 
 
-class TestFlaskServerIntegration:
-    """Test Flask server startup and basic functionality."""
+class TestServerIntegration:
+    """Test aiohttp server startup and basic functionality."""
     
     @pytest.mark.timeout(20)
-    def test_server_is_running(self, global_flask_server):
-        """Test that the Flask server is running and accessible."""
-        process, base_url = global_flask_server
+    def test_server_is_running(self, global_test_server):
+        """Test that the server is running and accessible."""
+        process, base_url = global_test_server
         response = requests.get(f"{base_url}/")
         assert response.status_code == 200, "Server should be accessible on port 8080"
     
     @pytest.mark.timeout(20)
-    def test_root_endpoint_serves_html(self, global_flask_server):
+    def test_root_endpoint_serves_html(self, global_test_server):
         """Test that the root endpoint serves the game HTML."""
-        process, base_url = global_flask_server
+        process, base_url = global_test_server
         response = requests.get(f"{base_url}/")
         assert response.status_code == 200
         assert "text/html" in response.headers.get("Content-Type", "")
         assert "mahjong" in response.text.lower() or "game" in response.text.lower()
     
     @pytest.mark.timeout(20)
-    def test_game_endpoint_serves_html(self, global_flask_server):
+    def test_game_endpoint_serves_html(self, global_test_server):
         """Test that the /game endpoint serves the same HTML as root."""
-        process, base_url = global_flask_server
+        process, base_url = global_test_server
         response = requests.get(f"{base_url}/game")
         assert response.status_code == 200
         assert "text/html" in response.headers.get("Content-Type", "")
 
 
 class TestAPIEndpointsIntegration:
-    """Test all Flask API endpoints for correct functionality."""
+    """Test all API endpoints for correct functionality."""
     
     @pytest.mark.timeout(20)
-    def test_start_new_game_api(self, global_flask_server):
+    def test_start_new_game_api(self, global_test_server):
         """Test the start_new_game API endpoint."""
-        process, base_url = global_flask_server
+        process, base_url = global_test_server
         response = requests.post(f"{base_url}/api/start_new_game")
         assert response.status_code == 200
         
@@ -230,17 +229,17 @@ class TestAPIEndpointsIntegration:
 
     
     @pytest.mark.timeout(20)
-    def test_reset_game_api(self, global_flask_server):
+    def test_reset_game_api(self, global_test_server):
         """Test the reset_game API endpoint."""
-        process, base_url = global_flask_server
+        process, base_url = global_test_server
         response = requests.post(f"{base_url}/api/reset_game")
         assert response.status_code == 200
         assert response.json() is True
     
     @pytest.mark.timeout(20)
-    def test_draw_tile_api(self, global_flask_server):
+    def test_draw_tile_api(self, global_test_server):
         """Test the draw_tile API endpoint."""
-        process, base_url = global_flask_server
+        process, base_url = global_test_server
         # First start a new game
         requests.post(f"{base_url}/api/start_new_game")
         
@@ -261,21 +260,18 @@ class TestAPIEndpointsIntegration:
         assert data["player_id"] == 0
     
     @pytest.mark.timeout(20)
-    def test_discard_tile_api(self, global_flask_server):
+    def test_discard_tile_api(self, global_test_server):
         """Test the discard_tile API endpoint."""
-        process, base_url = global_flask_server        # Start a new game and draw a tile
+        process, base_url = global_test_server        # Start a new game and draw a tile
         requests.post(f"{base_url}/api/start_new_game")
         draw_response = requests.post(f"{base_url}/api/draw_tile")
         hand = draw_response.json()["hand"]
-        print(hand)
         
         # Discard the first tile in hand (use correct API format)
         tile_to_discard = hand[0]
         discard_data = {
             "tile_to_discard": tile_to_discard
         }
-        
-        print(discard_data)
 
         response = requests.post(
             f"{base_url}/api/discard_tile",
@@ -283,8 +279,6 @@ class TestAPIEndpointsIntegration:
             headers={"Content-Type": "application/json"}
         )
 
-        print(response.json())
-        
         assert response.status_code == 200
         
         data = response.json()
@@ -294,9 +288,9 @@ class TestAPIEndpointsIntegration:
         assert "winner_found" in data
 
     @pytest.mark.timeout(20)
-    def test_request_ai_turn_api(self, global_flask_server):
+    def test_request_ai_turn_api(self, global_test_server):
         """Test the request_ai_turn API endpoint."""
-        process, base_url = global_flask_server
+        process, base_url = global_test_server
         # Start a new game and make it an AI player's turn
         requests.post(f"{base_url}/api/start_new_game")
 
@@ -325,9 +319,9 @@ class TestAPIEndpointsIntegration:
         # Note: This might fail if the current player is not AI, which is expected behavior
 
     @pytest.mark.timeout(30)
-    def test_remaining_tiles_updates_for_all_players(self, global_flask_server):
+    def test_remaining_tiles_updates_for_all_players(self, global_test_server):
         """Test that remaining_tiles count updates after both human and AI turns."""
-        process, base_url = global_flask_server
+        process, base_url = global_test_server
         
         # 1. Start a new game
         response = requests.post(f"{base_url}/api/start_new_game")
@@ -402,10 +396,10 @@ class TestJavaScriptModulesIntegration:
     """Test that JavaScript modules are served correctly with proper MIME types."""
     
     @pytest.mark.timeout(20)
-    def test_main_js_serves_correctly(self, global_flask_server):
+    def test_main_js_serves_correctly(self, global_test_server):
         """Test that main.js is served with correct MIME type."""
-        process, base_url = global_flask_server
-        response = requests.get(f"{base_url}/game/main.js")
+        process, base_url = global_test_server
+        response = requests.get(f"{base_url}/static/game/main.js")
         assert response.status_code == 200
         
         content_type = response.headers.get("Content-Type", "")
@@ -418,16 +412,16 @@ class TestJavaScriptModulesIntegration:
         assert "import" in response.text
         assert "export" in response.text or "from" in response.text
     @pytest.mark.timeout(20)
-    def test_all_js_modules_serve_correctly(self, global_flask_server):
+    def test_all_js_modules_serve_correctly(self, global_test_server):
         """Test that all JavaScript modules are served correctly."""
-        process, base_url = global_flask_server
+        process, base_url = global_test_server
         js_modules = [
-            "/game/js/gameActions.js",
-            "/game/js/claimsHandler.js", 
-            "/game/js/tileDisplay.js",
-            "/game/js/aiTurnHandler.js",
-            "/game/js/celebrationScreen.js",
-            "/game/js/gameStore.js"
+            "/static/game/js/gameActions.js",
+            "/static/game/js/claimsHandler.js", 
+            "/static/game/js/tileDisplay.js",
+            "/static/game/js/aiTurnHandler.js",
+            "/static/game/js/celebrationScreen.js",
+            "/static/game/js/gameStore.js"
         ]
         
         for module_path in js_modules:
@@ -441,10 +435,10 @@ class TestJavaScriptModulesIntegration:
             ]), f"Module {module_path} should have JavaScript MIME type, got: {content_type}"
     
     @pytest.mark.timeout(20)
-    def test_security_headers_present(self, global_flask_server):
+    def test_security_headers_present(self, global_test_server):
         """Test that security headers are present in responses."""
-        process, base_url = global_flask_server
-        response = requests.get(f"{base_url}/game/main.js")
+        process, base_url = global_test_server
+        response = requests.get(f"{base_url}/static/game/main.js")
         assert response.status_code == 200
         
         # Check for CORS headers
@@ -456,9 +450,9 @@ class TestGameFlowIntegration:
     """Test complete game flow scenarios."""
     
     @pytest.mark.timeout(20)
-    def test_complete_turn_cycle(self, global_flask_server):
+    def test_complete_turn_cycle(self, global_test_server):
         """Test a complete turn cycle: start game -> draw -> discard -> AI turn."""
-        process, base_url = global_flask_server
+        process, base_url = global_test_server
         # Start new game
         start_response = requests.post(f"{base_url}/api/start_new_game")
         assert start_response.status_code == 200, "Failed to start new game"
@@ -478,7 +472,6 @@ class TestGameFlowIntegration:
         discard_data = {
             "tile_to_discard": tile_to_discard
         }
-        print(discard_data)
         
         discard_response = requests.post(
             f"{base_url}/api/discard_tile",
@@ -498,9 +491,9 @@ class TestGameFlowIntegration:
         assert "winner_found" in ai_data
     
     @pytest.mark.timeout(20)
-    def test_game_reset_functionality(self, global_flask_server):
+    def test_game_reset_functionality(self, global_test_server):
         """Test that game reset works correctly."""
-        process, base_url = global_flask_server
+        process, base_url = global_test_server
         # Start a game and make some moves
         requests.post(f"{base_url}/api/start_new_game")
         requests.post(f"{base_url}/api/draw_tile")
@@ -525,17 +518,17 @@ class TestDeploymentReadiness:
     """Test that the application is ready for deployment to fly.io."""
     
     @pytest.mark.timeout(20)
-    def test_flask_app_structure(self):
-        """Test that Flask app has proper structure for deployment."""
+    def test_app_structure(self):
+        """Test that the app has proper structure for deployment."""
         app_py_path = project_root / "app.py"
         assert app_py_path.exists(), "app.py should exist for deployment"
-        
-        # Check that app.py contains Flask app
+
+        # Check that app.py contains aiohttp app
         with open(app_py_path, 'r') as f:
             content = f.read()
-            assert "from flask import" in content
-            assert "app = Flask" in content
-            assert "if __name__ == '__main__':" in content or "app.run" in content
+            assert "from aiohttp import web" in content
+            assert "web.Application" in content
+            assert "web.run_app" in content
     @pytest.mark.timeout(20)
     def test_requirements_file_exists(self):
         """Test that requirements.txt exists with necessary dependencies."""
@@ -544,7 +537,7 @@ class TestDeploymentReadiness:
         
         with open(req_path, 'r') as f:
             requirements = f.read()
-            assert "Flask" in requirements, "Flask should be in requirements.txt"
+            assert "aiohttp" in requirements, "aiohttp should be in requirements.txt"
     
     @pytest.mark.timeout(20)
     def test_fly_toml_configuration(self):
@@ -557,9 +550,9 @@ class TestDeploymentReadiness:
             assert "8080" in content, "fly.toml should reference port 8080"
     
     @pytest.mark.timeout(20)
-    def test_server_responds_on_correct_port(self, global_flask_server):
+    def test_server_responds_on_correct_port(self, global_test_server):
         """Test that server responds on the port configured for fly.io."""
-        process, base_url = global_flask_server
+        process, base_url = global_test_server
         response = requests.get(f"{base_url}/")
         assert response.status_code == 200
         
@@ -567,13 +560,18 @@ class TestDeploymentReadiness:
         # This is implicit if we can reach it via localhost
     
     @pytest.mark.timeout(20)
-    def test_static_files_accessible(self, global_flask_server):
+    def test_static_files_accessible(self, global_test_server):
         """Test that static files are accessible for deployment."""
-        process, base_url = global_flask_server
+        process, base_url = global_test_server
         static_files = [
             "/",
-            "/game/main.js",
-            "/game/js/gameActions.js"
+            "/static/game/main.js",
+            "/static/game/js/aiTurnHandler.js",
+            "/static/game/js/celebrationScreen.js",
+            "/static/game/js/claimsHandler.js",
+            "/static/game/js/gameActions.js",
+            "/static/game/js/gameStore.js",
+            "/static/game/js/tileDisplay.js",
         ]
         
         for static_file in static_files:
@@ -585,9 +583,9 @@ class TestDealerRotationIntegration:
     """Test dealer rotation system through API endpoints."""
     
     @pytest.mark.timeout(30)
-    def test_start_new_game_dealer_info(self, global_flask_server):
+    def test_start_new_game_dealer_info(self, global_test_server):
         """Test that start_new_game includes correct dealer rotation information."""
-        process, base_url = global_flask_server
+        process, base_url = global_test_server
         
         response = requests.post(f"{base_url}/api/start_new_game")
         assert response.status_code == 200
@@ -608,9 +606,9 @@ class TestDealerRotationIntegration:
         assert data["game_wind"] == "East"  # Should match round_wind initially
     
     @pytest.mark.timeout(30)
-    def test_reset_game_resets_dealer_info(self, global_flask_server):
+    def test_reset_game_resets_dealer_info(self, global_test_server):
         """Test that reset_game properly resets dealer rotation state."""
-        process, base_url = global_flask_server
+        process, base_url = global_test_server
         
         # Start a game
         start_response = requests.post(f"{base_url}/api/start_new_game")
@@ -638,9 +636,9 @@ class TestDealerRotationIntegration:
 
     
     @pytest.mark.timeout(30)
-    def test_dealer_info_consistency_across_endpoints(self, global_flask_server):
+    def test_dealer_info_consistency_across_endpoints(self, global_test_server):
         """Test that dealer info is consistent across different API endpoints."""
-        process, base_url = global_flask_server
+        process, base_url = global_test_server
         
         # Start new game and get initial dealer info
         start_response = requests.post(f"{base_url}/api/start_new_game")
