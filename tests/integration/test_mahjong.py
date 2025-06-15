@@ -256,9 +256,7 @@ class TestAPIEndpointsIntegration:
         assert "winner_found" in data
           # Verify tile structure
         drawn_tile = data["drawn_tile"]
-        assert "suit" in drawn_tile
-        assert "unicode" in drawn_tile
-        assert "value" in drawn_tile
+        assert isinstance(drawn_tile, str)
         assert data["success"] is True
         assert data["player_id"] == 0
     

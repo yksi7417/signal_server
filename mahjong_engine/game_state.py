@@ -390,13 +390,7 @@ class GameState:
         # This appends to hand and checks for win
         replacement_tile = self.draw_tile_for_current_player()
 
-        drawn_tile_serializable = None
-        if replacement_tile:
-            drawn_tile_serializable = {
-                "unicode": replacement_tile.unicode,
-                "suit": replacement_tile.suit,
-                "value": replacement_tile.value
-            }
+        drawn_tile_serializable = replacement_tile.unicode if replacement_tile else None
 
         message = f"Hidden Kong with {kong_tile_obj} declared. Replacement tile drawn: {replacement_tile.unicode if replacement_tile else 'None'}. Your turn to discard."
 
@@ -521,10 +515,7 @@ class GameState:
                 "action": "win",
                 "winner_found": True,
                 "winning_player_id": self.winning_player_id,
-                "drawn_tile_for_win": {
-                    "suit": drawn_tile.suit,
-                    "value": drawn_tile.value,
-                    "unicode": drawn_tile.unicode},
+                "drawn_tile_for_win": drawn_tile.unicode,
                 "discarded_tile": None,
                 "next_player_id": self.winning_player_id,
                 "human_can_claim": None,
@@ -551,13 +542,10 @@ class GameState:
 
         return {"success": True,
                 "ai_player_id": ai_player.player_id,
-                "discarded_tile": {"suit": self.current_discard.suit,
-                "value": self.current_discard.value,
-                "unicode": self.current_discard.unicode} if self.current_discard else None,
+                "discarded_tile": self.current_discard.unicode if self.current_discard else None,
                 "next_player_id": self.players[self.current_player_index].player_id,
                 "human_can_claim": self.claim_type_pending if self.pending_claim_player_id == 0 else None,
-                "claimable_tile": {"suit": self.potential_claim_tile.suit,
-                                   "value": self.potential_claim_tile.value} if self.potential_claim_tile and self.pending_claim_player_id == 0 else None}
+                "claimable_tile": self.potential_claim_tile.unicode if self.potential_claim_tile and self.pending_claim_player_id == 0 else None}
 
     def assign_player_winds(self):
         """Assign winds to players based on current dealer position."""
