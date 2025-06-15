@@ -14,12 +14,12 @@ export function showClaimPrompt(tile, claimType) {
     
     if (claimType === "SELF_DRAW_WIN") {
         elements.playerConsoleEl.textContent =
-            `You drew ${tile.unicode} and can WIN! Do you want to claim WIN? (5s timeout)`;
+            `You drew ${tile} and can WIN! Do you want to claim WIN? (5s timeout)`;
         
         // No auto-timeout for self-draw wins - let player decide
     } else {
         elements.playerConsoleEl.textContent =
-            `Player discarded ${tile.suit} ${tile.value}. Do you want to claim ${claimType}? (Auto-decline in 5s)`;
+            `Player discarded ${tile}. Do you want to claim ${claimType}? (Auto-decline in 5s)`;
         
         // Set timeout to automatically decline Pung/Kong claims
         store.claimTimeoutId = setTimeout(() => {
@@ -321,7 +321,7 @@ async function handleClaimWinNo() {
                 
                 // Update the selected tile display
                 if (elements.selectedTileDisplayEl) {
-                    elements.selectedTileDisplayEl.textContent = `Selected: ${lastTile.unicode}`;
+                    elements.selectedTileDisplayEl.textContent = `Selected: ${lastTile}`;
                 }
                 
                 // Highlight the last tile in the UI
