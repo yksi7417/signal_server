@@ -1,11 +1,14 @@
 import json
 import os
 import logging
-import aiohttp_cors
-from aiohttp import web, WSMsgType
+from flask import Flask, Response, send_from_directory, request
+from gevent import pywsgi
+from geventwebsocket.handler import WebSocketHandler
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+app = Flask(__name__, static_url_path="/static", static_folder="static")
 
 WS_ENDPOINTS = {
     "dev": "ws://localhost:8080/ws",
@@ -14,118 +17,109 @@ WS_ENDPOINTS = {
 }
 
 
-async def env_js_handler(request):
+def env_js_handler():
     env = os.getenv("APP_ENV", "prod").lower().strip()
     ws_url = WS_ENDPOINTS.get(env, WS_ENDPOINTS["prod"])
 
-    js_code = f"""
-    window.APP_CONFIG = {{
-      env: "{env}",
-      wsUrl: "{ws_url}"
-    }};
-    """.strip()
+    js_code = (
+        f"window.APP_CONFIG = {{\n  env: \"{env}\",\n  wsUrl: \"{ws_url}\"\n}};"
+    )
 
-    return web.Response(text=js_code, content_type="application/javascript")
+    return Response(js_code, mimetype="application/javascript")
 
 
 clients = {}
 
 
-async def websocket_handler(request):
-    ws = web.WebSocketResponse()
-    await ws.prepare(request)
+def websocket_handler():
+    ws = request.environ.get("wsgi.websocket")
+    if ws is None:
+        return "WebSocket connection expected", 400
 
-    logger.info("Websocket from: %s", request.remote)
+    logger.info("Websocket from: %s", request.remote_addr)
     logger.debug("Headers: %s", dict(request.headers))
     print("Cookies:", request.cookies)
 
     client_id = None
 
-    msg = await ws.receive()
-    if msg.type == WSMsgType.TEXT:
+    msg = ws.receive()
+    if msg is not None:
         try:
-            client_info = json.loads(msg.data)
+            client_info = json.loads(msg)
             client_id = client_info["id"]
         except Exception as e:
-            print("Invalid JSON message received:", msg.data, e)
-            await ws.close()
-            return ws
+            print("Invalid JSON message received:", msg, e)
+            ws.close()
+            return ""
     else:
-        print("Non-text message received:", msg.type)
-        await ws.close()
-        return ws
+        ws.close()
+        return ""
 
     clients[client_id] = ws
 
 
     for other_id, other_ws in clients.items():
         if other_ws != ws:
-            await other_ws.send_str(json.dumps({
-                "type": "new-peer",
-                "id": client_id
-            }))
+            try:
+                other_ws.send(json.dumps({"type": "new-peer", "id": client_id}))
+            except Exception:
+                pass
 
-    await ws.send_str(json.dumps({
+    ws.send(json.dumps({
         "type": "peer-list",
         "peers": [pid for pid in clients if pid != client_id]
     }))
 
     try:
-        async for msg in ws:
+        while True:
+            msg = ws.receive()
+            if msg is None:
+                break
             try:
-                if msg.type == WSMsgType.TEXT:
-                    data = json.loads(msg.data)
-                    to_id = data.get("to")
-                    if to_id in clients:
-                        await clients[to_id].send_str(msg.data)
+                data = json.loads(msg)
+                to_id = data.get("to")
+                if to_id in clients:
+                    clients[to_id].send(msg)
             except Exception as e:
                 print("Error handling WebSocket message:", e)
     finally:
         if client_id in clients:
             del clients[client_id]
             for other_ws in clients.values():
-                await other_ws.send_str(json.dumps({
-                    "type": "peer-disconnect",
-                    "id": client_id
-                }))
+                try:
+                    other_ws.send(json.dumps({"type": "peer-disconnect", "id": client_id}))
+                except Exception:
+                    pass
 
-    return ws
+    return ""
 
-
-@web.middleware
-async def cors_headers_middleware(request, handler):
-    response = await handler(request)
-    response.headers['Cross-Origin-Opener-Policy'] = 'same-origin'
-    response.headers['Cross-Origin-Embedder-Policy'] = 'require-corp'
+@app.after_request
+def add_security_headers(response):
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+    response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
     return response
 
 
-async def index_handler(request):
-    return web.FileResponse('./index.html')
+@app.route("/")
+def index_handler():
+    return send_from_directory(".", "index.html")
 
-async def voice_handler(request):
-    return web.FileResponse('./voice.html')
 
-async def voice_command_handler(request):
-    return web.FileResponse('./voice_command.html')
+@app.route("/voice.html")
+def voice_handler():
+    return send_from_directory(".", "voice.html")
 
-app = web.Application(middlewares=[cors_headers_middleware])
-app.router.add_get('/', index_handler)
-app.router.add_get('/voice.html', voice_handler)
-app.router.add_get('/voice_command.html', voice_command_handler)
-app.router.add_get('/ws', websocket_handler)
-app.router.add_get('/env.js', env_js_handler)
-app.router.add_static('/static/', path='./static', name='static')
 
-cors = aiohttp_cors.setup(app, defaults={
-    "*": aiohttp_cors.ResourceOptions(
-        allow_credentials=True,
-        expose_headers="*",
-        allow_headers="*",
-    )
-})
+@app.route("/voice_command.html")
+def voice_command_handler():
+    return send_from_directory(".", "voice_command.html")
 
-for route in list(app.router.routes()):
-    cors.add(route)
 
-web.run_app(app, port=8080)
+app.add_url_rule("/ws", view_func=websocket_handler)
+app.add_url_rule("/env.js", view_func=env_js_handler)
+
+
+if __name__ == "__main__":
+    server = pywsgi.WSGIServer(("", 8080), app, handler_class=WebSocketHandler)
+    server.serve_forever()
+
