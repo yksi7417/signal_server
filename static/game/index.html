@@ -57,6 +57,7 @@
 
     <audio id="ding" src="/static/audio/dingdong.mp3" preload="auto"></audio>
 
+    <script src="https://unpkg.com/twemoji@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
     <script src="/static/scripts/Vosklet.js" async defer></script>
     <script type="module" src="/static/scripts/voice.js"></script>
     <script type="module" src="/static/scripts/signaling.js"></script>
@@ -73,7 +74,16 @@
       startButton.onclick = async () => {
         await signal.handleStartOrEnd();
         await startRecognizingCommands();
-      };
+      };      // Always use Twemoji regardless of platform
+      document.addEventListener('DOMContentLoaded', function() {
+          // Parse all emoji in the entire document
+          twemoji.parse(document.body, {
+              folder: 'svg',
+              ext: '.svg',
+              base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/',
+              className: 'emoji'
+          });
+      });
     </script>
 
 </body>
