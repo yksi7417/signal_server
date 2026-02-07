@@ -18,6 +18,7 @@ idna==3.10
 multidict==6.4.3
 numpy==2.2.5
 propcache==0.3.1
+pyarrow>=15.0.0
 psutil==6.1.0
 pytest==8.3.3
 pytest-timeout==2.3.1
