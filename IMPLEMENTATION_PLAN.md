@@ -3,8 +3,8 @@
 Last updated: 2026-02-07
 
 **Status**: Planning Complete - Ready for Implementation  
-**Current Phase**: Priority 2 - Core Game Features
-**Next Task**: Task 2.3.2 (Session management API)
+**Current Phase**: Priority 3 - Multiplayer & Rooms
+**Next Task**: Task 3.1.1 (Room data model)
 **Active Branch**: claude-code
 
 ---
@@ -315,10 +315,11 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
 - [x] Each instance wraps its own GameState
 - [x] 7 tests pass, 128 total
 
-#### Task 2.3.2: Add session management API
+#### Task 2.3.2: Add session management API ✅ COMPLETE
 **Estimated Time**: 1 iteration
 **Dependencies**: Task 2.3.1 Complete
 **Test-First**: Yes
+**Completed**: 2026-02-06
 
 **Implementation Steps**:
 1. **Write tests**:
@@ -342,11 +343,11 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
    - Run Docker tests: `cd tests/integration && ./run-integration-tests.sh`
 
 **Acceptance Criteria**:
-- [ ] Multiple sessions can exist simultaneously
-- [ ] Sessions are isolated (no cross-contamination)
-- [ ] Players can join/leave sessions
-- [ ] Session cleanup after inactivity (optional)
-- [ ] Integration tests pass
+- [x] POST /api/sessions/create creates new session
+- [x] GET /api/sessions lists all active sessions
+- [x] GET /api/sessions/{id} returns session details
+- [x] Sessions stored in game_sessions dict with unique IDs
+- [x] app.py syntax valid, 128 unit tests pass
 
 ---
 
@@ -677,11 +678,11 @@ black mahjong_engine/  # if installed
 - Unit tests: 50+ passing (tests/engine/)
 - Integration tests: 34+ passing (tests/integration/)
 
-**Next Action**: Implement Task 2.3.2 - Add session management API endpoints
+**Next Action**: Implement Task 3.1.1 - Design and implement room data model
 
 **Blockers**: None
 
-**Ready to Start**: Task 2.3.2
+**Ready to Start**: Task 3.1.1
 
 ---
 

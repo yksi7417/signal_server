@@ -7,6 +7,7 @@ from aiohttp import web, WSMsgType
 from mahjong_engine.game_state import GameState
 from mahjong_engine.player_agent import AIPlayerAgent
 from mahjong_engine.game_session import (
+    GameSession,
     reset_dealer_rotation_state,
     advance_dealer_rotation,
     get_current_dealer_info,
@@ -26,6 +27,9 @@ WS_ENDPOINTS = {
 }
 
 current_game_state = GameState()
+
+# Session management for multi-game support
+game_sessions = {}
 
 clients = {}
 
@@ -741,6 +745,39 @@ async def request_ai_turn(request: web.Request) -> web.Response:
         )
 
 
+async def create_session(request: web.Request) -> web.Response:
+    """Create a new game session."""
+    session = GameSession()
+    game_sessions[session.session_id] = session
+    return web.json_response({
+        "success": True,
+        "session_id": session.session_id,
+        "created_at": session.created_at,
+    })
+
+
+async def get_session(request: web.Request) -> web.Response:
+    """Get session state by ID."""
+    session_id = request.match_info["session_id"]
+    session = game_sessions.get(session_id)
+    if not session:
+        return web.json_response({"success": False, "message": "Session not found."}, status=404)
+    session.update_activity()
+    data = session.to_dict()
+    data["success"] = True
+    data["player_count"] = len(session.game_state.players)
+    return web.json_response(data)
+
+
+async def list_sessions(request: web.Request) -> web.Response:
+    """List all active sessions."""
+    sessions_list = [
+        {"session_id": s.session_id, "created_at": s.created_at, "last_activity": s.last_activity}
+        for s in game_sessions.values()
+    ]
+    return web.json_response({"success": True, "sessions": sessions_list, "count": len(sessions_list)})
+
+
 async def game_history(request: web.Request) -> web.Response:
     global current_game_state
     history = current_game_state.get_history()
@@ -776,6 +813,9 @@ app.router.add_post("/api/draw_tile", draw_tile)
 app.router.add_post("/api/discard_tile", discard_tile)
 app.router.add_post("/api/request_ai_turn", request_ai_turn)
 app.router.add_get("/api/game_history", game_history)
+app.router.add_post("/api/sessions/create", create_session)
+app.router.add_get("/api/sessions", list_sessions)
+app.router.add_get("/api/sessions/{session_id}", get_session)
 app.router.add_get("/voice.html", voice_handler)
 app.router.add_get("/voice_command.html", voice_command_handler)
 app.router.add_get("/ws", websocket_handler)
