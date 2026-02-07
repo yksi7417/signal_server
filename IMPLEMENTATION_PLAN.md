@@ -1,364 +1,683 @@
 # Implementation Plan
 
-Last updated: 2026-02-06
+Last updated: 2026-02-07
+
+**Status**: Planning Complete - Ready for Implementation  
+**Current Phase**: Priority 2 - Core Game Features  
+**Next Task**: Task 2.1.1 (Chow validation function)  
+**Active Branch**: main
+
+---
 
 ## Overview
 
 This plan tracks the implementation of the Signal Server - a multiplayer Mahjong game platform with video chat and voice control capabilities.
 
-**Current Status**: Core game engine complete, WebSocket multiplayer functional, integration testing framework in progress.
+**Current State**: 
+- Phase 1 Complete: Core game engine, WebSocket multiplayer, integration testing framework
+- Phase 2 In Progress: Implementing Chow (吃) claim feature
+- Phases 3-5: Planned for future sprints
 
-**Target Vision**: Full-featured social gaming platform with video chat, persistent chat history, user accounts, and advanced voice controls.
+**Architecture Vision**: Full-featured social gaming platform with video chat, persistent chat history, user accounts, and advanced voice controls.
 
 ---
 
-## Priority 1: Foundation & Testing (Current Focus)
+## Priority 1: Foundation & Testing ✅ COMPLETE
 
-### 1.1 Fix Integration Test Suite
-**Status**: In Progress  
-**Dependencies**: None  
-**Priority**: Critical
+### 1.1 Integration Test Infrastructure ✅
+**Status**: Complete | **Dependencies**: None
 
-- [ ] **Add health check endpoint to app.py**
-  - Test: `tests/integration/test_health_endpoint.py`
-  - Implementation: Add `GET /health` endpoint to `app.py` that returns `{"status": "ok"}`
-  - Validation: `curl http://localhost:8080/health` returns 200 OK
-  - File: `app.py:700+` (add new route)
-
-- [ ] **Verify Docker integration test setup**
-  - Test: `cd tests/integration && ./run-integration-tests.sh`
-  - Validation: Docker containers start successfully, server responds on port 8080
+- [x] **Docker integration test environment**
   - Files: `tests/integration/docker-compose.integration.yml`, `tests/integration/run-integration-tests.sh`
-  - Fix any path or dependency issues in docker-compose
+  - Validation: `cd tests/integration && ./run-integration-tests.sh`
+  - Result: Docker containers start, server responds on port 8080
 
-- [ ] **Create integration test runner script validation**
-  - Test: Run `pytest tests/integration/test_full_game.py -v` in Docker
-  - Validation: At least one complete game flow test passes
-  - Files: `tests/integration/test_full_game.py`, `tests/integration/pytest.ini`
+- [x] **Integration test suite**
+  - File: `tests/integration/test_full_game.py`
+  - Test Classes: TestCompleteGameFlow, TestRulesCompliance, TestAPIContract
+  - Validation: `pytest tests/integration/test_full_game.py -v`
 
-### 1.2 Complete Integration Test Scenarios
-**Status**: Not Started  
-**Dependencies**: 1.1 Complete  
-**Priority**: High
+### 1.2 Test Scenarios ✅
+**Status**: Complete | **Dependencies**: 1.1
 
-- [ ] **Create scenario loader utility**
-  - Test: `tests/integration/test_scenario_loader.py`
-  - Implementation: JSON scenario parser in `tests/integration/scenario_loader.py`
-  - Validation: Can load and parse `tests/integration/scenarios/*.json` files
-  - Format: Follow `ARCHITECTURE.md` section "Integration Test Data Scenarios"
+- [x] Winning hand scenario (5-dots claim)
+  - File: `tests/integration/scenarios/winning_hand_scenario.json`
+- [x] Pung claim priority scenario
+  - File: `tests/integration/scenarios/pung_priority_test.json`
+- [x] Wall exhaustion scenario
+  - File: `tests/integration/scenarios/wall_exhaustion.json`
+- [x] Complete game flow scenario
+  - File: `tests/integration/scenarios/complete_game_flow.json`
 
-- [ ] **Create winning hand scenario (5-dots claim)**
-  - Test: `tests/integration/scenarios/winning_hand_scenario.json`
-  - Implementation: JSON scenario file with initial state and expected outcome
-  - Validation: Scenario runs through `scenario_loader.py` successfully
-  - Reference: See `ARCHITECTURE.md` lines 647-677 for example format
+### 1.3 Documentation ✅
+**Status**: Complete | **Dependencies**: None
 
-- [ ] **Create pung claim priority scenario**
-  - Test: `tests/integration/scenarios/pung_priority_scenario.json`
-  - Implementation: Test that pung claims are processed correctly
-  - Validation: Scenario validates pung claim flow from discard to reveal
-
-- [ ] **Create wall exhaustion scenario**
-  - Test: `tests/integration/scenarios/wall_exhaustion_scenario.json`
-  - Implementation: Test game ends correctly when wall is empty
-  - Validation: Game state shows `game_ended: true` and proper draw handling
-
-### 1.3 Documentation Completion
-**Status**: Partially Complete  
-**Dependencies**: None  
-**Priority**: Medium
-
-- [ ] **Create QUICKSTART.md for new developers**
-  - Test: Have a new developer follow the guide (manual validation)
-  - Implementation: Step-by-step setup, build, test, run instructions
-  - Validation: Document covers: Python setup, pip install, pytest, docker
-  - Include: Prerequisites, installation, running tests, running server
-
-- [ ] **Document WebSocket protocol**
-  - Test: `tests/websocket/test_protocol.py` (verify message formats)
-  - Implementation: Document all WebSocket message types in `docs/WEBSOCKET_PROTOCOL.md`
-  - Validation: Frontend and backend use consistent message formats
-  - Reference: `app.py:62-111` for current WebSocket implementation
+- [x] AGENTS.md - Build/test/run guide
+- [x] ARCHITECTURE.md - System design and roadmap
+- [x] instruction.md - Testing framework guidelines
+- [x] SPEECH_RECOGNITION.md - Voice command integration
+- [x] IMPLEMENTATION_PLAN.md - This file
 
 ---
 
-## Priority 2: Core Game Features
+## Priority 2: Core Game Features 🔄 IN PROGRESS
 
-### 2.1 Game Mechanics Enhancement
-**Status**: Partially Complete  
-**Dependencies**: 1.1 Complete  
-**Priority**: High
+### 2.1 Chow (吃) Implementation 🎯 NEXT TASK
+**Status**: Ready to implement | **Dependencies**: Priority 1 Complete
+**Rationale**: Chow is a fundamental mahjong move that's missing from the current implementation
 
-- [ ] **Implement chow (吃) validation in hand_validator.py**
-  - Test: `tests/engine/test_melds.py::TestChowValidation`
-  - Implementation: Add `can_form_chow(hand, tile)` function to `mahjong_engine/hand_validator.py`
-  - Validation: 
-    - Chow requires 3 consecutive tiles in same suit (e.g., 1-2-3 of dots)
-    - Cannot chow winds or dragons
-    - Cannot chow across suits
-  - Rules: Only player to left of discarder can claim chow
+#### Task 2.1.1: Create chow validation function
+**Estimated Time**: 1 iteration
+**Test-First**: Yes
 
-- [ ] **Add chow claim API endpoint**
-  - Test: `tests/integration/test_chow_claim.py`
-  - Implementation: Add `POST /api/player_claims_chow` to `app.py`
-  - Validation: 
-    - Endpoint accepts `confirm_claim` parameter
-    - Returns updated hand and revealed sets on success
-    - Handles decline flow correctly (advance to next player)
-  - Reference: Copy pattern from `player_claims_pung` endpoint
+**Analysis**: 
+- Chow validation logic EXISTS in `_can_form_melds_recursive()` at lines 53-67 of hand_validator.py
+- Reference templates: `can_form_pung_with_discard()` (lines 138-155), `can_form_kong_with_discard()` (lines 158-175)
+- NO standalone `can_form_chow_with_discard()` function exists
 
-- [ ] **Implement tile discard validation**
-  - Test: `tests/engine/test_game_state.py::TestDiscardValidation`
-  - Implementation: Validate in `GameState.discard_tile_for_current_player()`
-  - Validation:
-    - Only current player can discard
-    - Tile must exist in player's hand
-    - Hand must have 14 tiles (after draw) before discard
-  - File: `mahjong_engine/game_state.py` (check existing discard logic)
+**Implementation Steps**:
+1. **Write tests first** (RED phase):
+   - Add `TestChowValidation` class to `tests/engine/test_melds.py`
+   - Tests: valid chow patterns, position rules, invalid cases
+   - Run: `pytest tests/engine/test_melds.py::TestChowValidation -v` (should fail)
+
+2. **Implement function** (GREEN phase):
+   - File: `mahjong_engine/hand_validator.py` (after line 188)
+   - Signature: `can_form_chow_with_discard(hand, discarded_tile, discarder_position, claimer_position)`
+   - Logic:
+     - Position check: Only left neighbor can claim `(discarder_position + 1) % 4 == claimer_position`
+     - Suit check: Only numeric suits (no winds/dragons): `discarded_tile.is_numeric_suit()`
+     - Pattern A (discarded is highest): Need `[N-2, N-1]` in hand
+     - Pattern B (discarded is middle): Need `[N-1, N+1]` in hand
+     - Pattern C (discarded is lowest): Need `[N+1, N+2]` in hand
+   - Run: `pytest tests/engine/test_melds.py::TestChowValidation -v` (should pass)
+
+3. **Validate** (Refactor phase):
+   - Run all unit tests: `pytest tests/engine/ -v`
+   - Run linting: `flake8 mahjong_engine/hand_validator.py`
+   - Run integration tests: `cd tests/integration && ./run-integration-tests.sh`
+
+**Acceptance Criteria**:
+- [ ] `TestChowValidation` class exists with 8+ test methods
+- [ ] `can_form_chow_with_discard()` implemented with full docstring
+- [ ] All chow tests pass
+- [ ] No regressions in existing 68 unit tests
+- [ ] No flake8/pylint errors
+
+#### Task 2.1.2: Add chow claim API endpoint
+**Estimated Time**: 1 iteration
+**Dependencies**: Task 2.1.1 Complete
+**Test-First**: Yes
+
+**Implementation Steps**:
+1. **Write tests**:
+   - File: `tests/integration/test_chow_claim.py`
+   - Test class: `TestChowClaimAPI`
+   - Tests: successful claim, invalid claim, decline flow
+   - Run: `pytest tests/integration/test_chow_claim.py -v` (should fail)
+
+2. **Implement endpoint**:
+   - File: `app.py` (add after line 699)
+   - Pattern: Copy from `player_claims_pung` (lines 184-252)
+   - Endpoint: `POST /api/player_claims_chow`
+   - Parameters: `confirm_claim` (bool), `tile_to_chow` (string)
+   - Logic:
+     - Validate chow is legal using `can_form_chow_with_discard()`
+     - Update player hand (remove 2 tiles, reveal 3)
+     - Advance game state
+     - Return updated state
+   - Run: `pytest tests/integration/test_chow_claim.py -v` (should pass)
+
+3. **Validate**:
+   - Run all integration tests: `pytest tests/integration/ -v`
+   - Test via curl: `curl -X POST http://localhost:8080/api/player_claims_chow -H "Content-Type: application/json" -d '{"confirm_claim":true,"tile_to_chow":"1-dot"}'`
+
+**Acceptance Criteria**:
+- [ ] `POST /api/player_claims_chow` endpoint responds correctly
+- [ ] Endpoint validates chow legality before accepting
+- [ ] Updates game state correctly on success
+- [ ] Handles decline flow (advances to next player)
+- [ ] Integration tests pass
+
+#### Task 2.1.3: Integrate chow into game state logic
+**Estimated Time**: 1 iteration
+**Dependencies**: Task 2.1.2 Complete
+**Test-First**: Yes
+
+**Implementation Steps**:
+1. **Write tests**:
+   - File: `tests/engine/test_game_state.py`
+   - Add to class: `TestChowIntegration`
+   - Tests: chow processing, turn validation, state updates
+   - Run: `pytest tests/engine/test_game_state.py::TestChowIntegration -v` (should fail)
+
+2. **Implement GameState method**:
+   - File: `mahjong_engine/game_state.py`
+   - Method: `process_chow_claim(player_id, tile)`
+   - Logic:
+     - Validate it's the claiming player's turn
+     - Remove 2 tiles from hand that form sequence with discarded tile
+     - Add 3-tile chow to revealed sets
+     - Update current player to claimer
+   - Run: `pytest tests/engine/test_game_state.py::TestChowIntegration -v` (should pass)
+
+3. **Validate**:
+   - Run full test suite: `pytest -v`
+   - Run Docker tests: `cd tests/integration && ./run-integration-tests.sh`
+
+**Acceptance Criteria**:
+- [ ] `process_chow_claim()` method exists in GameState
+- [ ] Method validates turn order correctly
+- [ ] Hand and revealed sets updated correctly
+- [ ] Game state advances properly after chow
+- [ ] All tests pass
 
 ### 2.2 Game History & Replay
-**Status**: Not Started  
-**Dependencies**: None  
-**Priority**: Medium
+**Status**: Not Started | **Dependencies**: None | **Priority**: Medium
 
-- [ ] **Create game history tracker**
-  - Test: `tests/engine/test_game_history.py`
-  - Implementation: Add `mahjong_engine/game_history.py` with `GameHistory` class
-  - Validation:
-    - Records all actions: deal, draw, discard, claim, win
-    - Stores player hands at each step
-    - Can serialize to JSON
-  - Format: `[{"action": "draw", "player_id": 0, "tile": "🀇", "timestamp": ...}, ...]`
+#### Task 2.2.1: Create game history tracker class
+**Estimated Time**: 1 iteration
+**Test-First**: Yes
 
-- [ ] **Add game history API endpoints**
-  - Test: `tests/integration/test_game_history_api.py`
-  - Implementation: Add to `app.py`:
-    - `GET /api/game_history` - Returns current game history
-    - `POST /api/save_game` - Saves game history to file
-  - Validation: Can retrieve and replay a complete game from history
+**Implementation Steps**:
+1. **Write tests**:
+   - File: `tests/engine/test_game_history.py`
+   - Test class: `TestGameHistory`
+   - Tests: record actions, serialize to JSON, thread safety
+   - Run: `pytest tests/engine/test_game_history.py -v` (should fail)
+
+2. **Implement class**:
+   - File: `mahjong_engine/game_history.py` (new file)
+   - Class: `GameHistory`
+   - Methods:
+     - `record_action(action_type, player_id, tile, timestamp)`
+     - `get_history()` -> list of action dicts
+     - `to_json()` -> JSON string
+     - `clear()` -> reset history
+   - Format: `[{"action": "draw", "player_id": 0, "tile": "🀇", "timestamp": "..."}, ...]`
+   - Run: `pytest tests/engine/test_game_history.py -v` (should pass)
+
+3. **Validate**:
+   - Run: `flake8 mahjong_engine/game_history.py`
+   - Run: `pylint mahjong_engine/game_history.py`
+
+**Acceptance Criteria**:
+- [ ] `GameHistory` class exists with all methods
+- [ ] Records all game actions with timestamps
+- [ ] JSON serialization works correctly
+- [ ] Thread-safe implementation
+- [ ] Tests pass
+
+#### Task 2.2.2: Integrate history into GameState
+**Estimated Time**: 1 iteration
+**Dependencies**: Task 2.2.1 Complete
+**Test-First**: Yes
+
+**Implementation Steps**:
+1. **Write tests**:
+   - File: `tests/engine/test_game_state.py`
+   - Add to class: `TestGameHistoryIntegration`
+   - Tests: auto-recording, history access, new game clears history
+   - Run: `pytest tests/engine/test_game_state.py::TestGameHistoryIntegration -v` (should fail)
+
+2. **Integrate into GameState**:
+   - File: `mahjong_engine/game_state.py`
+   - Add: `self.history = GameHistory()` in `__init__`
+   - Add: History recording calls in `draw_tile()`, `discard_tile()`, `process_pung_claim()`, etc.
+   - Add: `get_history()` method that returns `self.history.get_history()`
+   - Run: `pytest tests/engine/test_game_state.py::TestGameHistoryIntegration -v` (should pass)
+
+3. **Validate**:
+   - Run all tests: `pytest tests/engine/ -v`
+
+**Acceptance Criteria**:
+- [ ] GameState has `history` attribute
+- [ ] All actions auto-recorded
+- [ ] `get_history()` returns complete history
+- [ ] History cleared on new game
+- [ ] Tests pass
+
+#### Task 2.2.3: Add history API endpoints
+**Estimated Time**: 1 iteration
+**Dependencies**: Task 2.2.2 Complete
+**Test-First**: Yes
+
+**Implementation Steps**:
+1. **Write tests**:
+   - File: `tests/integration/test_game_history_api.py`
+   - Test class: `TestGameHistoryAPI`
+   - Tests: retrieve history, save game, load game
+   - Run: `pytest tests/integration/test_game_history_api.py -v` (should fail)
+
+2. **Implement endpoints**:
+   - File: `app.py`
+   - Endpoints:
+     - `GET /api/game_history` - Returns JSON history
+     - `POST /api/save_game` - Saves history to file
+     - `GET /api/saved_games` - Lists saved games
+   - Run: `pytest tests/integration/test_game_history_api.py -v` (should pass)
+
+3. **Validate**:
+   - Run integration tests: `pytest tests/integration/ -v`
+
+**Acceptance Criteria**:
+- [ ] History retrieval endpoint works
+- [ ] Save/load game endpoints work
+- [ ] JSON format matches schema
+- [ ] Integration tests pass
+
+### 2.3 Game Session Management
+**Status**: Partial (game_session.py exists) | **Dependencies**: None | **Priority**: Medium
+
+#### Task 2.3.1: Complete GameSession class implementation
+**Estimated Time**: 1 iteration
+**Test-First**: Yes
+
+**Current State**:
+- File: `mahjong_engine/game_session.py` exists (64 lines)
+- Current functionality: Global dealer rotation only
+- Missing: Session IDs, multi-session support, serialization
+
+**Implementation Steps**:
+1. **Write tests**:
+   - File: `tests/engine/test_game_session.py`
+   - Test class: `TestGameSession`
+   - Tests: session creation, unique IDs, serialization, multi-session
+   - Run: `pytest tests/engine/test_game_session.py -v` (should fail)
+
+2. **Expand GameSession class**:
+   - File: `mahjong_engine/game_session.py`
+   - Add to class:
+     - `session_id` (UUID)
+     - `created_at` (timestamp)
+     - `last_activity` (timestamp)
+     - `game_state` (GameState instance)
+     - `to_dict()` -> serialize to dict
+     - `from_dict(data)` -> deserialize from dict
+     - `update_activity()` -> update last_activity timestamp
+   - Run: `pytest tests/engine/test_game_session.py -v` (should pass)
+
+3. **Validate**:
+   - Run: `flake8 mahjong_engine/game_session.py`
+   - Run all engine tests: `pytest tests/engine/ -v`
+
+**Acceptance Criteria**:
+- [ ] GameSession has unique UUID
+- [ ] Tracks creation and last activity times
+- [ ] Can serialize/deserialize game state
+- [ ] Supports multiple concurrent sessions
+- [ ] Tests pass
+
+#### Task 2.3.2: Add session management API
+**Estimated Time**: 1 iteration
+**Dependencies**: Task 2.3.1 Complete
+**Test-First**: Yes
+
+**Implementation Steps**:
+1. **Write tests**:
+   - File: `tests/integration/test_session_api.py`
+   - Test class: `TestSessionAPI`
+   - Tests: create session, join session, get session state, multi-session isolation
+   - Run: `pytest tests/integration/test_session_api.py -v` (should fail)
+
+2. **Implement endpoints**:
+   - File: `app.py`
+   - Endpoints:
+     - `POST /api/sessions/create` - Create new session, returns session_id
+     - `GET /api/sessions/{session_id}` - Get session state
+     - `POST /api/sessions/{session_id}/join` - Join existing session
+     - `POST /api/sessions/{session_id}/leave` - Leave session
+   - Add: Session manager (dict mapping session_id -> GameSession)
+   - Run: `pytest tests/integration/test_session_api.py -v` (should pass)
+
+3. **Validate**:
+   - Run integration tests: `pytest tests/integration/ -v`
+   - Run Docker tests: `cd tests/integration && ./run-integration-tests.sh`
+
+**Acceptance Criteria**:
+- [ ] Multiple sessions can exist simultaneously
+- [ ] Sessions are isolated (no cross-contamination)
+- [ ] Players can join/leave sessions
+- [ ] Session cleanup after inactivity (optional)
+- [ ] Integration tests pass
 
 ---
 
-## Priority 3: Multiplayer & Rooms
+## Priority 3: Multiplayer & Rooms ⏳ PLANNED
 
-### 3.1 Game Room Management (Phase 2 Target)
-**Status**: Not Started  
-**Dependencies**: 1.x Complete, 2.x Complete  
-**Priority**: Medium**
+### 3.1 Game Room Management
+**Status**: Not Started | **Dependencies**: Priority 2 Complete | **Priority**: Medium
 
-- [ ] **Design room data model**
-  - Test: `tests/engine/test_room_model.py`
-  - Implementation: Create `mahjong_engine/room.py` with `GameRoom` class
-  - Validation: Room has unique ID, player list, game state, creation time
-  - Attributes: `room_id`, `players[]`, `game_state`, `status`, `created_at`
+#### Task 3.1.1: Design and implement room data model
+**Estimated Time**: 1 iteration
+**Test-First**: Yes
 
-- [ ] **Implement room creation and joining**
-  - Test: `tests/integration/test_game_rooms.py`
-  - Implementation: Add to `app.py`:
-    - `POST /api/rooms/create` - Create new room
-    - `POST /api/rooms/join` - Join existing room
-    - `POST /api/rooms/leave` - Leave room
-  - Validation: Multiple rooms can exist simultaneously without interference
+**Implementation**:
+- File: `mahjong_engine/room.py` (new file)
+- Class: `GameRoom`
+- Attributes: `room_id` (UUID), `players[]`, `game_state`, `status`, `created_at`, `max_players`
+- Test: `tests/engine/test_room_model.py`
+- Validation: `pytest tests/engine/test_room_model.py -v`
 
-- [ ] **Add room listing endpoint**
-  - Test: `tests/integration/test_room_listing.py`
-  - Implementation: `GET /api/rooms/list` returns active rooms
-  - Validation: Returns room ID, player count, status for each room
+#### Task 3.1.2: Implement room manager singleton
+**Estimated Time**: 1 iteration
+**Dependencies**: Task 3.1.1 Complete
+**Test-First**: Yes
 
-### 3.2 In-Memory Room Store
-**Status**: Not Started  
-**Dependencies**: 3.1  
-**Priority**: Medium**
+**Implementation**:
+- File: `mahjong_engine/room_manager.py` (new file)
+- Class: `RoomManager` (singleton)
+- Methods: `create_room()`, `get_room()`, `delete_room()`, `list_rooms()`, `cleanup_stale()`
+- Features: Thread-safe, auto-cleanup after 24h inactivity
+- Test: `tests/engine/test_room_manager.py`
+- Validation: `pytest tests/engine/test_room_manager.py -v`
 
-- [ ] **Create room manager singleton**
-  - Test: `tests/engine/test_room_manager.py`
-  - Implementation: `mahjong_engine/room_manager.py` with `RoomManager` class
-  - Validation:
-    - Singleton pattern (one instance across app)
-    - Thread-safe operations
-    - Automatic cleanup of stale rooms
-  - Methods: `create_room()`, `get_room()`, `delete_room()`, `list_rooms()`
+#### Task 3.1.3: Create room management API endpoints
+**Estimated Time**: 1 iteration
+**Dependencies**: Task 3.1.2 Complete
+**Test-First**: Yes
+
+**Implementation**:
+- File: `app.py`
+- Endpoints:
+  - `POST /api/rooms/create`
+  - `POST /api/rooms/{room_id}/join`
+  - `POST /api/rooms/{room_id}/leave`
+  - `GET /api/rooms/list`
+  - `GET /api/rooms/{room_id}`
+- Test: `tests/integration/test_game_rooms.py`
+- Validation: `pytest tests/integration/test_game_rooms.py -v`
+
+#### Task 3.1.4: Add room-based WebSocket messaging
+**Estimated Time**: 1 iteration
+**Dependencies**: Task 3.1.3 Complete
+**Test-First**: Yes
+
+**Implementation**:
+- File: `app.py` (extend `websocket_handler`)
+- Features:
+  - Room ID tracked per WebSocket connection
+  - Messages broadcast only to same room
+  - Cleanup on disconnect
+- Test: `tests/websocket/test_room_messaging.py`
+- Validation: `pytest tests/websocket/test_room_messaging.py -v`
 
 ---
 
-## Priority 4: Chat & Communication
+## Priority 4: Chat & Communication ⏳ PLANNED
 
 ### 4.1 Text Chat System
-**Status**: Not Started  
-**Dependencies**: 3.1 (Room system)  
-**Priority**: Medium**
+**Status**: Not Started | **Dependencies**: Priority 3 Complete | **Priority**: Medium
 
-- [ ] **Implement WebSocket chat protocol**
-  - Test: `tests/integration/test_chat_protocol.py`
-  - Implementation: Extend WebSocket handler in `app.py`
-  - Message Types:
-    - `chat:message` - Text message
-    - `chat:history` - Request history
-    - `chat:typing` - Typing indicator
-  - Validation: Messages broadcast to all players in same room
+#### Task 4.1.1: Implement chat message data model
+**Estimated Time**: 1 iteration
+**Dependencies**: Task 3.1 Complete
+**Test-First**: Yes
 
-- [ ] **Add chat persistence (in-memory)**
-  - Test: `tests/integration/test_chat_persistence.py`
-  - Implementation: Store messages in room object
-  - Validation: New joiners receive last 50 messages
-  - Format: Store timestamp, sender, message text
+**Implementation**:
+- File: `mahjong_engine/chat.py` (new file)
+- Class: `ChatMessage`
+- Format: `{"timestamp": "ISO8601", "sender_id": "uuid", "content": "text", "type": "text|system"}`
+- Test: `tests/engine/test_chat_message.py`
+- Validation: `pytest tests/engine/test_chat_message.py -v`
+
+#### Task 4.1.2: Implement in-memory chat persistence
+**Estimated Time**: 1 iteration
+**Dependencies**: Task 4.1.1 Complete
+**Test-First**: Yes
+
+**Implementation**:
+- File: `mahjong_engine/room.py` (add to Room class)
+- Features:
+  - Store last 100 messages (circular buffer)
+  - New joiners receive message history
+- Test: `tests/engine/test_chat_persistence.py`
+- Validation: `pytest tests/engine/test_chat_persistence.py -v`
+
+#### Task 4.1.3: Implement WebSocket chat protocol
+**Estimated Time**: 1 iteration
+**Dependencies**: Task 4.1.2 Complete
+**Test-First**: Yes
+
+**Implementation**:
+- File: `app.py` (extend WebSocket handler)
+- Message Types:
+  - `chat:message` - Text message
+  - `chat:history` - Request history
+  - `chat:typing` - Typing indicator
+  - `chat:system` - System messages
+- Test: `tests/integration/test_chat_protocol.py`
+- Validation: `pytest tests/integration/test_chat_protocol.py -v`
 
 ---
 
-## Priority 5: Video & Voice
+## Priority 5: Video & Voice ⏳ PLANNED
 
 ### 5.1 Video Chat SFU Research
-**Status**: Not Started  
-**Dependencies**: None  
-**Priority**: Low**
+**Status**: Not Started | **Dependencies**: None | **Priority**: Low
 
-- [ ] **Evaluate Janus Gateway vs Mediasoup**
-  - Test: Proof of concept with both
-  - Implementation: Document in `docs/SFU_EVALUATION.md`
-  - Criteria:
-    - Ease of integration with aiohttp
-    - 4+ player support
-    - Docker deployment complexity
-    - Documentation quality
-  - Validation: Decision matrix with scores
+#### Task 5.1.1: Evaluate SFU options
+**Estimated Time**: 1 iteration (research only)
+**Deliverable**: Decision document
+
+**Research**:
+- Options: Janus Gateway, Mediasoup, Pion
+- Criteria: Integration ease, 4+ player support, Docker deployment, documentation
+- File: `docs/SFU_EVALUATION.md` (new file)
+- Output: Decision matrix with recommendation
 
 ### 5.2 Voice Command Enhancement
-**Status**: Partially Complete  
-**Dependencies**: None  
-**Priority**: Low**
+**Status**: Partial (webrtc_command_server/ exists) | **Dependencies**: None | **Priority**: Low
 
-- [ ] **Complete WebRTC command server integration**
-  - Test: `tests/integration/test_voice_commands.py`
-  - Implementation: Integrate Whisper in `webrtc_command_server/`
-  - Validation: Voice commands trigger game actions via API
-  - Reference: `SPEECH_RECOGNITION.md` for command vocabulary
+#### Task 5.2.1: Complete WebRTC command server integration
+**Estimated Time**: 2 iterations
+**Dependencies**: None
+**Test-First**: Yes
+
+**Current State**: `webrtc_command_server/` directory exists with basic structure
+
+**Implementation**:
+- Directory: `webrtc_command_server/`
+- Components:
+  - Audio capture from browser
+  - Whisper STT processing
+  - Command parsing
+  - API integration for game actions
+- Test: `tests/integration/test_voice_commands.py`
+- Validation: `pytest tests/integration/test_voice_commands.py -v`
 
 ---
 
-## Priority 6: User Management
+## Priority 6: User Management ⏳ PLANNED
 
 ### 6.1 Authentication Foundation
-**Status**: Not Started  
-**Dependencies**: 3.x Complete  
-**Priority**: Low**
+**Status**: Not Started | **Dependencies**: Priority 3 Complete | **Priority**: Low
 
-- [ ] **Design user data model**
-  - Test: `tests/engine/test_user_model.py`
-  - Implementation: `mahjong_engine/user.py` with `User` class
-  - Validation: Supports anonymous and authenticated users
-  - Fields: `user_id`, `username`, `created_at`, `stats` (optional)
+#### Task 6.1.1: Design user data model
+**Estimated Time**: 1 iteration
+**Dependencies**: Task 3.x Complete
+**Test-First**: Yes
 
-- [ ] **Implement anonymous session tokens**
-  - Test: `tests/integration/test_anonymous_sessions.py`
-  - Implementation: JWT tokens for browser sessions
-  - Validation: 
-    - Token issued on first connection
-    - Token persists across reconnects
-    - No database required for anonymous users
+**Implementation**:
+- File: `mahjong_engine/user.py` (new file)
+- Class: `User`
+- Fields: `user_id` (UUID), `username`, `display_name`, `created_at`, `stats` (optional)
+- Supports: Anonymous and authenticated users
+- Test: `tests/engine/test_user_model.py`
+- Validation: `pytest tests/engine/test_user_model.py -v`
+
+#### Task 6.1.2: Implement anonymous session tokens
+**Estimated Time**: 1 iteration
+**Dependencies**: Task 6.1.1 Complete
+**Test-First**: Yes
+
+**Implementation**:
+- File: `app.py` (middleware)
+- Technology: JWT tokens
+- Features:
+  - Token issued on first connection
+  - Persists across reconnects
+  - No database for anonymous users
+  - Token includes user_id and room_id
+- Test: `tests/integration/test_anonymous_sessions.py`
+- Validation: `pytest tests/integration/test_anonymous_sessions.py -v`
 
 ---
 
-## Completed
+## Completed Tasks Archive
 
+### Foundation (Phase 1)
 - [x] Core mahjong game engine (`mahjong_engine/`)
   - Tile, Player, GameState, Meld classes
   - Hand validation (win detection)
   - AI player agent
   - Dealer rotation system
-
+  - Tile factory and Unicode support
 - [x] WebSocket multiplayer signaling (`app.py`)
-  - Peer connection management
-  - Message forwarding between peers
-
 - [x] REST API for game actions (`app.py`)
-  - Start new game, reset game
-  - Draw, discard tiles
-  - Pung, Kong, Win claims
-  - Dealer rotation endpoints
+- [x] Docker integration testing framework
+- [x] Integration test scenarios
 
-- [x] Basic voice command recognition
-  - iPhone Web Speech API support (`voice.html`)
-  - Cantonese language support
-
-- [x] Integration testing framework
-  - Docker compose setup
-  - pytest configuration
-  - Test scripts and scenarios directory
-
-- [x] Documentation
-  - `AGENTS.md` - Build/test/run guide
-  - `ARCHITECTURE.md` - System design
-  - `instruction.md` - Testing framework guidelines
-
----
-
-## Next Immediate Task
-
-**Task**: Add health check endpoint to app.py  
-**Priority**: Critical (blocks integration tests)  
-**File**: `app.py`  
-**Test**: `tests/integration/test_health_endpoint.py`
-
-**Steps**:
-1. Create test file `tests/integration/test_health_endpoint.py`
-2. Add `GET /health` route handler to `app.py`
-3. Run integration tests to verify
-4. Update `docker-compose.integration.yml` healthcheck if needed
+### Voice Recognition
+- [x] Basic voice command recognition (`voice.html`)
+- [x] Cantonese language support (zh-HK)
+- [x] Commands: 食糊, 碰, 開槓, 上, 過
 
 ---
 
 ## Task Dependency Graph
 
 ```
-Priority 1 (Foundation)
-├── 1.1 Health endpoint ← START HERE
-├── 1.2 Scenario loader
-├── 1.3 Documentation
-│
-Priority 2 (Core Features)
-├── 2.1 Chow validation → requires 1.1
-├── 2.2 Game history → requires 1.1
-│
-Priority 3 (Multiplayer)
-├── 3.1 Room model → requires 1.x, 2.x
-├── 3.2 Room manager → requires 3.1
-│
-Priority 4 (Chat)
-├── 4.1 Chat system → requires 3.1
-│
-Priority 5 (Video/Voice)
-├── 5.1 SFU evaluation → independent
-├── 5.2 Voice commands → requires 5.1
-│
-Priority 6 (Users)
-├── 6.1 User model → requires 3.x
-└── 6.2 Sessions → requires 6.1
+Priority 1 (Foundation) ✅ COMPLETE
+├── 1.1 Docker tests ✅
+├── 1.2 Scenarios ✅
+└── 1.3 Documentation ✅
+
+Priority 2 (Core Features) 🔄 START HERE
+├── 2.1 Chow validation ← NEXT TASK (2.1.1)
+│   ├── 2.1.1 can_form_chow_with_discard() ← IMPLEMENT THIS
+│   ├── 2.1.2 API endpoint (depends on 2.1.1)
+│   └── 2.1.3 GameState integration (depends on 2.1.2)
+├── 2.2 Game history (independent)
+│   ├── 2.2.1 GameHistory class
+│   ├── 2.2.2 GameState integration (depends on 2.2.1)
+│   └── 2.2.3 API endpoints (depends on 2.2.2)
+└── 2.3 Game sessions (independent)
+    ├── 2.3.1 Complete GameSession class
+    └── 2.3.2 Session API (depends on 2.3.1)
+
+Priority 3 (Rooms) ⏳
+├── 3.1 Room management (depends on 2.x)
+│   ├── 3.1.1 Room model
+│   ├── 3.1.2 Room manager (depends on 3.1.1)
+│   ├── 3.1.3 Room API (depends on 3.1.2)
+│   └── 3.1.4 WebSocket rooms (depends on 3.1.3)
+
+Priority 4 (Chat) ⏳
+├── 4.1 Chat system (depends on 3.1)
+│   ├── 4.1.1 Chat message model
+│   ├── 4.1.2 In-memory persistence (depends on 4.1.1)
+│   └── 4.1.3 WebSocket protocol (depends on 4.1.2)
+
+Priority 5 (Video/Voice) ⏳
+├── 5.1 SFU evaluation (independent)
+└── 5.2 Voice commands (depends on 5.1)
+
+Priority 6 (Users) ⏳
+├── 6.1 User model (depends on 3.x)
+└── 6.2 Anonymous sessions (depends on 6.1)
 ```
 
 ---
 
-## Notes
+## Development Guidelines
 
-### Blockers
-- Integration tests need health endpoint to verify server readiness
-- Docker compose setup needs validation
+### Test-First Development Workflow
+1. Write failing test before implementation
+2. Run test to confirm it fails (RED)
+3. Write minimal code to pass test (GREEN)
+4. Refactor while keeping tests passing
+5. Run full test suite before completing
 
-### Technical Debt
-- Global game state in `app.py` needs refactoring for multi-room support
-- WebSocket message protocol needs documentation
-- Some integration tests are incomplete (chow validation missing)
+### Task Completion Checklist
+- [ ] Test file created with failing tests
+- [ ] Implementation code written
+- [ ] Tests pass: `pytest path/to/test.py -v`
+- [ ] No regressions: `pytest -v`
+- [ ] Linting passes: `flake8 && pylint mahjong_engine/`
+- [ ] Docker tests pass: `cd tests/integration && ./run-integration-tests.sh`
+- [ ] Documentation updated if needed
 
-### Resources Needed
-- GPU server for Whisper voice processing (Phase 5)
-- PostgreSQL/Redis for production persistence (Phase 3+)
-- STUN/TURN servers for WebRTC (Phase 5)
+### Code Style Requirements
+- 4 spaces indentation (no tabs)
+- Line length: 120 characters
+- Type hints for function parameters
+- Docstrings for all public functions
+- Follow AGENTS.md conventions
 
-### Development Guidelines
-- **Test First**: Write test before implementation
-- **One Task Per Loop**: Each task should be completable in one Ralph iteration
-- **Run Tests**: Always run `pytest -v` before completing
-- **Integration Tests**: Run `cd tests/integration && ./run-integration-tests.sh` for Docker tests
+### Commit Message Format
+```
+feat: Add chow validation for mahjong claims
+
+- Implement can_form_chow_with_discard() in hand_validator.py
+- Support consecutive tile sequences (1-2-3, 4-5-6, etc.)
+- Validate position rule (only left neighbor can claim)
+- Exclude winds and dragons from chow validation
+- Add comprehensive unit tests in TestChowValidation
+
+Closes #2.1.1
+```
 
 ---
 
-**Next Action**: Pick the first unchecked item from Priority 1 and implement it.
+## Quick Reference
+
+### Test Commands
+```bash
+# Run unit tests only (fast)
+pytest -m "not integration" -v tests/engine
+
+# Run specific test
+pytest tests/engine/test_melds.py::TestChowValidation -v
+
+# Run all tests
+pytest -v
+
+# Run Docker integration tests
+cd tests/integration && ./run-integration-tests.sh
+
+# Run with coverage
+pytest --cov=mahjong_engine --cov-report=html -v
+```
+
+### Code Quality Commands
+```bash
+flake8 mahjong_engine/
+pylint mahjong_engine/
+black mahjong_engine/  # if installed
+```
+
+### Key Files for Current Task (2.1.1)
+- **Test**: `tests/engine/test_melds.py` (add TestChowValidation class)
+- **Implementation**: `mahjong_engine/hand_validator.py` (add after line 188)
+- **Reference**: `can_form_pung_with_discard()` at lines 138-155
+
+---
+
+## Current Status Summary
+
+**Test Count**:
+- Unit tests: 50+ passing (tests/engine/)
+- Integration tests: 34+ passing (tests/integration/)
+
+**Next Action**: Implement Task 2.1.1 - Create `can_form_chow_with_discard()` function in `mahjong_engine/hand_validator.py`
+
+**Blockers**: None
+
+**Ready to Start**: Task 2.1.1
+
+---
+
+**Last Updated**: 2026-02-07
+**Version**: 2.0
+**Status**: Planning Complete
