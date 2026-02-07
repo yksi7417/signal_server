@@ -6,7 +6,10 @@ from aiohttp import web, WSMsgType
 
 from mahjong_engine.game_state import GameState
 from mahjong_engine.player_agent import AIPlayerAgent
+from mahjong_engine.room_manager import RoomManager
+from mahjong_engine.ws_room_tracker import WebSocketRoomTracker
 from mahjong_engine.game_session import (
+    GameSession,
     reset_dealer_rotation_state,
     advance_dealer_rotation,
     get_current_dealer_info,
@@ -26,6 +29,15 @@ WS_ENDPOINTS = {
 }
 
 current_game_state = GameState()
+
+# Session management for multi-game support
+game_sessions = {}
+
+# Room management for multiplayer lobbies
+room_manager = RoomManager()
+
+# WebSocket room-based peer tracking
+ws_room_tracker = WebSocketRoomTracker()
 
 clients = {}
 
@@ -67,12 +79,14 @@ async def websocket_handler(request: web.Request):
     logger.debug("Headers: %s", dict(request.headers))
 
     client_id = None
+    room_id = None
 
     msg = await ws.receive()
     if msg.type == WSMsgType.TEXT:
         try:
             client_info = json.loads(msg.data)
             client_id = client_info["id"]
+            room_id = client_info.get("room_id", "lobby")
         except Exception as e:
             logger.error("Invalid JSON message: %s", e)
             await ws.close()
@@ -82,15 +96,19 @@ async def websocket_handler(request: web.Request):
         return ws
 
     clients[client_id] = ws
+    ws_room_tracker.register(client_id, room_id)
 
-    for other_id, other_ws in clients.items():
-        if other_ws != ws:
-            await other_ws.send_str(
-                json.dumps({"type": "new-peer", "id": client_id})
+    # Notify only peers in the same room
+    room_peers = ws_room_tracker.get_room_peers(client_id)
+    for peer_id in room_peers:
+        if peer_id in clients:
+            await clients[peer_id].send_str(
+                json.dumps({"type": "new-peer", "id": client_id, "room_id": room_id})
             )
 
+    # Send peer list (only peers in the same room)
     await ws.send_str(
-        json.dumps({"type": "peer-list", "peers": [pid for pid in clients if pid != client_id]})
+        json.dumps({"type": "peer-list", "peers": room_peers, "room_id": room_id})
     )
 
     try:
@@ -98,15 +116,23 @@ async def websocket_handler(request: web.Request):
             if msg.type == WSMsgType.TEXT:
                 data = json.loads(msg.data)
                 to_id = data.get("to")
-                if to_id in clients:
+                if to_id and to_id in clients:
                     await clients[to_id].send_str(msg.data)
+                elif data.get("type") == "room-broadcast":
+                    # Broadcast to all peers in the same room
+                    for peer_id in ws_room_tracker.get_room_peers(client_id):
+                        if peer_id in clients:
+                            await clients[peer_id].send_str(msg.data)
     finally:
+        ws_room_tracker.unregister(client_id)
         if client_id in clients:
             del clients[client_id]
-            for other_ws in clients.values():
-                await other_ws.send_str(
-                    json.dumps({"type": "peer-disconnect", "id": client_id})
-                )
+            # Notify only room peers of disconnect
+            for peer_id in ws_room_tracker.clients_in_room(room_id):
+                if peer_id in clients:
+                    await clients[peer_id].send_str(
+                        json.dumps({"type": "peer-disconnect", "id": client_id, "room_id": room_id})
+                    )
 
     return ws
 
@@ -239,6 +265,77 @@ async def player_claims_pung(request: web.Request) -> web.Response:
         response = {
             "success": True,
             "message": "Pung claim declined. Game continues.",
+            "action": "claim_declined",
+            "next_player_id": current_game_state.players[
+                current_game_state.current_player_index
+            ].player_id,
+            "discarded_tile": current_game_state.current_discard.unicode
+            if current_game_state.current_discard
+            else None,
+            "winner_found": current_game_state.winner_found,
+        }
+
+    return web.json_response(response)
+
+
+async def player_claims_chow(request: web.Request) -> web.Response:
+    global current_game_state
+    data = await request.json()
+    confirm_claim = data.get("confirm_claim", False)
+
+    response = {"success": False, "message": "Claim processing failed."}
+
+    if (
+        current_game_state.pending_claim_player_id is None
+        or current_game_state.potential_claim_tile is None
+        or current_game_state.claim_type_pending != "CHOW"
+    ):
+        response["message"] = "No Chow claim was pending or tile info missing."
+        return web.json_response(response)
+
+    claiming_player_id = current_game_state.pending_claim_player_id
+
+    if claiming_player_id != 0:
+        response["message"] = "Pending claim is not for the human player."
+        return web.json_response(response)
+
+    if confirm_claim:
+        claimed_tile = current_game_state.potential_claim_tile
+        success = current_game_state.process_chow_claim(claiming_player_id, claimed_tile)
+        if success:
+            player = current_game_state.players[claiming_player_id]
+            hand_serializable = [t.unicode for t in player.hand]
+            revealed_sets_serializable = [
+                {"type": meld.meld_type.value, "tiles": [t.unicode for t in meld.raw_tiles]}
+                for meld in player.revealed_sets
+            ]
+            response = {
+                "success": True,
+                "message": f"Player {claiming_player_id} claimed Chow. Your turn to discard.",
+                "player_hand": hand_serializable,
+                "revealed_sets": revealed_sets_serializable,
+                "current_player_id": current_game_state.current_player_index,
+                "action": "discard_after_chow",
+                "winner_found": current_game_state.winner_found,
+            }
+        else:
+            response["message"] = "Backend failed to process Chow claim."
+            response["winner_found"] = current_game_state.winner_found
+    else:
+        discarder_player_id = current_game_state.current_player_index
+
+        current_game_state.potential_claim_tile = None
+        current_game_state.pending_claim_player_id = None
+        current_game_state.claim_type_pending = None
+
+        current_game_state.current_player_index = (
+            discarder_player_id + 1
+        ) % len(current_game_state.players)
+        current_game_state.turn_number += 1
+
+        response = {
+            "success": True,
+            "message": "Chow claim declined. Game continues.",
             "action": "claim_declined",
             "next_player_id": current_game_state.players[
                 current_game_state.current_player_index
@@ -670,6 +767,103 @@ async def request_ai_turn(request: web.Request) -> web.Response:
         )
 
 
+async def create_room(request: web.Request) -> web.Response:
+    """Create a new game room."""
+    room = room_manager.create_room()
+    return web.json_response({"success": True, "room": room.to_dict()})
+
+
+async def get_room(request: web.Request) -> web.Response:
+    """Get room details by ID."""
+    room_id = request.match_info["room_id"]
+    room = room_manager.get_room(room_id)
+    if not room:
+        return web.json_response({"success": False, "message": "Room not found."}, status=404)
+    return web.json_response({"success": True, "room": room.to_dict()})
+
+
+async def list_rooms(request: web.Request) -> web.Response:
+    """List all active rooms."""
+    rooms = room_manager.list_rooms()
+    rooms_list = [r.to_dict() for r in rooms.values()]
+    return web.json_response({"success": True, "rooms": rooms_list, "count": len(rooms_list)})
+
+
+async def join_room(request: web.Request) -> web.Response:
+    """Join a game room."""
+    room_id = request.match_info["room_id"]
+    data = await request.json()
+    player_id = data.get("player_id")
+
+    if not player_id:
+        return web.json_response({"success": False, "message": "player_id required."})
+
+    room = room_manager.get_room(room_id)
+    if not room:
+        return web.json_response({"success": False, "message": "Room not found."}, status=404)
+
+    if room.add_player(player_id):
+        return web.json_response({"success": True, "message": f"Player {player_id} joined room.", "room": room.to_dict()})
+    return web.json_response({"success": False, "message": "Cannot join room (full or already joined)."})
+
+
+async def leave_room(request: web.Request) -> web.Response:
+    """Leave a game room."""
+    room_id = request.match_info["room_id"]
+    data = await request.json()
+    player_id = data.get("player_id")
+
+    if not player_id:
+        return web.json_response({"success": False, "message": "player_id required."})
+
+    room = room_manager.get_room(room_id)
+    if not room:
+        return web.json_response({"success": False, "message": "Room not found."}, status=404)
+
+    if room.remove_player(player_id):
+        return web.json_response({"success": True, "message": f"Player {player_id} left room.", "room": room.to_dict()})
+    return web.json_response({"success": False, "message": "Player not in room."})
+
+
+async def create_session(request: web.Request) -> web.Response:
+    """Create a new game session."""
+    session = GameSession()
+    game_sessions[session.session_id] = session
+    return web.json_response({
+        "success": True,
+        "session_id": session.session_id,
+        "created_at": session.created_at,
+    })
+
+
+async def get_session(request: web.Request) -> web.Response:
+    """Get session state by ID."""
+    session_id = request.match_info["session_id"]
+    session = game_sessions.get(session_id)
+    if not session:
+        return web.json_response({"success": False, "message": "Session not found."}, status=404)
+    session.update_activity()
+    data = session.to_dict()
+    data["success"] = True
+    data["player_count"] = len(session.game_state.players)
+    return web.json_response(data)
+
+
+async def list_sessions(request: web.Request) -> web.Response:
+    """List all active sessions."""
+    sessions_list = [
+        {"session_id": s.session_id, "created_at": s.created_at, "last_activity": s.last_activity}
+        for s in game_sessions.values()
+    ]
+    return web.json_response({"success": True, "sessions": sessions_list, "count": len(sessions_list)})
+
+
+async def game_history(request: web.Request) -> web.Response:
+    global current_game_state
+    history = current_game_state.get_history()
+    return web.json_response({"success": True, "history": history, "count": len(history)})
+
+
 @web.middleware
 async def security_headers(request: web.Request, handler):
     response = await handler(request)
@@ -691,12 +885,22 @@ app.router.add_post("/api/reset_dealer_rotation", reset_dealer_rotation)
 app.router.add_post("/api/advance_dealer", advance_dealer)
 app.router.add_get("/api/get_dealer_info", get_dealer_info)
 app.router.add_post("/api/player_claims_pung", player_claims_pung)
+app.router.add_post("/api/player_claims_chow", player_claims_chow)
 app.router.add_post("/api/player_claims_win", player_claims_win)
 app.router.add_post("/api/player_claims_kong", player_claims_kong)
 app.router.add_post("/api/player_declares_hidden_kong", player_declares_hidden_kong)
 app.router.add_post("/api/draw_tile", draw_tile)
 app.router.add_post("/api/discard_tile", discard_tile)
 app.router.add_post("/api/request_ai_turn", request_ai_turn)
+app.router.add_get("/api/game_history", game_history)
+app.router.add_post("/api/rooms/create", create_room)
+app.router.add_get("/api/rooms", list_rooms)
+app.router.add_get("/api/rooms/{room_id}", get_room)
+app.router.add_post("/api/rooms/{room_id}/join", join_room)
+app.router.add_post("/api/rooms/{room_id}/leave", leave_room)
+app.router.add_post("/api/sessions/create", create_session)
+app.router.add_get("/api/sessions", list_sessions)
+app.router.add_get("/api/sessions/{session_id}", get_session)
 app.router.add_get("/voice.html", voice_handler)
 app.router.add_get("/voice_command.html", voice_command_handler)
 app.router.add_get("/ws", websocket_handler)

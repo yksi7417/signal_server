@@ -2,6 +2,7 @@ import pytest
 from mahjong_engine.tile import Tile
 from mahjong_engine.melds import Meld, MeldType, Pung, Kong, Chow, Pair
 from mahjong_engine.constants import SUIT_DOTS, SUIT_BAMBOO, SUIT_CHARACTERS, SUIT_WINDS, SUIT_DRAGONS, TILE_VALUES_NUMERIC
+from mahjong_engine.hand_validator import can_form_chow_with_discard
 
 # Sample Tiles
 d1 = Tile(SUIT_DOTS, '1')
@@ -166,3 +167,100 @@ def test_meld_equality_and_hash():
     assert meld_dict[p1b] == "Pung D1 Revealed"
     assert meld_dict[chow1_unsorted_init] == "Chow D123 Revealed"
     assert len(meld_dict) == 3
+
+
+class TestChowValidation:
+    """Tests for can_form_chow_with_discard() function."""
+
+    def test_chow_discard_is_lowest(self):
+        """Discarded tile is lowest in sequence (e.g., discard 1, hand has 2,3)."""
+        hand = [Tile(SUIT_DOTS, '2'), Tile(SUIT_DOTS, '3'), Tile(SUIT_BAMBOO, '5')]
+        discard = Tile(SUIT_DOTS, '1')
+        assert can_form_chow_with_discard(hand, discard, discarder_position=3, claimer_position=0) is True
+
+    def test_chow_discard_is_middle(self):
+        """Discarded tile is middle of sequence (e.g., discard 5, hand has 4,6)."""
+        hand = [Tile(SUIT_BAMBOO, '4'), Tile(SUIT_BAMBOO, '6'), Tile(SUIT_DOTS, '1')]
+        discard = Tile(SUIT_BAMBOO, '5')
+        assert can_form_chow_with_discard(hand, discard, discarder_position=1, claimer_position=2) is True
+
+    def test_chow_discard_is_highest(self):
+        """Discarded tile is highest in sequence (e.g., discard 9, hand has 7,8)."""
+        hand = [Tile(SUIT_CHARACTERS, '7'), Tile(SUIT_CHARACTERS, '8'), Tile(SUIT_DOTS, '1')]
+        discard = Tile(SUIT_CHARACTERS, '9')
+        assert can_form_chow_with_discard(hand, discard, discarder_position=2, claimer_position=3) is True
+
+    def test_chow_multiple_patterns_available(self):
+        """Hand has tiles for multiple chow patterns with the discard."""
+        hand = [Tile(SUIT_DOTS, '4'), Tile(SUIT_DOTS, '6'), Tile(SUIT_DOTS, '3')]
+        discard = Tile(SUIT_DOTS, '5')
+        # Can form 3-4-5 or 4-5-6 or 5-6-... wait, 5 is discard, hand has 3,4,6
+        # Pattern: discard=5, hand has 3,4 -> 3-4-5 (discard is highest)
+        # Pattern: discard=5, hand has 4,6 -> 4-5-6 (discard is middle)
+        assert can_form_chow_with_discard(hand, discard, discarder_position=0, claimer_position=1) is True
+
+    def test_chow_invalid_wrong_position(self):
+        """Only left neighbor (discarder+1 mod 4) can claim chow."""
+        hand = [Tile(SUIT_DOTS, '2'), Tile(SUIT_DOTS, '3')]
+        discard = Tile(SUIT_DOTS, '1')
+        # Position 0 discards, claimer is position 2 (not left neighbor)
+        assert can_form_chow_with_discard(hand, discard, discarder_position=0, claimer_position=2) is False
+        # Position 0 discards, claimer is position 3
+        assert can_form_chow_with_discard(hand, discard, discarder_position=0, claimer_position=3) is False
+
+    def test_chow_invalid_honor_tiles(self):
+        """Cannot form chow with wind or dragon tiles."""
+        hand = [Tile(SUIT_WINDS, 'South'), Tile(SUIT_WINDS, 'West')]
+        discard = Tile(SUIT_WINDS, 'East')
+        assert can_form_chow_with_discard(hand, discard, discarder_position=0, claimer_position=1) is False
+
+        hand2 = [Tile(SUIT_DRAGONS, 'Green'), Tile(SUIT_DRAGONS, 'White')]
+        discard2 = Tile(SUIT_DRAGONS, 'Red')
+        assert can_form_chow_with_discard(hand2, discard2, discarder_position=0, claimer_position=1) is False
+
+    def test_chow_invalid_tiles_not_in_hand(self):
+        """Hand doesn't contain the needed tiles for any chow pattern."""
+        hand = [Tile(SUIT_DOTS, '1'), Tile(SUIT_DOTS, '5')]
+        discard = Tile(SUIT_DOTS, '3')
+        # Need 2,4 or 4,5 or 1,2 — hand has 1,5 so no consecutive pair with 3
+        # Actually: need (1,2), (2,4), or (4,5) in hand. Hand has 1,5. None match.
+        assert can_form_chow_with_discard(hand, discard, discarder_position=0, claimer_position=1) is False
+
+    def test_chow_invalid_empty_hand(self):
+        """Empty hand cannot form chow."""
+        assert can_form_chow_with_discard([], Tile(SUIT_DOTS, '5'), discarder_position=0, claimer_position=1) is False
+
+    def test_chow_invalid_none_discard(self):
+        """None discard returns False."""
+        hand = [Tile(SUIT_DOTS, '2'), Tile(SUIT_DOTS, '3')]
+        assert can_form_chow_with_discard(hand, None, discarder_position=0, claimer_position=1) is False
+
+    def test_chow_invalid_different_suits(self):
+        """Tiles must all be the same suit."""
+        hand = [Tile(SUIT_DOTS, '2'), Tile(SUIT_BAMBOO, '3')]
+        discard = Tile(SUIT_DOTS, '1')
+        # Need 2-dots and 3-dots, but hand has 3-bamboo not 3-dots
+        assert can_form_chow_with_discard(hand, discard, discarder_position=0, claimer_position=1) is False
+
+    def test_chow_edge_tile_1_cannot_be_highest(self):
+        """Tile value 1 cannot be the highest in a sequence (no -1, 0 tiles)."""
+        hand = [Tile(SUIT_DOTS, '2'), Tile(SUIT_DOTS, '3')]
+        discard = Tile(SUIT_DOTS, '1')
+        # 1 as lowest: need 2,3 in hand -> True
+        assert can_form_chow_with_discard(hand, discard, discarder_position=0, claimer_position=1) is True
+        # But with only a 9 and 8 in hand, 1 can't form anything
+        hand2 = [Tile(SUIT_DOTS, '8'), Tile(SUIT_DOTS, '9')]
+        assert can_form_chow_with_discard(hand2, discard, discarder_position=0, claimer_position=1) is False
+
+    def test_chow_edge_tile_9_cannot_be_lowest(self):
+        """Tile value 9 cannot be the lowest in a sequence (no 10, 11 tiles)."""
+        hand = [Tile(SUIT_DOTS, '7'), Tile(SUIT_DOTS, '8')]
+        discard = Tile(SUIT_DOTS, '9')
+        # 9 as highest: need 7,8 in hand -> True
+        assert can_form_chow_with_discard(hand, discard, discarder_position=0, claimer_position=1) is True
+
+    def test_chow_position_wraps_around(self):
+        """Position 3 discards, position 0 is left neighbor (wrap-around)."""
+        hand = [Tile(SUIT_DOTS, '4'), Tile(SUIT_DOTS, '5')]
+        discard = Tile(SUIT_DOTS, '3')
+        assert can_form_chow_with_discard(hand, discard, discarder_position=3, claimer_position=0) is True
