@@ -1,6 +1,7 @@
 """Game room data model for multiplayer room management."""
 
 import uuid
+from collections import deque
 from datetime import datetime
 
 
@@ -21,6 +22,7 @@ class GameRoom:
         self.status = "waiting"
         self.max_players = max_players
         self.created_at = datetime.utcnow().isoformat()
+        self._messages = deque(maxlen=100)
 
     def add_player(self, player_id):
         """Add a player to the room.
@@ -56,6 +58,39 @@ class GameRoom:
     def is_full(self):
         """Check if room has reached max_players."""
         return len(self.players) >= self.max_players
+
+    def add_message(self, message):
+        """Add a ChatMessage to the room's chat history.
+
+        Args:
+            message: ChatMessage instance to add.
+        """
+        self._messages.append(message)
+
+    def get_messages(self):
+        """Get a copy of the chat message history.
+
+        Returns:
+            List of ChatMessage instances.
+        """
+        return list(self._messages)
+
+    def get_messages_as_dicts(self):
+        """Get chat messages serialized as dictionaries.
+
+        Returns:
+            List of message dictionaries.
+        """
+        return [m.to_dict() for m in self._messages]
+
+    @property
+    def message_count(self):
+        """Number of messages in chat history."""
+        return len(self._messages)
+
+    def clear_messages(self):
+        """Remove all chat messages."""
+        self._messages.clear()
 
     def to_dict(self):
         """Serialize room to dictionary.
