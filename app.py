@@ -741,6 +741,12 @@ async def request_ai_turn(request: web.Request) -> web.Response:
         )
 
 
+async def game_history(request: web.Request) -> web.Response:
+    global current_game_state
+    history = current_game_state.get_history()
+    return web.json_response({"success": True, "history": history, "count": len(history)})
+
+
 @web.middleware
 async def security_headers(request: web.Request, handler):
     response = await handler(request)
@@ -769,6 +775,7 @@ app.router.add_post("/api/player_declares_hidden_kong", player_declares_hidden_k
 app.router.add_post("/api/draw_tile", draw_tile)
 app.router.add_post("/api/discard_tile", discard_tile)
 app.router.add_post("/api/request_ai_turn", request_ai_turn)
+app.router.add_get("/api/game_history", game_history)
 app.router.add_get("/voice.html", voice_handler)
 app.router.add_get("/voice_command.html", voice_command_handler)
 app.router.add_get("/ws", websocket_handler)

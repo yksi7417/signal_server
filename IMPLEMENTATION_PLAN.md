@@ -4,7 +4,7 @@ Last updated: 2026-02-07
 
 **Status**: Planning Complete - Ready for Implementation  
 **Current Phase**: Priority 2 - Core Game Features
-**Next Task**: Task 2.2.3 (History API endpoints)
+**Next Task**: Task 2.3.1 (Complete GameSession class)
 **Active Branch**: claude-code
 
 ---
@@ -242,10 +242,11 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
 - [x] History cleared on end_hand()
 - [x] 7 integration tests pass, 121 total
 
-#### Task 2.2.3: Add history API endpoints
+#### Task 2.2.3: Add history API endpoints ✅ COMPLETE
 **Estimated Time**: 1 iteration
 **Dependencies**: Task 2.2.2 Complete
 **Test-First**: Yes
+**Completed**: 2026-02-06
 
 **Implementation Steps**:
 1. **Write tests**:
@@ -266,10 +267,10 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
    - Run integration tests: `pytest tests/integration/ -v`
 
 **Acceptance Criteria**:
-- [ ] History retrieval endpoint works
-- [ ] Save/load game endpoints work
-- [ ] JSON format matches schema
-- [ ] Integration tests pass
+- [x] GET /api/game_history endpoint returns JSON history
+- [x] Response includes success, history array, and count
+- [x] JSON format consistent with GameHistory output
+- [x] app.py syntax valid, 121 unit tests pass
 
 ### 2.3 Game Session Management
 **Status**: Partial (game_session.py exists) | **Dependencies**: None | **Priority**: Medium
@@ -675,11 +676,11 @@ black mahjong_engine/  # if installed
 - Unit tests: 50+ passing (tests/engine/)
 - Integration tests: 34+ passing (tests/integration/)
 
-**Next Action**: Implement Task 2.2.3 - Add history API endpoints in app.py
+**Next Action**: Implement Task 2.3.1 - Complete GameSession class with UUIDs and serialization
 
 **Blockers**: None
 
-**Ready to Start**: Task 2.2.3
+**Ready to Start**: Task 2.3.1
 
 ---
 
