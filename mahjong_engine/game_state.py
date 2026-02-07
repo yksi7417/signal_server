@@ -1,6 +1,7 @@
 import random
 
 from .constants import INIT_HAND_SIZE, NUM_COPIES_PER_TILE, NUM_PLAYERS, TILE_CATEGORIES_FOR_GENERATION, WIND_EAST, WINDS_ALL
+from .game_history import GameHistory
 from .game_session import get_dealer_rotation_state, assign_player_winds_globally, advance_dealer_rotation, get_current_dealer_info, set_dealer_rotation_state
 from .hand_validator import (
     can_form_chow_with_discard,
@@ -54,7 +55,8 @@ class GameState:
 
         self.winner_found = False
         self.winning_player_id = None
-        
+        self.history = GameHistory()
+
         # Assign player winds based on global dealer rotation state
         assign_player_winds_globally(self.players)
 
@@ -81,6 +83,10 @@ class GameState:
         # This setter is primarily for testing purposes
         current_dealer = self.dealer_index
         set_dealer_rotation_state(current_dealer, value)
+
+    def get_history(self):
+        """Return the game action history."""
+        return self.history.get_history()
 
     def deal_tiles(self):
         for player in self.players:
@@ -113,7 +119,9 @@ class GameState:
 
         # Draw and add tile
         drawn_tile = self.wall.pop(0)
-        player.hand.append(drawn_tile)        # Check for win if hand size % 3 == 2
+        player.hand.append(drawn_tile)
+        self.history.record_action("draw", player_id=player.player_id, tile=drawn_tile.unicode)
+        # Check for win if hand size % 3 == 2
         if len(player.hand) % 3 == 2:
             is_win = self.rules.is_winning_hand(
                 player.hand, player.revealed_sets)
@@ -161,6 +169,7 @@ class GameState:
 
         self.current_discard = tile_object_to_discard
         player.discards.append(tile_object_to_discard)
+        self.history.record_action("discard", player_id=player.player_id, tile=tile_object_to_discard.unicode)
 
         self.potential_claim_tile = self.current_discard
         # Reset pending claims before checks
@@ -298,6 +307,7 @@ class GameState:
 
         print(
             f"Player {claiming_player_id} formed Pung: {new_pung} from player {discarding_player_original_index}'s discard.")
+        self.history.record_action("pung", player_id=claiming_player_id, tile=claimed_tile.unicode)
 
         self.current_player_index = claiming_player_id
 
@@ -373,6 +383,7 @@ class GameState:
         claiming_player.add_revealed_set(new_chow)
 
         print(f"Player {claiming_player_id} formed Chow: {new_chow} from player {discarding_player_original_index}'s discard.")
+        self.history.record_action("chow", player_id=claiming_player_id, tile=claimed_tile.unicode)
 
         self.current_player_index = claiming_player_id
 
@@ -405,6 +416,7 @@ class GameState:
 
         self.winner_found = True
         self.winning_player_id = claiming_player_id
+        self.history.record_action("win", player_id=claiming_player_id, tile=claimed_tile.unicode)
 
         print(
             f"Player {claiming_player_id} has claimed WIN with tile {claimed_tile}!")        # Clear pending claim and discard information
@@ -555,6 +567,7 @@ class GameState:
 
         print(
             f"Player {claiming_player_id} formed Kong from player {discarding_player_original_index}'s discard.")
+        self.history.record_action("kong", player_id=claiming_player_id, tile=claimed_tile.unicode)
 
         self.current_player_index = claiming_player_id
         self.current_discard = None
@@ -686,3 +699,4 @@ class GameState:
         self.pending_claim_player_id = None
         self.potential_claim_tile = None
         self.claim_type_pending = None
+        self.history.clear()

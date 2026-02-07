@@ -987,3 +987,81 @@ class TestChowIntegration:
 
         # Should be PUNG, not CHOW (pung has higher priority)
         assert game.claim_type_pending == "PUNG"
+
+
+class TestGameHistoryIntegration:
+    """Tests for GameHistory integration in GameState."""
+
+    def test_history_exists_on_game_state(self, game):
+        """GameState has a history attribute."""
+        assert hasattr(game, 'history')
+        assert game.history is not None
+
+    def test_draw_records_history(self, game):
+        """Drawing a tile records a 'draw' action in history."""
+        game.draw_tile_for_current_player()
+        actions = game.get_history()
+        assert len(actions) >= 1
+        draw_actions = [a for a in actions if a["action"] == "draw"]
+        assert len(draw_actions) == 1
+        assert draw_actions[0]["player_id"] == game.current_player_index
+
+    def test_discard_records_history(self, game):
+        """Discarding a tile records a 'discard' action in history."""
+        player = game.players[game.current_player_index]
+        # Draw first to get to valid hand size
+        game.draw_tile_for_current_player()
+        tile = player.hand[0]
+        discard_repr = {'suit': tile.suit, 'value': tile.value}
+        game.discard_tile_for_current_player(discard_repr)
+
+        actions = game.get_history()
+        discard_actions = [a for a in actions if a["action"] == "discard"]
+        assert len(discard_actions) == 1
+
+    def test_pung_records_history(self, game):
+        """Processing a pung claim records a 'pung' action."""
+        player = game.players[0]
+        claimed_tile = Tile(SUIT_DOTS, '5')
+        player.hand = [
+            claimed_tile, claimed_tile,
+            Tile(SUIT_BAMBOO, '1'), Tile(SUIT_BAMBOO, '2'),
+            Tile(SUIT_CHARACTERS, '7'),
+        ]
+        game.current_player_index = 1
+        game.process_pung_claim(0, claimed_tile)
+
+        actions = game.get_history()
+        pung_actions = [a for a in actions if a["action"] == "pung"]
+        assert len(pung_actions) == 1
+        assert pung_actions[0]["player_id"] == 0
+
+    def test_chow_records_history(self, game):
+        """Processing a chow claim records a 'chow' action."""
+        player = game.players[0]
+        claimed_tile = Tile(SUIT_DOTS, '5')
+        player.hand = [
+            Tile(SUIT_DOTS, '4'), Tile(SUIT_DOTS, '6'),
+            Tile(SUIT_BAMBOO, '1'), Tile(SUIT_BAMBOO, '2'),
+            Tile(SUIT_CHARACTERS, '7'),
+        ]
+        game.current_player_index = 3
+        game.process_chow_claim(0, claimed_tile)
+
+        actions = game.get_history()
+        chow_actions = [a for a in actions if a["action"] == "chow"]
+        assert len(chow_actions) == 1
+
+    def test_get_history_method(self, game):
+        """get_history() returns action list."""
+        assert game.get_history() == []
+        game.draw_tile_for_current_player()
+        assert len(game.get_history()) >= 1
+
+    def test_end_hand_clears_history(self, game):
+        """end_hand() clears the history for the new hand."""
+        game.draw_tile_for_current_player()
+        assert len(game.get_history()) >= 1
+
+        game.end_hand(wall_empty=True)
+        assert game.get_history() == []

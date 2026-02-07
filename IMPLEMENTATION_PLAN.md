@@ -4,7 +4,7 @@ Last updated: 2026-02-07
 
 **Status**: Planning Complete - Ready for Implementation  
 **Current Phase**: Priority 2 - Core Game Features
-**Next Task**: Task 2.2.2 (Integrate history into GameState)
+**Next Task**: Task 2.2.3 (History API endpoints)
 **Active Branch**: claude-code
 
 ---
@@ -212,10 +212,11 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
 - [x] Thread-safe implementation (lock-based)
 - [x] 9 tests pass
 
-#### Task 2.2.2: Integrate history into GameState
+#### Task 2.2.2: Integrate history into GameState ✅ COMPLETE
 **Estimated Time**: 1 iteration
 **Dependencies**: Task 2.2.1 Complete
 **Test-First**: Yes
+**Completed**: 2026-02-06
 
 **Implementation Steps**:
 1. **Write tests**:
@@ -235,11 +236,11 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
    - Run all tests: `pytest tests/engine/ -v`
 
 **Acceptance Criteria**:
-- [ ] GameState has `history` attribute
-- [ ] All actions auto-recorded
-- [ ] `get_history()` returns complete history
-- [ ] History cleared on new game
-- [ ] Tests pass
+- [x] GameState has `history` attribute
+- [x] All actions auto-recorded (draw, discard, pung, chow, kong, win)
+- [x] `get_history()` returns complete history
+- [x] History cleared on end_hand()
+- [x] 7 integration tests pass, 121 total
 
 #### Task 2.2.3: Add history API endpoints
 **Estimated Time**: 1 iteration
@@ -674,11 +675,11 @@ black mahjong_engine/  # if installed
 - Unit tests: 50+ passing (tests/engine/)
 - Integration tests: 34+ passing (tests/integration/)
 
-**Next Action**: Implement Task 2.2.2 - Integrate GameHistory into GameState
+**Next Action**: Implement Task 2.2.3 - Add history API endpoints in app.py
 
 **Blockers**: None
 
-**Ready to Start**: Task 2.2.2
+**Ready to Start**: Task 2.2.3
 
 ---
 
