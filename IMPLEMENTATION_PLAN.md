@@ -1,6 +1,6 @@
 # Implementation Plan
 
-Last updated: 2025-02-06
+Last updated: 2026-02-06
 
 ## Overview
 
@@ -14,244 +14,351 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
 
 ## Priority 1: Foundation & Testing (Current Focus)
 
-### Testing Infrastructure
-- [x] Create comprehensive AGENTS.md with build/test commands
-- [x] Document code style guidelines
-- [x] Create ARCHITECTURE.md with current and target architecture
-- [ ] Fix and verify integration test suite
-  - Dependencies: Docker, docker-compose
-  - Test: Run `cd tests/integration && ./run-integration-tests.sh`
-  - Validation: All integration tests pass
-  - Files: `tests/integration/docker-compose.integration.yml`, `tests/integration/test_full_game.py`
-- [ ] Complete integration test scenarios
-  - Test: `tests/integration/scenarios/*.json`
-  - Implementation: Create 5-10 game scenarios covering win conditions, pung/kong/chow claims, wall exhaustion
-  - Validation: Scenarios run successfully in Docker
-- [ ] Add health check endpoint to app.py
-  - Test: `tests/integration/test_health_endpoint.py`
-  - Implementation: Add `/health` endpoint to `app.py`
-  - Validation: Docker healthcheck passes
+### 1.1 Fix Integration Test Suite
+**Status**: In Progress  
+**Dependencies**: None  
+**Priority**: Critical
 
-### Documentation
-- [x] Create Ralph Wiggum loop.sh for Kimi K2.5 Free
-- [x] Create PROMPT_build.md for build mode
-- [x] Create PROMPT_plan.md for planning mode
-- [ ] Create QUICKSTART.md for new developers
-  - Dependencies: None
-  - Implementation: Document setup, build, test, run steps
-  - Validation: New developer can follow guide successfully
+- [ ] **Add health check endpoint to app.py**
+  - Test: `tests/integration/test_health_endpoint.py`
+  - Implementation: Add `GET /health` endpoint to `app.py` that returns `{"status": "ok"}`
+  - Validation: `curl http://localhost:8080/health` returns 200 OK
+  - File: `app.py:700+` (add new route)
+
+- [ ] **Verify Docker integration test setup**
+  - Test: `cd tests/integration && ./run-integration-tests.sh`
+  - Validation: Docker containers start successfully, server responds on port 8080
+  - Files: `tests/integration/docker-compose.integration.yml`, `tests/integration/run-integration-tests.sh`
+  - Fix any path or dependency issues in docker-compose
+
+- [ ] **Create integration test runner script validation**
+  - Test: Run `pytest tests/integration/test_full_game.py -v` in Docker
+  - Validation: At least one complete game flow test passes
+  - Files: `tests/integration/test_full_game.py`, `tests/integration/pytest.ini`
+
+### 1.2 Complete Integration Test Scenarios
+**Status**: Not Started  
+**Dependencies**: 1.1 Complete  
+**Priority**: High
+
+- [ ] **Create scenario loader utility**
+  - Test: `tests/integration/test_scenario_loader.py`
+  - Implementation: JSON scenario parser in `tests/integration/scenario_loader.py`
+  - Validation: Can load and parse `tests/integration/scenarios/*.json` files
+  - Format: Follow `ARCHITECTURE.md` section "Integration Test Data Scenarios"
+
+- [ ] **Create winning hand scenario (5-dots claim)**
+  - Test: `tests/integration/scenarios/winning_hand_scenario.json`
+  - Implementation: JSON scenario file with initial state and expected outcome
+  - Validation: Scenario runs through `scenario_loader.py` successfully
+  - Reference: See `ARCHITECTURE.md` lines 647-677 for example format
+
+- [ ] **Create pung claim priority scenario**
+  - Test: `tests/integration/scenarios/pung_priority_scenario.json`
+  - Implementation: Test that pung claims are processed correctly
+  - Validation: Scenario validates pung claim flow from discard to reveal
+
+- [ ] **Create wall exhaustion scenario**
+  - Test: `tests/integration/scenarios/wall_exhaustion_scenario.json`
+  - Implementation: Test game ends correctly when wall is empty
+  - Validation: Game state shows `game_ended: true` and proper draw handling
+
+### 1.3 Documentation Completion
+**Status**: Partially Complete  
+**Dependencies**: None  
+**Priority**: Medium
+
+- [ ] **Create QUICKSTART.md for new developers**
+  - Test: Have a new developer follow the guide (manual validation)
+  - Implementation: Step-by-step setup, build, test, run instructions
+  - Validation: Document covers: Python setup, pip install, pytest, docker
+  - Include: Prerequisites, installation, running tests, running server
+
+- [ ] **Document WebSocket protocol**
+  - Test: `tests/websocket/test_protocol.py` (verify message formats)
+  - Implementation: Document all WebSocket message types in `docs/WEBSOCKET_PROTOCOL.md`
+  - Validation: Frontend and backend use consistent message formats
+  - Reference: `app.py:62-111` for current WebSocket implementation
 
 ---
 
 ## Priority 2: Core Game Features
 
-### Game Mechanics
-- [ ] Add remaining meld types validation
-  - Dependencies: None
-  - Test: `tests/engine/test_melds.py::TestChowValidation`, `TestKongValidation`
-  - Implementation: Complete chow (吃) and kong (槓) validation in `mahjong_engine/hand_validator.py`
-  - Validation: All meld tests pass
-- [ ] Implement tile discard validation
-  - Dependencies: Current player tracking
-  - Test: `tests/engine/test_game_state.py::TestDiscardValidation`
-  - Implementation: Validate only current player can discard, tile must be in hand
-  - Validation: Integration tests for discard flow
-- [ ] Add game history and replay
-  - Dependencies: Game state persistence
-  - Test: `tests/engine/test_game_history.py`
-  - Implementation: Track all actions in `mahjong_engine/game_history.py`
-  - Validation: Can replay game from history
+### 2.1 Game Mechanics Enhancement
+**Status**: Partially Complete  
+**Dependencies**: 1.1 Complete  
+**Priority**: High
 
-### AI Improvements
-- [ ] Enhance AI decision making
-  - Dependencies: Basic AI working
-  - Test: `tests/engine/test_player_agent.py::TestAIDecisions`
-  - Implementation: Add strategic tile selection, claim prioritization
-  - Validation: AI wins ~25% of games in simulation
-- [ ] Add AI difficulty levels
-  - Dependencies: Enhanced AI
-  - Test: `tests/engine/test_player_agent.py::TestDifficultyLevels`
-  - Implementation: Easy/Normal/Hard modes with different strategies
-  - Validation: Hard AI beats Easy AI consistently
+- [ ] **Implement chow (吃) validation in hand_validator.py**
+  - Test: `tests/engine/test_melds.py::TestChowValidation`
+  - Implementation: Add `can_form_chow(hand, tile)` function to `mahjong_engine/hand_validator.py`
+  - Validation: 
+    - Chow requires 3 consecutive tiles in same suit (e.g., 1-2-3 of dots)
+    - Cannot chow winds or dragons
+    - Cannot chow across suits
+  - Rules: Only player to left of discarder can claim chow
+
+- [ ] **Add chow claim API endpoint**
+  - Test: `tests/integration/test_chow_claim.py`
+  - Implementation: Add `POST /api/player_claims_chow` to `app.py`
+  - Validation: 
+    - Endpoint accepts `confirm_claim` parameter
+    - Returns updated hand and revealed sets on success
+    - Handles decline flow correctly (advance to next player)
+  - Reference: Copy pattern from `player_claims_pung` endpoint
+
+- [ ] **Implement tile discard validation**
+  - Test: `tests/engine/test_game_state.py::TestDiscardValidation`
+  - Implementation: Validate in `GameState.discard_tile_for_current_player()`
+  - Validation:
+    - Only current player can discard
+    - Tile must exist in player's hand
+    - Hand must have 14 tiles (after draw) before discard
+  - File: `mahjong_engine/game_state.py` (check existing discard logic)
+
+### 2.2 Game History & Replay
+**Status**: Not Started  
+**Dependencies**: None  
+**Priority**: Medium
+
+- [ ] **Create game history tracker**
+  - Test: `tests/engine/test_game_history.py`
+  - Implementation: Add `mahjong_engine/game_history.py` with `GameHistory` class
+  - Validation:
+    - Records all actions: deal, draw, discard, claim, win
+    - Stores player hands at each step
+    - Can serialize to JSON
+  - Format: `[{"action": "draw", "player_id": 0, "tile": "🀇", "timestamp": ...}, ...]`
+
+- [ ] **Add game history API endpoints**
+  - Test: `tests/integration/test_game_history_api.py`
+  - Implementation: Add to `app.py`:
+    - `GET /api/game_history` - Returns current game history
+    - `POST /api/save_game` - Saves game history to file
+  - Validation: Can retrieve and replay a complete game from history
 
 ---
 
 ## Priority 3: Multiplayer & Rooms
 
-### Game Room Management
-- [ ] Implement game room system
-  - Dependencies: None
-  - Test: `tests/integration/test_game_rooms.py`
-  - Implementation: Room creation, joining, leaving in `app.py`
-  - Validation: Multiple concurrent games don't interfere
-- [ ] Add room persistence
-  - Dependencies: Game room system
-  - Test: `tests/integration/test_room_persistence.py`
-  - Implementation: Save room state to Redis/PostgreSQL
-  - Validation: Can resume interrupted games
-- [ ] Implement spectator mode
-  - Dependencies: Game room system
-  - Test: `tests/integration/test_spectator_mode.py`
-  - Implementation: Allow non-players to watch games
-  - Validation: Spectators see real-time game updates
+### 3.1 Game Room Management (Phase 2 Target)
+**Status**: Not Started  
+**Dependencies**: 1.x Complete, 2.x Complete  
+**Priority**: Medium**
 
-### Session Management
-- [ ] Add player session handling
-  - Dependencies: Game room system
-  - Test: `tests/integration/test_sessions.py`
-  - Implementation: Session tokens, reconnection logic
-  - Validation: Players can reconnect after disconnect
-- [ ] Implement game state synchronization
-  - Dependencies: Session handling
-  - Test: `tests/integration/test_state_sync.py`
-  - Implementation: Sync state on reconnect, conflict resolution
-  - Validation: No desync issues in 100 game simulation
+- [ ] **Design room data model**
+  - Test: `tests/engine/test_room_model.py`
+  - Implementation: Create `mahjong_engine/room.py` with `GameRoom` class
+  - Validation: Room has unique ID, player list, game state, creation time
+  - Attributes: `room_id`, `players[]`, `game_state`, `status`, `created_at`
+
+- [ ] **Implement room creation and joining**
+  - Test: `tests/integration/test_game_rooms.py`
+  - Implementation: Add to `app.py`:
+    - `POST /api/rooms/create` - Create new room
+    - `POST /api/rooms/join` - Join existing room
+    - `POST /api/rooms/leave` - Leave room
+  - Validation: Multiple rooms can exist simultaneously without interference
+
+- [ ] **Add room listing endpoint**
+  - Test: `tests/integration/test_room_listing.py`
+  - Implementation: `GET /api/rooms/list` returns active rooms
+  - Validation: Returns room ID, player count, status for each room
+
+### 3.2 In-Memory Room Store
+**Status**: Not Started  
+**Dependencies**: 3.1  
+**Priority**: Medium**
+
+- [ ] **Create room manager singleton**
+  - Test: `tests/engine/test_room_manager.py`
+  - Implementation: `mahjong_engine/room_manager.py` with `RoomManager` class
+  - Validation:
+    - Singleton pattern (one instance across app)
+    - Thread-safe operations
+    - Automatic cleanup of stale rooms
+  - Methods: `create_room()`, `get_room()`, `delete_room()`, `list_rooms()`
 
 ---
 
 ## Priority 4: Chat & Communication
 
-### Text Chat
-- [ ] Add in-game chat system
-  - Dependencies: Game room system
-  - Test: `tests/integration/test_chat.py`
-  - Implementation: WebSocket chat in `app.py`, chat history
-  - Validation: Messages delivered to all players in room
-- [ ] Implement chat persistence
-  - Dependencies: Chat system, database
-  - Test: `tests/integration/test_chat_history.py`
-  - Implementation: Store chat in PostgreSQL
-  - Validation: Chat history available after rejoin
-- [ ] Add private messaging
-  - Dependencies: Chat system
-  - Test: `tests/integration/test_private_messages.py`
-  - Implementation: Direct messages between players
-  - Validation: Only recipient sees private message
+### 4.1 Text Chat System
+**Status**: Not Started  
+**Dependencies**: 3.1 (Room system)  
+**Priority**: Medium**
 
-### Voice Commands
-- [ ] Complete WebRTC command server
-  - Dependencies: webrtc_command_server setup
-  - Test: `tests/integration/test_voice_commands.py`
-  - Implementation: Integrate Whisper STT, command parser
-  - Validation: Voice commands trigger game actions
-- [ ] Expand voice command vocabulary
-  - Dependencies: Basic voice commands
-  - Test: `tests/integration/test_voice_vocabulary.py`
-  - Implementation: Add English commands, more tile names
-  - Validation: 90%+ recognition accuracy in tests
+- [ ] **Implement WebSocket chat protocol**
+  - Test: `tests/integration/test_chat_protocol.py`
+  - Implementation: Extend WebSocket handler in `app.py`
+  - Message Types:
+    - `chat:message` - Text message
+    - `chat:history` - Request history
+    - `chat:typing` - Typing indicator
+  - Validation: Messages broadcast to all players in same room
+
+- [ ] **Add chat persistence (in-memory)**
+  - Test: `tests/integration/test_chat_persistence.py`
+  - Implementation: Store messages in room object
+  - Validation: New joiners receive last 50 messages
+  - Format: Store timestamp, sender, message text
 
 ---
 
-## Priority 5: Video & Media
+## Priority 5: Video & Voice
 
-### Video Chat
-- [ ] Research and select SFU (Janus vs Mediasoup)
-  - Dependencies: None
-  - Implementation: Evaluation document, proof of concept
-  - Validation: Can run 4-player video call
-- [ ] Integrate Janus Gateway
-  - Dependencies: SFU selection
-  - Test: `tests/integration/test_video_chat.py`
-  - Implementation: Docker compose with Janus, signaling integration
-  - Validation: 4 players can video chat during game
-- [ ] Add screen sharing
-  - Dependencies: Video chat working
-  - Test: Manual testing
-  - Implementation: WebRTC screen capture
-  - Validation: Can share screen to other players
+### 5.1 Video Chat SFU Research
+**Status**: Not Started  
+**Dependencies**: None  
+**Priority**: Low**
+
+- [ ] **Evaluate Janus Gateway vs Mediasoup**
+  - Test: Proof of concept with both
+  - Implementation: Document in `docs/SFU_EVALUATION.md`
+  - Criteria:
+    - Ease of integration with aiohttp
+    - 4+ player support
+    - Docker deployment complexity
+    - Documentation quality
+  - Validation: Decision matrix with scores
+
+### 5.2 Voice Command Enhancement
+**Status**: Partially Complete  
+**Dependencies**: None  
+**Priority**: Low**
+
+- [ ] **Complete WebRTC command server integration**
+  - Test: `tests/integration/test_voice_commands.py`
+  - Implementation: Integrate Whisper in `webrtc_command_server/`
+  - Validation: Voice commands trigger game actions via API
+  - Reference: `SPEECH_RECOGNITION.md` for command vocabulary
 
 ---
 
 ## Priority 6: User Management
 
-### Authentication
-- [ ] Implement user registration/login
-  - Dependencies: Database
-  - Test: `tests/integration/test_auth.py`
-  - Implementation: JWT tokens, password hashing
-  - Validation: Can register, login, access protected endpoints
-- [ ] Add OAuth providers
-  - Dependencies: Auth system
-  - Test: `tests/integration/test_oauth.py`
-  - Implementation: Google, Apple, WeChat OAuth
-  - Validation: Can login with each provider
+### 6.1 Authentication Foundation
+**Status**: Not Started  
+**Dependencies**: 3.x Complete  
+**Priority**: Low**
 
-### Social Features
-- [ ] Create friend system
-  - Dependencies: User accounts
-  - Test: `tests/integration/test_friends.py`
-  - Implementation: Friend requests, list, invites
-  - Validation: Can add friends, see online status
-- [ ] Add player statistics
-  - Dependencies: User accounts, game history
-  - Test: `tests/integration/test_statistics.py`
-  - Implementation: Win/loss tracking, ELO rating
-  - Validation: Stats update correctly after games
-- [ ] Implement achievement system
-  - Dependencies: Statistics
-  - Test: `tests/integration/test_achievements.py`
-  - Implementation: Achievement definitions, unlocking
-  - Validation: Achievements unlock at correct milestones
+- [ ] **Design user data model**
+  - Test: `tests/engine/test_user_model.py`
+  - Implementation: `mahjong_engine/user.py` with `User` class
+  - Validation: Supports anonymous and authenticated users
+  - Fields: `user_id`, `username`, `created_at`, `stats` (optional)
 
----
-
-## Priority 7: Mobile & Deployment
-
-### Mobile App
-- [ ] Create mobile app prototype
-  - Dependencies: API stability
-  - Implementation: React Native or Flutter app
-  - Validation: Can play game on iOS/Android
-- [ ] Add push notifications
-  - Dependencies: Mobile app
-  - Implementation: FCM/APNs integration
-  - Validation: Notifications received when invited to game
-
-### Production Hardening
-- [ ] Add rate limiting
-  - Dependencies: None
-  - Test: `tests/integration/test_rate_limiting.py`
-  - Implementation: Redis-based rate limiting
-  - Validation: API throttles excessive requests
-- [ ] Implement proper logging
-  - Dependencies: None
-  - Implementation: Structured logging with correlation IDs
-  - Validation: Can trace request through logs
-- [ ] Add monitoring
-  - Dependencies: Deployment
-  - Implementation: Prometheus metrics, Grafana dashboards
-  - Validation: Dashboards show key metrics
+- [ ] **Implement anonymous session tokens**
+  - Test: `tests/integration/test_anonymous_sessions.py`
+  - Implementation: JWT tokens for browser sessions
+  - Validation: 
+    - Token issued on first connection
+    - Token persists across reconnects
+    - No database required for anonymous users
 
 ---
 
 ## Completed
 
-- [x] Core mahjong game engine
-- [x] WebSocket multiplayer signaling
-- [x] REST API for game actions
-- [x] Voice command recognition (iPhone/Web Speech API)
-- [x] Integration testing framework (Docker-based)
-- [x] AGENTS.md operational guide
-- [x] ARCHITECTURE.md documentation
-- [x] Ralph Wiggum loop.sh for autonomous development
+- [x] Core mahjong game engine (`mahjong_engine/`)
+  - Tile, Player, GameState, Meld classes
+  - Hand validation (win detection)
+  - AI player agent
+  - Dealer rotation system
+
+- [x] WebSocket multiplayer signaling (`app.py`)
+  - Peer connection management
+  - Message forwarding between peers
+
+- [x] REST API for game actions (`app.py`)
+  - Start new game, reset game
+  - Draw, discard tiles
+  - Pung, Kong, Win claims
+  - Dealer rotation endpoints
+
+- [x] Basic voice command recognition
+  - iPhone Web Speech API support (`voice.html`)
+  - Cantonese language support
+
+- [x] Integration testing framework
+  - Docker compose setup
+  - pytest configuration
+  - Test scripts and scenarios directory
+
+- [x] Documentation
+  - `AGENTS.md` - Build/test/run guide
+  - `ARCHITECTURE.md` - System design
+  - `instruction.md` - Testing framework guidelines
+
+---
+
+## Next Immediate Task
+
+**Task**: Add health check endpoint to app.py  
+**Priority**: Critical (blocks integration tests)  
+**File**: `app.py`  
+**Test**: `tests/integration/test_health_endpoint.py`
+
+**Steps**:
+1. Create test file `tests/integration/test_health_endpoint.py`
+2. Add `GET /health` route handler to `app.py`
+3. Run integration tests to verify
+4. Update `docker-compose.integration.yml` healthcheck if needed
+
+---
+
+## Task Dependency Graph
+
+```
+Priority 1 (Foundation)
+├── 1.1 Health endpoint ← START HERE
+├── 1.2 Scenario loader
+├── 1.3 Documentation
+│
+Priority 2 (Core Features)
+├── 2.1 Chow validation → requires 1.1
+├── 2.2 Game history → requires 1.1
+│
+Priority 3 (Multiplayer)
+├── 3.1 Room model → requires 1.x, 2.x
+├── 3.2 Room manager → requires 3.1
+│
+Priority 4 (Chat)
+├── 4.1 Chat system → requires 3.1
+│
+Priority 5 (Video/Voice)
+├── 5.1 SFU evaluation → independent
+├── 5.2 Voice commands → requires 5.1
+│
+Priority 6 (Users)
+├── 6.1 User model → requires 3.x
+└── 6.2 Sessions → requires 6.1
+```
 
 ---
 
 ## Notes
 
-### Current Blockers
-- None currently
+### Blockers
+- Integration tests need health endpoint to verify server readiness
+- Docker compose setup needs validation
 
 ### Technical Debt
-- Some integration tests need completion
-- WebRTC command server needs more work
-- Need to finalize game room architecture
+- Global game state in `app.py` needs refactoring for multi-room support
+- WebSocket message protocol needs documentation
+- Some integration tests are incomplete (chow validation missing)
 
 ### Resources Needed
-- GPU server for Whisper voice processing
-- STUN/TURN servers for WebRTC
-- PostgreSQL/Redis for production
+- GPU server for Whisper voice processing (Phase 5)
+- PostgreSQL/Redis for production persistence (Phase 3+)
+- STUN/TURN servers for WebRTC (Phase 5)
+
+### Development Guidelines
+- **Test First**: Write test before implementation
+- **One Task Per Loop**: Each task should be completable in one Ralph iteration
+- **Run Tests**: Always run `pytest -v` before completing
+- **Integration Tests**: Run `cd tests/integration && ./run-integration-tests.sh` for Docker tests
 
 ---
 
-**Next Task**: Fix and verify integration test suite
+**Next Action**: Pick the first unchecked item from Priority 1 and implement it.
