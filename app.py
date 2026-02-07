@@ -4,6 +4,7 @@ import logging
 import aiohttp_cors
 from aiohttp import web, WSMsgType
 
+from mahjong_engine.bug_report import BugReport
 from mahjong_engine.game_state import GameState
 from mahjong_engine.player_agent import AIPlayerAgent
 from mahjong_engine.room_manager import RoomManager
@@ -864,6 +865,57 @@ async def game_history(request: web.Request) -> web.Response:
     return web.json_response({"success": True, "history": history, "count": len(history)})
 
 
+async def action_log(request: web.Request) -> web.Response:
+    """Return decoded action log for the current game."""
+    global current_game_state
+    player_filter = request.rel_url.query.get("player_id")
+    if player_filter is not None:
+        try:
+            player_filter = int(player_filter)
+        except ValueError:
+            return web.json_response(
+                {"success": False, "error": "player_id must be an integer."})
+
+    decoded = current_game_state.action_log.decode(player_filter=player_filter)
+    return web.json_response(
+        {"success": True, "actions": decoded, "count": len(decoded)},
+        content_type="application/json",
+    )
+
+
+async def report_bug(request: web.Request) -> web.Response:
+    """Create a bug report capturing action log and game state.
+
+    Request body: {"description": "What went wrong..."}
+    """
+    global current_game_state
+
+    data = await request.json()
+    description = data.get("description", "").strip()
+
+    if not description:
+        return web.json_response(
+            {"success": False, "error": "description is required."})
+
+    snapshot = current_game_state.get_state_snapshot()
+    report = BugReport(
+        description=description,
+        action_log=current_game_state.action_log,
+        game_state_snapshot=snapshot,
+    )
+
+    report_dir = report.save()
+    markdown = report.to_github_markdown()
+
+    return web.json_response({
+        "success": True,
+        "bug_id": report.bug_id,
+        "report_dir": report_dir,
+        "markdown": markdown,
+        "issue_url": "https://github.com/yksi7417/signal_server/issues/new",
+    })
+
+
 @web.middleware
 async def security_headers(request: web.Request, handler):
     response = await handler(request)
@@ -893,6 +945,8 @@ app.router.add_post("/api/draw_tile", draw_tile)
 app.router.add_post("/api/discard_tile", discard_tile)
 app.router.add_post("/api/request_ai_turn", request_ai_turn)
 app.router.add_get("/api/game_history", game_history)
+app.router.add_get("/api/action_log", action_log)
+app.router.add_post("/api/report_bug", report_bug)
 app.router.add_post("/api/rooms/create", create_room)
 app.router.add_get("/api/rooms", list_rooms)
 app.router.add_get("/api/rooms/{room_id}", get_room)

@@ -1,6 +1,7 @@
 import random
 
 from .constants import INIT_HAND_SIZE, NUM_COPIES_PER_TILE, NUM_PLAYERS, TILE_CATEGORIES_FOR_GENERATION, WIND_EAST, WINDS_ALL
+from .action_log import ActionLog
 from .game_history import GameHistory
 from .game_session import get_dealer_rotation_state, assign_player_winds_globally, advance_dealer_rotation, get_current_dealer_info, set_dealer_rotation_state
 from .hand_validator import (
@@ -56,6 +57,11 @@ class GameState:
         self.winner_found = False
         self.winning_player_id = None
         self.history = GameHistory()
+        self.action_log = ActionLog()
+
+        # Record game initialization with wall order for replay
+        wall_order = [t.unicode for t in self.wall]
+        self.action_log.record("game_init", extra={"wall": wall_order})
 
         # Assign player winds based on global dealer rotation state
         assign_player_winds_globally(self.players)
@@ -121,6 +127,7 @@ class GameState:
         drawn_tile = self.wall.pop(0)
         player.hand.append(drawn_tile)
         self.history.record_action("draw", player_id=player.player_id, tile=drawn_tile.unicode)
+        self.action_log.record("draw", player_id=player.player_id, tile=drawn_tile)
         # Check for win if hand size % 3 == 2
         if len(player.hand) % 3 == 2:
             is_win = self.rules.is_winning_hand(
@@ -170,6 +177,7 @@ class GameState:
         self.current_discard = tile_object_to_discard
         player.discards.append(tile_object_to_discard)
         self.history.record_action("discard", player_id=player.player_id, tile=tile_object_to_discard.unicode)
+        self.action_log.record("discard", player_id=player.player_id, tile=tile_object_to_discard)
 
         self.potential_claim_tile = self.current_discard
         # Reset pending claims before checks
@@ -308,6 +316,7 @@ class GameState:
         print(
             f"Player {claiming_player_id} formed Pung: {new_pung} from player {discarding_player_original_index}'s discard.")
         self.history.record_action("pung", player_id=claiming_player_id, tile=claimed_tile.unicode)
+        self.action_log.record("pung", player_id=claiming_player_id, tile=claimed_tile)
 
         self.current_player_index = claiming_player_id
 
@@ -384,6 +393,7 @@ class GameState:
 
         print(f"Player {claiming_player_id} formed Chow: {new_chow} from player {discarding_player_original_index}'s discard.")
         self.history.record_action("chow", player_id=claiming_player_id, tile=claimed_tile.unicode)
+        self.action_log.record("chow", player_id=claiming_player_id, tile=claimed_tile)
 
         self.current_player_index = claiming_player_id
 
@@ -417,6 +427,7 @@ class GameState:
         self.winner_found = True
         self.winning_player_id = claiming_player_id
         self.history.record_action("win", player_id=claiming_player_id, tile=claimed_tile.unicode)
+        self.action_log.record("win", player_id=claiming_player_id, tile=claimed_tile)
 
         print(
             f"Player {claiming_player_id} has claimed WIN with tile {claimed_tile}!")        # Clear pending claim and discard information
@@ -568,6 +579,7 @@ class GameState:
         print(
             f"Player {claiming_player_id} formed Kong from player {discarding_player_original_index}'s discard.")
         self.history.record_action("kong", player_id=claiming_player_id, tile=claimed_tile.unicode)
+        self.action_log.record("kong", player_id=claiming_player_id, tile=claimed_tile)
 
         self.current_player_index = claiming_player_id
         self.current_discard = None
@@ -687,9 +699,14 @@ class GameState:
 
     def end_hand(self, winner_id=None, wall_empty=False):
         """End current hand and handle dealer rotation."""
+        self.action_log.record("end_hand", extra={
+            "winner_id": winner_id,
+            "wall_empty": wall_empty,
+        })
+
         # Use global dealer rotation to advance dealer if needed
         advance_dealer_rotation(winner_id, wall_empty)
-        
+
         # Reset game state for next hand
         self.current_player_index = self.dealer_index  # Next hand starts with dealer
         self.winner_found = False
@@ -700,3 +717,44 @@ class GameState:
         self.potential_claim_tile = None
         self.claim_type_pending = None
         self.history.clear()
+
+    def get_state_snapshot(self):
+        """Capture current game state as a serializable dict for bug reports."""
+        players_snap = []
+        for p in self.players:
+            player_data = {
+                "player_id": p.player_id,
+                "wind": p.wind,
+                "hand": [t.unicode for t in p.hand],
+                "discards": [t.unicode for t in p.discards],
+                "revealed_sets": [
+                    {
+                        "type": m.meld_type.value,
+                        "tiles": [t.unicode for t in m.raw_tiles],
+                    }
+                    for m in p.revealed_sets
+                ],
+            }
+            players_snap.append(player_data)
+
+        snapshot = {
+            "turn_number": self.turn_number,
+            "current_player_index": self.current_player_index,
+            "wall_size": len(self.wall),
+            "game_wind": self.game_wind,
+            "winner_found": self.winner_found,
+            "winning_player_id": self.winning_player_id,
+            "players": players_snap,
+        }
+
+        if self.pending_claim_player_id is not None:
+            snapshot["pending_claim"] = {
+                "player_id": self.pending_claim_player_id,
+                "claim_type": self.claim_type_pending,
+                "tile": self.potential_claim_tile.unicode if self.potential_claim_tile else None,
+            }
+
+        if self.current_discard:
+            snapshot["current_discard"] = self.current_discard.unicode
+
+        return snapshot
