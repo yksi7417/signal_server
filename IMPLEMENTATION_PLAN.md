@@ -4,7 +4,7 @@ Last updated: 2026-02-07
 
 **Status**: Planning Complete - Ready for Implementation  
 **Current Phase**: Priority 2 - Core Game Features
-**Next Task**: Task 2.2.1 (Game history tracker class)
+**Next Task**: Task 2.2.2 (Integrate history into GameState)
 **Active Branch**: claude-code
 
 ---
@@ -178,9 +178,10 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
 ### 2.2 Game History & Replay
 **Status**: Not Started | **Dependencies**: None | **Priority**: Medium
 
-#### Task 2.2.1: Create game history tracker class
+#### Task 2.2.1: Create game history tracker class ✅ COMPLETE
 **Estimated Time**: 1 iteration
 **Test-First**: Yes
+**Completed**: 2026-02-06
 
 **Implementation Steps**:
 1. **Write tests**:
@@ -205,11 +206,11 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
    - Run: `pylint mahjong_engine/game_history.py`
 
 **Acceptance Criteria**:
-- [ ] `GameHistory` class exists with all methods
-- [ ] Records all game actions with timestamps
-- [ ] JSON serialization works correctly
-- [ ] Thread-safe implementation
-- [ ] Tests pass
+- [x] `GameHistory` class exists with all methods
+- [x] Records all game actions with timestamps
+- [x] JSON serialization works correctly
+- [x] Thread-safe implementation (lock-based)
+- [x] 9 tests pass
 
 #### Task 2.2.2: Integrate history into GameState
 **Estimated Time**: 1 iteration
@@ -673,11 +674,11 @@ black mahjong_engine/  # if installed
 - Unit tests: 50+ passing (tests/engine/)
 - Integration tests: 34+ passing (tests/integration/)
 
-**Next Action**: Implement Task 2.2.1 - Create GameHistory tracker class in `mahjong_engine/game_history.py`
+**Next Action**: Implement Task 2.2.2 - Integrate GameHistory into GameState
 
 **Blockers**: None
 
-**Ready to Start**: Task 2.2.1
+**Ready to Start**: Task 2.2.2
 
 ---
 
