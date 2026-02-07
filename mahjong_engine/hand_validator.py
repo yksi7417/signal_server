@@ -185,3 +185,58 @@ def can_form_self_kong(hand):
 
     tile_counts = collections.Counter(hand)
     return [tile for tile, count in tile_counts.items() if count >= 4]
+
+
+def can_form_chow_with_discard(hand, discarded_tile, discarder_position, claimer_position):
+    """
+    Checks if a player's hand can form a Chow (sequence of 3 consecutive tiles
+    in the same numeric suit) with a given discarded tile.
+
+    Chow rules:
+    - Only the left neighbor of the discarder can claim a chow.
+    - Only numeric suits (Dots, Bamboo, Characters) can form chows.
+    - The sequence must be 3 consecutive values in the same suit.
+
+    Args:
+        hand: List of Tile objects in the player's hand.
+        discarded_tile: The Tile object that was discarded.
+        discarder_position: Seat position (0-3) of the player who discarded.
+        claimer_position: Seat position (0-3) of the player claiming the chow.
+
+    Returns:
+        True if a Chow can be formed, False otherwise.
+    """
+    if not hand or not discarded_tile:
+        return False
+
+    # Only left neighbor can claim chow
+    if (discarder_position + 1) % 4 != claimer_position:
+        return False
+
+    # Only numeric suits can form chows
+    if not discarded_tile.is_numeric_suit():
+        return False
+
+    val = int(discarded_tile.value)
+    suit = discarded_tile.suit
+
+    # Check three possible patterns where discarded_tile completes a sequence
+    # Pattern A: discard is lowest (val, val+1, val+2) — need val+1 and val+2 in hand
+    # Pattern B: discard is middle (val-1, val, val+1) — need val-1 and val+1 in hand
+    # Pattern C: discard is highest (val-2, val-1, val) — need val-2 and val-1 in hand
+
+    hand_tiles = set((t.suit, int(t.value)) for t in hand if t.is_numeric_suit())
+
+    # Pattern A: discard is lowest
+    if val <= 7 and (suit, val + 1) in hand_tiles and (suit, val + 2) in hand_tiles:
+        return True
+
+    # Pattern B: discard is middle
+    if val >= 2 and val <= 8 and (suit, val - 1) in hand_tiles and (suit, val + 1) in hand_tiles:
+        return True
+
+    # Pattern C: discard is highest
+    if val >= 3 and (suit, val - 2) in hand_tiles and (suit, val - 1) in hand_tiles:
+        return True
+
+    return False

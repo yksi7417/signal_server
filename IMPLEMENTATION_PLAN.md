@@ -3,9 +3,9 @@
 Last updated: 2026-02-07
 
 **Status**: Planning Complete - Ready for Implementation  
-**Current Phase**: Priority 2 - Core Game Features  
-**Next Task**: Task 2.1.1 (Chow validation function)  
-**Active Branch**: main
+**Current Phase**: Priority 2 - Core Game Features
+**Next Task**: Task 2.1.2 (Chow claim API endpoint)
+**Active Branch**: claude-code
 
 ---
 
@@ -62,13 +62,14 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
 
 ## Priority 2: Core Game Features 🔄 IN PROGRESS
 
-### 2.1 Chow (吃) Implementation 🎯 NEXT TASK
-**Status**: Ready to implement | **Dependencies**: Priority 1 Complete
+### 2.1 Chow (吃) Implementation 🔄 IN PROGRESS
+**Status**: Task 2.1.1 Complete, 2.1.2 Next | **Dependencies**: Priority 1 Complete
 **Rationale**: Chow is a fundamental mahjong move that's missing from the current implementation
 
-#### Task 2.1.1: Create chow validation function
+#### Task 2.1.1: Create chow validation function ✅ COMPLETE
 **Estimated Time**: 1 iteration
 **Test-First**: Yes
+**Completed**: 2026-02-06
 
 **Analysis**: 
 - Chow validation logic EXISTS in `_can_form_melds_recursive()` at lines 53-67 of hand_validator.py
@@ -98,11 +99,11 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
    - Run integration tests: `cd tests/integration && ./run-integration-tests.sh`
 
 **Acceptance Criteria**:
-- [ ] `TestChowValidation` class exists with 8+ test methods
-- [ ] `can_form_chow_with_discard()` implemented with full docstring
-- [ ] All chow tests pass
-- [ ] No regressions in existing 68 unit tests
-- [ ] No flake8/pylint errors
+- [x] `TestChowValidation` class exists with 13 test methods
+- [x] `can_form_chow_with_discard()` implemented with full docstring
+- [x] All chow tests pass
+- [x] No regressions in existing unit tests (99 total pass)
+- [x] No new flake8 errors
 
 #### Task 2.1.2: Add chow claim API endpoint
 **Estimated Time**: 1 iteration
@@ -670,11 +671,11 @@ black mahjong_engine/  # if installed
 - Unit tests: 50+ passing (tests/engine/)
 - Integration tests: 34+ passing (tests/integration/)
 
-**Next Action**: Implement Task 2.1.1 - Create `can_form_chow_with_discard()` function in `mahjong_engine/hand_validator.py`
+**Next Action**: Implement Task 2.1.2 - Add chow claim API endpoint in `app.py`
 
 **Blockers**: None
 
-**Ready to Start**: Task 2.1.1
+**Ready to Start**: Task 2.1.2
 
 ---
 
