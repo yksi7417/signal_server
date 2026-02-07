@@ -4,7 +4,7 @@ Last updated: 2026-02-07
 
 **Status**: Planning Complete - Ready for Implementation  
 **Current Phase**: Priority 3 - Multiplayer & Rooms
-**Next Task**: Task 3.1.1 (Room data model)
+**Next Task**: Task 3.1.2 (Room manager)
 **Active Branch**: claude-code
 
 ---
@@ -356,9 +356,10 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
 ### 3.1 Game Room Management
 **Status**: Not Started | **Dependencies**: Priority 2 Complete | **Priority**: Medium
 
-#### Task 3.1.1: Design and implement room data model
+#### Task 3.1.1: Design and implement room data model ✅ COMPLETE
 **Estimated Time**: 1 iteration
 **Test-First**: Yes
+**Completed**: 2026-02-06
 
 **Implementation**:
 - File: `mahjong_engine/room.py` (new file)
@@ -678,11 +679,11 @@ black mahjong_engine/  # if installed
 - Unit tests: 50+ passing (tests/engine/)
 - Integration tests: 34+ passing (tests/integration/)
 
-**Next Action**: Implement Task 3.1.1 - Design and implement room data model
+**Next Action**: Implement Task 3.1.2 - Room manager singleton
 
 **Blockers**: None
 
-**Ready to Start**: Task 3.1.1
+**Ready to Start**: Task 3.1.2
 
 ---
 
