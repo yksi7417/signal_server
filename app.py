@@ -6,6 +6,7 @@ from aiohttp import web, WSMsgType
 
 from mahjong_engine.game_state import GameState
 from mahjong_engine.player_agent import AIPlayerAgent
+from mahjong_engine.room_manager import RoomManager
 from mahjong_engine.game_session import (
     GameSession,
     reset_dealer_rotation_state,
@@ -30,6 +31,9 @@ current_game_state = GameState()
 
 # Session management for multi-game support
 game_sessions = {}
+
+# Room management for multiplayer lobbies
+room_manager = RoomManager()
 
 clients = {}
 
@@ -745,6 +749,64 @@ async def request_ai_turn(request: web.Request) -> web.Response:
         )
 
 
+async def create_room(request: web.Request) -> web.Response:
+    """Create a new game room."""
+    room = room_manager.create_room()
+    return web.json_response({"success": True, "room": room.to_dict()})
+
+
+async def get_room(request: web.Request) -> web.Response:
+    """Get room details by ID."""
+    room_id = request.match_info["room_id"]
+    room = room_manager.get_room(room_id)
+    if not room:
+        return web.json_response({"success": False, "message": "Room not found."}, status=404)
+    return web.json_response({"success": True, "room": room.to_dict()})
+
+
+async def list_rooms(request: web.Request) -> web.Response:
+    """List all active rooms."""
+    rooms = room_manager.list_rooms()
+    rooms_list = [r.to_dict() for r in rooms.values()]
+    return web.json_response({"success": True, "rooms": rooms_list, "count": len(rooms_list)})
+
+
+async def join_room(request: web.Request) -> web.Response:
+    """Join a game room."""
+    room_id = request.match_info["room_id"]
+    data = await request.json()
+    player_id = data.get("player_id")
+
+    if not player_id:
+        return web.json_response({"success": False, "message": "player_id required."})
+
+    room = room_manager.get_room(room_id)
+    if not room:
+        return web.json_response({"success": False, "message": "Room not found."}, status=404)
+
+    if room.add_player(player_id):
+        return web.json_response({"success": True, "message": f"Player {player_id} joined room.", "room": room.to_dict()})
+    return web.json_response({"success": False, "message": "Cannot join room (full or already joined)."})
+
+
+async def leave_room(request: web.Request) -> web.Response:
+    """Leave a game room."""
+    room_id = request.match_info["room_id"]
+    data = await request.json()
+    player_id = data.get("player_id")
+
+    if not player_id:
+        return web.json_response({"success": False, "message": "player_id required."})
+
+    room = room_manager.get_room(room_id)
+    if not room:
+        return web.json_response({"success": False, "message": "Room not found."}, status=404)
+
+    if room.remove_player(player_id):
+        return web.json_response({"success": True, "message": f"Player {player_id} left room.", "room": room.to_dict()})
+    return web.json_response({"success": False, "message": "Player not in room."})
+
+
 async def create_session(request: web.Request) -> web.Response:
     """Create a new game session."""
     session = GameSession()
@@ -813,6 +875,11 @@ app.router.add_post("/api/draw_tile", draw_tile)
 app.router.add_post("/api/discard_tile", discard_tile)
 app.router.add_post("/api/request_ai_turn", request_ai_turn)
 app.router.add_get("/api/game_history", game_history)
+app.router.add_post("/api/rooms/create", create_room)
+app.router.add_get("/api/rooms", list_rooms)
+app.router.add_get("/api/rooms/{room_id}", get_room)
+app.router.add_post("/api/rooms/{room_id}/join", join_room)
+app.router.add_post("/api/rooms/{room_id}/leave", leave_room)
 app.router.add_post("/api/sessions/create", create_session)
 app.router.add_get("/api/sessions", list_sessions)
 app.router.add_get("/api/sessions/{session_id}", get_session)
