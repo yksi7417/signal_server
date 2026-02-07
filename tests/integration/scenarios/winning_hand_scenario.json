@@ -1,0 +1,43 @@
+{
+  "name": "winning_hand_scenario",
+  "description": "Player 0 should win on 5-dots discard from player 3",
+  "initial_state": {
+    "player_hands": [
+      ["一筒", "二筒", "三筒", "四筒", "五筒", "六筒", "七筒", "八筒", "九筒", "東", "東", "南", "南"],
+      ["一索", "二索", "三索", "四索", "五索", "六索", "七索", "八索", "九索", "西", "西", "北", "北"],
+      ["一萬", "二萬", "三萬", "四萬", "五萬", "六萬", "七萬", "八萬", "九萬", "紅中", "紅中", "發財", "發財"],
+      ["東", "南", "西", "北", "紅中", "發財", "白板", "一筒", "二筒", "三筒", "四筒", "五筒", "六筒"]
+    ],
+    "wall": [
+      "七筒", "八筒", "九筒", "一索", "二索", "三索", "四索", "五索", "六索", "七索", "八索", "九索",
+      "一萬", "二萬", "三萬", "四萬", "五萬", "六萬", "七萬", "八萬", "九萬", "東", "南", "西", "北",
+      "紅中", "發財", "白板"
+    ],
+    "current_player": 3,
+    "game_wind": "East",
+    "round_wind": "East"
+  },
+  "actions": [
+    {"type": "draw", "player": 0, "tile": "七筒"},
+    {"type": "discard", "player": 0, "tile": "八筒"},
+    {"type": "draw", "player": 1, "tile": "八筒"},
+    {"type": "discard", "player": 1, "tile": "九筒"},
+    {"type": "draw", "player": 2, "tile": "九筒"},
+    {"type": "discard", "player": 2, "tile": "六筒"},
+    {"type": "draw", "player": 3, "tile": "六筒"},
+    {"type": "discard", "player": 3, "tile": "五筒"},
+    {"type": "claim_win", "player": 0, "claimed_tile": "五筒"}
+  ],
+  "expected_outcome": {
+    "winner": 0,
+    "winning_tile": "五筒",
+    "win_type": "claim_win",
+    "winning_hand": ["一筒", "二筒", "三筒", "四筒", "五筒", "六筒", "七筒", "九筒", "東", "東", "南", "南", "五筒"],
+    "sets": [
+      {"type": "chow", "tiles": ["一筒", "二筒", "三筒"]},
+      {"type": "chow", "tiles": ["四筒", "五筒", "六筒"]},
+      {"type": "pair", "tiles": ["東", "東"]},
+      {"type": "pair", "tiles": ["南", "南"]}
+    ]
+  }
+}

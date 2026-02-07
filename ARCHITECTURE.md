@@ -467,23 +467,372 @@ Fly.io / AWS / GCP
 └── Janus/Media Server (separate VMs)
 ```
 
+## Integration Testing Strategy
+
+### Pre-Commit Testing Requirements
+
+All code changes must pass the full integration test suite before merging to main. The integration tests validate that the game engine, HTTP API, and WebSocket functionality work together correctly according to mahjong rules.
+
+### Docker-Based Integration Test Environment
+
+#### Test Container Architecture
+
+```
+docker-compose.integration.yml
+├── signal-server (app container)
+│   ├── Exposes port 8080
+│   ├── Runs with --reload for development
+│   └── Includes test game scenarios
+├── test-runner (pytest container)
+│   ├── Waits for server health check
+│   ├── Executes full game simulation
+│   └── Validates game rules compliance
+└── test-client (headless browser)
+    ├── Simulates 4-player gameplay
+    ├── Validates WebSocket connections
+    └── Tests voice command integration
+```
+
+#### Running Integration Tests Locally
+
+```bash
+# Build and start the test environment
+docker-compose -f docker-compose.integration.yml up --build
+
+# Run full game simulation test
+docker-compose -f docker-compose.integration.yml exec test-runner pytest tests/integration/test_full_game.py -v
+
+# Run with specific scenario
+docker-compose -f docker-compose.integration.yml exec test-runner pytest tests/integration/test_scenarios.py::TestWinningScenarios -v
+
+# Cleanup
+docker-compose -f docker-compose.integration.yml down -v
+```
+
+### Sample Game Simulation Tests
+
+#### Test Scenario 1: Complete 4-Player Game
+
+**Purpose**: Verify a full game from deal to win follows all rules correctly.
+
+```python
+# tests/integration/test_full_game.py
+class TestCompleteGame:
+    """Simulate a complete mahjong game with AI players."""
+    
+    def test_full_game_flow(self):
+        """
+        1. Start new game with 4 players
+        2. Each player draws and discards tiles
+        3. Validate turn order (East -> South -> West -> North)
+        4. Verify hand sizes (13 tiles + 1 draw = 14, then discard to 13)
+        5. Test pung/kong/chow claims
+        6. Validate win condition detection
+        7. Confirm dealer rotation on win
+        8. Check final scores calculated correctly
+        """
+        
+    def test_wall_exhaustion_flow(self):
+        """
+        1. Play until wall has < 16 tiles (no more complete rounds)
+        2. Verify game ends in draw
+        3. Check scores remain unchanged
+        4. Validate next round setup
+        """
+```
+
+#### Test Scenario 2: Rules Compliance Validation
+
+```python
+# tests/integration/test_rules_compliance.py
+class TestMahjongRules:
+    """Validate game follows Hong Kong/Cantonese mahjong rules."""
+    
+    def test_initial_deal_13_tiles_per_player(self):
+        """Each player must start with exactly 13 tiles."""
+        
+    def test_only_current_player_can_draw(self):
+        """Non-current players cannot draw from wall."""
+        
+    def test_discard_before_claim(self):
+        """Claims (pung/kong/win) only valid after tile is discarded."""
+        
+    def test_winning_hand_requirements(self):
+        """
+        Winning hand must have:
+        - 4 sets (pung/kong/chow) + 1 pair
+        - OR special hands (13 orphans, etc.)
+        """
+        
+    def test_pung_priority_over_chow(self):
+        """Pung claims have priority over chow claims."""
+        
+    def test_dealer_rotation_rules(self):
+        """
+        - Dealer wins: dealer stays, round continues
+        - Non-dealer wins: dealer moves to next player
+        - 4 rounds complete (East, South, West, North winds)
+        """
+```
+
+#### Test Scenario 3: API Contract Tests
+
+```python
+# tests/integration/test_api_contract.py
+class TestAPICompliance:
+    """Verify REST API responses match expected contracts."""
+    
+    def test_start_new_game_response_format(self):
+        """
+        Response must include:
+        - player_hand: list of tile unicode strings
+        - game_wind: string (East/South/West/North)
+        - current_player_id: integer
+        - remaining_tiles: integer
+        - dealer_index: integer (0-3)
+        """
+        
+    def test_claim_responses(self):
+        """
+        All claim endpoints (/player-claims-*) must return:
+        - success: boolean
+        - message: string
+        - action: string (e.g., "discard_after_pung")
+        - winner_found: boolean
+        - player_hand: list (updated if claim accepted)
+        """
+        
+    def test_websocket_message_types(self):
+        """
+        WebSocket messages must have:
+        - type: string ("new-peer", "peer-list", "peer-disconnect", "game-action")
+        - id: string (peer identifier)
+        - Additional fields based on type
+        """
+```
+
+#### Test Scenario 4: Concurrent Multiplayer Tests
+
+```python
+# tests/integration/test_concurrent_gameplay.py
+class TestConcurrentMultiplayer:
+    """Test multiple games running simultaneously."""
+    
+    def test_four_simultaneous_games(self):
+        """
+        1. Start 4 separate game sessions
+        2. Each with 4 players (16 total connections)
+        3. Play concurrent turns
+        4. Verify game states remain isolated
+        5. No cross-contamination between games
+        """
+        
+    def test_rapid_claim_resolution(self):
+        """
+        Multiple players claim same discarded tile:
+        1. Player A discards tile X
+        2. Player B claims pung
+        3. Player C claims win
+        4. Verify priority: Win > Pung > Kong > Chow
+        5. Only highest priority claim succeeds
+        """
+```
+
+### Integration Test Data Scenarios
+
+#### Scenario Files
+
+Create JSON scenario files for reproducible tests:
+
+```json
+// tests/integration/scenarios/winning_hand_scenario.json
+{
+  "description": "Player 0 should win on 5-dots discard",
+  "initial_state": {
+    "player_hands": [
+      ["一筒", "二筒", "三筒", "四筒", "五筒", "六筒", "七筒", "八筒", "九筒", "東", "東", "南", "南"],
+      [/* player 1 hand */],
+      [/* player 2 hand */],
+      [/* player 3 hand */]
+    ],
+    "wall": ["五筒", /* remaining tiles */],
+    "current_player": 3,
+    "game_wind": "East"
+  },
+  "actions": [
+    {"type": "draw", "player": 0},
+    {"type": "discard", "player": 0, "tile": "八筒"},
+    {"type": "draw", "player": 1},
+    {"type": "discard", "player": 1, "tile": "九筒"},
+    {"type": "draw", "player": 2},
+    {"type": "discard", "player": 2, "tile": "六筒"},
+    {"type": "draw", "player": 3},
+    {"type": "discard", "player": 3, "tile": "五筒"}
+  ],
+  "expected_outcome": {
+    "winner": 0,
+    "winning_tile": "五筒",
+    "win_type": "claim_win"
+  }
+}
+```
+
+#### Test Data Loader
+
+```python
+# tests/integration/test_scenario_loader.py
+class ScenarioLoader:
+    """Load and execute game scenarios from JSON files."""
+    
+    @staticmethod
+    def load_scenario(path: str) -> GameScenario:
+        """Load scenario and return testable object."""
+        
+    @staticmethod
+    def execute_scenario(scenario: GameScenario) -> TestResult:
+        """Run scenario against server and validate outcome."""
+```
+
+### CI/CD Integration
+
+#### GitHub Actions Workflow
+
+```yaml
+# .github/workflows/integration-tests.yml
+name: Integration Tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Start test environment
+        run: docker-compose -f docker-compose.integration.yml up -d
+      
+      - name: Wait for server health
+        run: |
+          for i in {1..30}; do
+            curl -f http://localhost:8080/health && break
+            sleep 1
+          done
+      
+      - name: Run game simulation tests
+        run: |
+          docker-compose -f docker-compose.integration.yml exec -T test-runner \
+            pytest tests/integration/test_full_game.py -v --tb=short
+      
+      - name: Run rules compliance tests
+        run: |
+          docker-compose -f docker-compose.integration.yml exec -T test-runner \
+            pytest tests/integration/test_rules_compliance.py -v
+      
+      - name: Run API contract tests
+        run: |
+          docker-compose -f docker-compose.integration.yml exec -T test-runner \
+            pytest tests/integration/test_api_contract.py -v
+      
+      - name: Run concurrent multiplayer tests
+        run: |
+          docker-compose -f docker-compose.integration.yml exec -T test-runner \
+            pytest tests/integration/test_concurrent_gameplay.py -v
+      
+      - name: Generate test report
+        if: always()
+        run: |
+          docker-compose -f docker-compose.integration.yml exec -T test-runner \
+            pytest tests/integration/ --html=report.html --self-contained-html
+      
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: integration-test-report
+          path: report.html
+      
+      - name: Cleanup
+        if: always()
+        run: docker-compose -f docker-compose.integration.yml down -v
+```
+
+### Pre-Commit Hook
+
+```bash
+#!/bin/bash
+# .git/hooks/pre-commit
+
+echo "Running pre-commit integration tests..."
+
+# Build and test
+docker-compose -f docker-compose.integration.yml up --build -d
+
+# Wait for ready
+sleep 5
+
+# Run tests
+if ! docker-compose -f docker-compose.integration.yml exec -T test-runner pytest tests/integration/ -q; then
+    echo "❌ Integration tests failed!"
+    docker-compose -f docker-compose.integration.yml down -v
+    exit 1
+fi
+
+echo "✅ Integration tests passed!"
+docker-compose -f docker-compose.integration.yml down -v
+exit 0
+```
+
+### Expected Test Outcomes
+
+All integration tests must demonstrate:
+
+1. **Rule Compliance**:
+   - Turn order follows dealer rotation
+   - Hand sizes correct at all times
+   - Valid melds only (no invalid pung/kong/chow)
+   - Win conditions properly validated
+   - Scores calculated according to rules
+
+2. **State Consistency**:
+   - Game state matches API responses
+   - WebSocket broadcasts reflect state changes
+   - No race conditions in concurrent access
+   - State persists through reconnection (future feature)
+
+3. **API Stability**:
+   - Response formats match contracts
+   - Error handling returns proper HTTP codes
+   - Edge cases handled gracefully (empty wall, invalid claims)
+
+4. **Performance**:
+   - API responses < 200ms
+   - WebSocket latency < 50ms
+   - Concurrent games don't interfere
+
+### Failure Handling
+
+When tests fail:
+
+1. **Capture State**: Save game state snapshot at failure point
+2. **Log Replay**: Record all API calls leading to failure
+3. **Video Recording**: Capture browser automation replay (if using headless)
+4. **Report Generation**: HTML report with failed assertions
+5. **Notification**: Slack/Discord notification on CI failure
+
+### Test Maintenance
+
+- Update scenarios when rules change
+- Add new scenarios for bug fixes (regression tests)
+- Review and update test data quarterly
+- Keep Docker images updated (security patches)
+
 ## Monitoring & Observability
-
-### Metrics to Track
-- Concurrent games
-- WebSocket connection count
-- API response times
-- Voice recognition accuracy
-- Video call quality (bitrate, packet loss)
-- Error rates by endpoint
-
-### Tools
-- Prometheus + Grafana for metrics
-- Sentry for error tracking
-- Pino/structlog for structured logging
-- Health check endpoints
-
-## Conclusion
 
 The Signal Server project has a solid foundation with a clean separation between game logic and web concerns. The current architecture is perfect for development and small-scale deployment.
 

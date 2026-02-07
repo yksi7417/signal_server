@@ -90,6 +90,33 @@ pytest tests/engine/test_tile.py::test_tile_creation -v
 pytest -k test_tile -v
 ```
 
+### Docker-Based Integration Tests
+
+**Pre-commit Testing**: Before checking in code, run the full integration test suite in Docker to ensure gameplay follows mahjong rules.
+
+```bash
+# Run all integration tests in Docker (recommended before commits)
+cd tests/integration
+./run-integration-tests.sh
+
+# Or manually with docker-compose
+cd tests/integration
+docker-compose -f docker-compose.integration.yml up --build
+
+# Run specific test suite in Docker
+docker-compose -f docker-compose.integration.yml exec -T test-runner \
+  pytest tests/integration/test_full_game.py::TestCompleteGameFlow -v
+```
+
+**What Integration Tests Validate:**
+- Complete game flow from deal to win
+- Mahjong rules compliance (turn order, hand sizes, valid melds)
+- API response contracts
+- Game state consistency
+- Concurrent multiplayer isolation
+- Win condition detection
+- Dealer rotation rules
+
 ### Test Options
 ```bash
 # Run with timeout protection
@@ -131,8 +158,9 @@ See `.github/workflows/deploy.yml` for CI/CD configuration.
 4. **Run test again** - `pytest -v path/to/test.py` - Verify it passes (GREEN)
 5. **Run all tests** - `pytest -v` - Ensure no regressions
 6. **Run linters** - `flake8 && pylint mahjong_engine/` - Check code quality
-7. **Refactor** - Clean up code while keeping tests green
-8. **Commit** - `git add . && git commit -m "description"`
+7. **Run integration tests** - `cd tests/integration && ./run-integration-tests.sh` - Verify gameplay rules
+8. **Refactor** - Clean up code while keeping tests green
+9. **Commit** - `git add . && git commit -m "description"`
 
 ## Code Style Guidelines
 
@@ -318,6 +346,7 @@ python -m py_compile app.py
 
 ### Critical Considerations
 - **Always run tests before committing** - `pytest -v`
+- **Run Docker integration tests before merging** - `cd tests/integration && ./run-integration-tests.sh`
 - When modifying game logic, ensure engine tests still pass
 - WebSocket handlers must properly close connections on errors
 - Async/await patterns are used throughout - never block the event loop
