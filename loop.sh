@@ -64,7 +64,7 @@ while true; do
     
     # Push changes to remote after each iteration
     echo "Pushing changes to remote..."
-    git push origin master || {
+    git push origin main || {
         echo "Warning: git push failed (code: $?). Continuing..."
     }
     
