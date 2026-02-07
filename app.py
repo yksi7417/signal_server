@@ -252,6 +252,77 @@ async def player_claims_pung(request: web.Request) -> web.Response:
     return web.json_response(response)
 
 
+async def player_claims_chow(request: web.Request) -> web.Response:
+    global current_game_state
+    data = await request.json()
+    confirm_claim = data.get("confirm_claim", False)
+
+    response = {"success": False, "message": "Claim processing failed."}
+
+    if (
+        current_game_state.pending_claim_player_id is None
+        or current_game_state.potential_claim_tile is None
+        or current_game_state.claim_type_pending != "CHOW"
+    ):
+        response["message"] = "No Chow claim was pending or tile info missing."
+        return web.json_response(response)
+
+    claiming_player_id = current_game_state.pending_claim_player_id
+
+    if claiming_player_id != 0:
+        response["message"] = "Pending claim is not for the human player."
+        return web.json_response(response)
+
+    if confirm_claim:
+        claimed_tile = current_game_state.potential_claim_tile
+        success = current_game_state.process_chow_claim(claiming_player_id, claimed_tile)
+        if success:
+            player = current_game_state.players[claiming_player_id]
+            hand_serializable = [t.unicode for t in player.hand]
+            revealed_sets_serializable = [
+                {"type": meld.meld_type.value, "tiles": [t.unicode for t in meld.raw_tiles]}
+                for meld in player.revealed_sets
+            ]
+            response = {
+                "success": True,
+                "message": f"Player {claiming_player_id} claimed Chow. Your turn to discard.",
+                "player_hand": hand_serializable,
+                "revealed_sets": revealed_sets_serializable,
+                "current_player_id": current_game_state.current_player_index,
+                "action": "discard_after_chow",
+                "winner_found": current_game_state.winner_found,
+            }
+        else:
+            response["message"] = "Backend failed to process Chow claim."
+            response["winner_found"] = current_game_state.winner_found
+    else:
+        discarder_player_id = current_game_state.current_player_index
+
+        current_game_state.potential_claim_tile = None
+        current_game_state.pending_claim_player_id = None
+        current_game_state.claim_type_pending = None
+
+        current_game_state.current_player_index = (
+            discarder_player_id + 1
+        ) % len(current_game_state.players)
+        current_game_state.turn_number += 1
+
+        response = {
+            "success": True,
+            "message": "Chow claim declined. Game continues.",
+            "action": "claim_declined",
+            "next_player_id": current_game_state.players[
+                current_game_state.current_player_index
+            ].player_id,
+            "discarded_tile": current_game_state.current_discard.unicode
+            if current_game_state.current_discard
+            else None,
+            "winner_found": current_game_state.winner_found,
+        }
+
+    return web.json_response(response)
+
+
 async def player_claims_win(request: web.Request) -> web.Response:
     global current_game_state
     data = await request.json()
@@ -691,6 +762,7 @@ app.router.add_post("/api/reset_dealer_rotation", reset_dealer_rotation)
 app.router.add_post("/api/advance_dealer", advance_dealer)
 app.router.add_get("/api/get_dealer_info", get_dealer_info)
 app.router.add_post("/api/player_claims_pung", player_claims_pung)
+app.router.add_post("/api/player_claims_chow", player_claims_chow)
 app.router.add_post("/api/player_claims_win", player_claims_win)
 app.router.add_post("/api/player_claims_kong", player_claims_kong)
 app.router.add_post("/api/player_declares_hidden_kong", player_declares_hidden_kong)

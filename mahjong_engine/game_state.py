@@ -3,12 +3,13 @@ import random
 from .constants import INIT_HAND_SIZE, NUM_COPIES_PER_TILE, NUM_PLAYERS, TILE_CATEGORIES_FOR_GENERATION, WIND_EAST, WINDS_ALL
 from .game_session import get_dealer_rotation_state, assign_player_winds_globally, advance_dealer_rotation, get_current_dealer_info, set_dealer_rotation_state
 from .hand_validator import (
+    can_form_chow_with_discard,
     can_form_kong_with_discard,
     can_form_pung_with_discard,
     can_form_self_kong,
     check_standard_win,
 )
-from .melds import Kong, Pung
+from .melds import Chow, Kong, Pung
 from .player import Player
 from .player_agent import AIPlayerAgent, HumanPlayerAgent
 from .ruleset import DefaultRuleSet  # Added import for DefaultRuleSet
@@ -229,7 +230,22 @@ class GameState:
                         # AI Pung claim logic could be triggered here if AI should pre-emptively claim.
                         # Current game flow usually has AI decide on its turn.
 
-        # 3. If no claims by a human player that require UI interaction,
+        # 3. If no WIN/KONG/PUNG claim, check for CHOW (lowest priority)
+        if self.pending_claim_player_id is None:
+            # Chow can only be claimed by the left neighbor
+            left_neighbor_idx = (self.current_player_index + 1) % len(self.players)
+            left_neighbor = self.players[left_neighbor_idx]
+            if isinstance(left_neighbor.agent, HumanPlayerAgent):
+                if can_form_chow_with_discard(
+                        left_neighbor.hand, self.potential_claim_tile,
+                        self.current_player_index, left_neighbor_idx):
+                    self.pending_claim_player_id = left_neighbor.player_id
+                    self.claim_type_pending = "CHOW"
+                    print(
+                        f"Player {left_neighbor.player_id} (Human) can Chow {self.potential_claim_tile}. Waiting for UI.")
+                    return True
+
+        # 4. If no claims by a human player that require UI interaction,
         # advance turn
         if self.pending_claim_player_id is None:
             self.current_player_index = (
@@ -282,6 +298,81 @@ class GameState:
 
         print(
             f"Player {claiming_player_id} formed Pung: {new_pung} from player {discarding_player_original_index}'s discard.")
+
+        self.current_player_index = claiming_player_id
+
+        self.current_discard = None
+        self.potential_claim_tile = None
+        self.pending_claim_player_id = None
+        self.claim_type_pending = None
+
+        print(f"Player {claiming_player.player_id}'s turn. Hand size: {len(claiming_player.hand)}. Must discard.")
+        return True
+
+    def process_chow_claim(self, claiming_player_id, claimed_tile):
+        """
+        Processes a Chow claim for the specified player with the given tile.
+        Finds valid sequence tiles in hand and forms the Chow meld.
+        """
+        if claimed_tile is None or claiming_player_id is None:
+            print("Error: Claimed tile or player ID is None.")
+            return False
+
+        claiming_player = None
+        discarding_player_original_index = self.current_player_index
+
+        for p in self.players:
+            if p.player_id == claiming_player_id:
+                claiming_player = p
+                break
+
+        if not claiming_player:
+            print(f"Error: Claiming player {claiming_player_id} not found.")
+            return False
+
+        if not claimed_tile.is_numeric_suit():
+            print("Error: Chow requires numeric suit tiles.")
+            return False
+
+        val = int(claimed_tile.value)
+        suit = claimed_tile.suit
+
+        # Find which 2 tiles to remove from hand for the chow sequence
+        # Check patterns in order: lowest, middle, highest
+        hand_tile_values = {}
+        for t in claiming_player.hand:
+            if t.suit == suit and t.is_numeric_suit():
+                v = int(t.value)
+                if v not in hand_tile_values:
+                    hand_tile_values[v] = []
+                hand_tile_values[v].append(t)
+
+        tiles_to_remove = []
+
+        # Pattern A: discard is lowest (need val+1, val+2)
+        if val <= 7 and (val + 1) in hand_tile_values and (val + 2) in hand_tile_values:
+            tiles_to_remove = [hand_tile_values[val + 1][0], hand_tile_values[val + 2][0]]
+        # Pattern B: discard is middle (need val-1, val+1)
+        elif val >= 2 and val <= 8 and (val - 1) in hand_tile_values and (val + 1) in hand_tile_values:
+            tiles_to_remove = [hand_tile_values[val - 1][0], hand_tile_values[val + 1][0]]
+        # Pattern C: discard is highest (need val-2, val-1)
+        elif val >= 3 and (val - 2) in hand_tile_values and (val - 1) in hand_tile_values:
+            tiles_to_remove = [hand_tile_values[val - 2][0], hand_tile_values[val - 1][0]]
+
+        if len(tiles_to_remove) != 2:
+            print(f"Error: Could not find valid chow sequence for {claimed_tile} in player {claiming_player_id}'s hand.")
+            return False
+
+        for tile_to_remove in tiles_to_remove:
+            claiming_player.hand.remove(tile_to_remove)
+
+        chow_tiles = sorted(tiles_to_remove + [claimed_tile], key=lambda t: int(t.value))
+        new_chow = Chow(
+            chow_tiles[0], chow_tiles[1], chow_tiles[2],
+            revealed=True, claimed_from=discarding_player_original_index)
+        claiming_player.add_revealed_set(new_chow)
+
+        print(f"Player {claiming_player_id} formed Chow: {new_chow} from player {discarding_player_original_index}'s discard.")
 
         self.current_player_index = claiming_player_id
 

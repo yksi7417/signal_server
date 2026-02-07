@@ -24,8 +24,8 @@ from mahjong_engine.constants import (
 )
 from mahjong_engine.game_state import GameState
 from mahjong_engine.game_session import reset_dealer_rotation_state
-from mahjong_engine.hand_validator import can_form_pung_with_discard
-from mahjong_engine.melds import MeldType, Pung
+from mahjong_engine.hand_validator import can_form_chow_with_discard, can_form_pung_with_discard
+from mahjong_engine.melds import MeldType, Pung, Chow
 from mahjong_engine.player import Player
 from mahjong_engine.player_agent import AIPlayerAgent, HumanPlayerAgent
 from mahjong_engine.tile import Tile
@@ -879,3 +879,111 @@ class TestWinDetectionWithDealerRotation:
         assert game.winner_found is False
         assert game.winning_player_id is None
         assert game.turn_number == 0
+
+
+class TestChowIntegration:
+    """Tests for chow claim integration in GameState."""
+
+    def test_process_chow_claim_successful(self, game):
+        """process_chow_claim removes correct tiles and creates Chow meld."""
+        player = game.players[0]
+        # Give player a hand with tiles that can form a chow with 5-dots
+        player.hand = [
+            Tile(SUIT_DOTS, '4'), Tile(SUIT_DOTS, '6'),
+            Tile(SUIT_BAMBOO, '1'), Tile(SUIT_BAMBOO, '2'),
+            Tile(SUIT_CHARACTERS, '7'), Tile(SUIT_CHARACTERS, '8'),
+            Tile(SUIT_CHARACTERS, '9'),
+        ]
+        claimed_tile = Tile(SUIT_DOTS, '5')
+        game.current_player_index = 3  # discarder is player 3
+        game.potential_claim_tile = claimed_tile
+
+        initial_hand_size = len(player.hand)
+        success = game.process_chow_claim(0, claimed_tile)
+
+        assert success is True
+        assert len(player.hand) == initial_hand_size - 2
+        assert len(player.revealed_sets) == 1
+        assert player.revealed_sets[0].meld_type == MeldType.CHOW
+        assert player.revealed_sets[0].revealed is True
+        # Current player should be the claimer
+        assert game.current_player_index == 0
+        # Claim state should be cleared
+        assert game.pending_claim_player_id is None
+        assert game.claim_type_pending is None
+
+    def test_process_chow_claim_invalid_no_tiles(self, game):
+        """process_chow_claim fails when hand doesn't have sequence tiles."""
+        player = game.players[0]
+        player.hand = [Tile(SUIT_DOTS, '1'), Tile(SUIT_DOTS, '9')]
+        claimed_tile = Tile(SUIT_DOTS, '5')
+        game.current_player_index = 3
+
+        success = game.process_chow_claim(0, claimed_tile)
+        assert success is False
+
+    def test_process_chow_claim_none_inputs(self, game):
+        """process_chow_claim fails with None inputs."""
+        assert game.process_chow_claim(None, Tile(SUIT_DOTS, '5')) is False
+        assert game.process_chow_claim(0, None) is False
+
+    def test_process_chow_claim_honor_tile_rejected(self, game):
+        """Chow cannot be formed with honor tiles."""
+        player = game.players[0]
+        player.hand = [Tile(SUIT_WINDS, 'South'), Tile(SUIT_WINDS, 'West')]
+
+        success = game.process_chow_claim(0, Tile(SUIT_WINDS, 'East'))
+        assert success is False
+
+    def test_discard_triggers_chow_opportunity(self, game):
+        """When AI (player 3) discards, human (player 0) gets chow opportunity."""
+        # Set up: player 3 is current, player 0 is left neighbor
+        game.current_player_index = 3
+        player_0 = game.players[0]
+        # Give player 0 tiles for a chow
+        player_0.hand = [
+            Tile(SUIT_DOTS, '2'), Tile(SUIT_DOTS, '3'),
+            Tile(SUIT_BAMBOO, '5'), Tile(SUIT_BAMBOO, '6'),
+            Tile(SUIT_CHARACTERS, '1'), Tile(SUIT_CHARACTERS, '2'),
+            Tile(SUIT_CHARACTERS, '3'),
+        ]
+        # Player 3 has a valid hand for discard
+        player_3 = game.players[3]
+        player_3.hand = [
+            Tile(SUIT_DOTS, '1'), Tile(SUIT_BAMBOO, '7'),
+            Tile(SUIT_BAMBOO, '8'), Tile(SUIT_BAMBOO, '9'),
+            Tile(SUIT_CHARACTERS, '4'), Tile(SUIT_CHARACTERS, '5'),
+            Tile(SUIT_CHARACTERS, '6'), Tile(SUIT_CHARACTERS, '7'),
+        ]
+
+        discard_repr = {'suit': SUIT_DOTS, 'value': '1'}
+        game.discard_tile_for_current_player(discard_repr)
+
+        # Player 0 should have a chow claim opportunity
+        assert game.pending_claim_player_id == 0
+        assert game.claim_type_pending == "CHOW"
+
+    def test_chow_lower_priority_than_pung(self, game):
+        """Pung claim takes priority over chow claim."""
+        game.current_player_index = 3
+        # Player 0 can chow AND pung the discarded tile
+        player_0 = game.players[0]
+        player_0.hand = [
+            Tile(SUIT_DOTS, '1'), Tile(SUIT_DOTS, '1'),  # Can pung
+            Tile(SUIT_DOTS, '2'), Tile(SUIT_DOTS, '3'),   # Can also chow with 1-dot
+            Tile(SUIT_BAMBOO, '5'), Tile(SUIT_BAMBOO, '6'),
+            Tile(SUIT_CHARACTERS, '7'),
+        ]
+        player_3 = game.players[3]
+        player_3.hand = [
+            Tile(SUIT_DOTS, '1'), Tile(SUIT_BAMBOO, '7'),
+            Tile(SUIT_BAMBOO, '8'), Tile(SUIT_BAMBOO, '9'),
+            Tile(SUIT_CHARACTERS, '4'), Tile(SUIT_CHARACTERS, '5'),
+            Tile(SUIT_CHARACTERS, '6'), Tile(SUIT_CHARACTERS, '7'),
+        ]
+
+        discard_repr = {'suit': SUIT_DOTS, 'value': '1'}
+        game.discard_tile_for_current_player(discard_repr)
+
+        # Should be PUNG, not CHOW (pung has higher priority)
+        assert game.claim_type_pending == "PUNG"

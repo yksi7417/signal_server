@@ -4,7 +4,7 @@ Last updated: 2026-02-07
 
 **Status**: Planning Complete - Ready for Implementation  
 **Current Phase**: Priority 2 - Core Game Features
-**Next Task**: Task 2.1.2 (Chow claim API endpoint)
+**Next Task**: Task 2.2.1 (Game history tracker class)
 **Active Branch**: claude-code
 
 ---
@@ -62,8 +62,8 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
 
 ## Priority 2: Core Game Features 🔄 IN PROGRESS
 
-### 2.1 Chow (吃) Implementation 🔄 IN PROGRESS
-**Status**: Task 2.1.1 Complete, 2.1.2 Next | **Dependencies**: Priority 1 Complete
+### 2.1 Chow (吃) Implementation ✅ COMPLETE
+**Status**: All tasks complete | **Dependencies**: Priority 1 Complete
 **Rationale**: Chow is a fundamental mahjong move that's missing from the current implementation
 
 #### Task 2.1.1: Create chow validation function ✅ COMPLETE
@@ -105,10 +105,11 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
 - [x] No regressions in existing unit tests (99 total pass)
 - [x] No new flake8 errors
 
-#### Task 2.1.2: Add chow claim API endpoint
+#### Task 2.1.2: Add chow claim API endpoint ✅ COMPLETE
 **Estimated Time**: 1 iteration
 **Dependencies**: Task 2.1.1 Complete
 **Test-First**: Yes
+**Completed**: 2026-02-06
 
 **Implementation Steps**:
 1. **Write tests**:
@@ -134,16 +135,17 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
    - Test via curl: `curl -X POST http://localhost:8080/api/player_claims_chow -H "Content-Type: application/json" -d '{"confirm_claim":true,"tile_to_chow":"1-dot"}'`
 
 **Acceptance Criteria**:
-- [ ] `POST /api/player_claims_chow` endpoint responds correctly
-- [ ] Endpoint validates chow legality before accepting
-- [ ] Updates game state correctly on success
-- [ ] Handles decline flow (advances to next player)
-- [ ] Integration tests pass
+- [x] `POST /api/player_claims_chow` endpoint responds correctly
+- [x] Endpoint validates chow legality before accepting
+- [x] Updates game state correctly on success
+- [x] Handles decline flow (advances to next player)
+- [x] Unit tests pass (105 total)
 
-#### Task 2.1.3: Integrate chow into game state logic
+#### Task 2.1.3: Integrate chow into game state logic ✅ COMPLETE
 **Estimated Time**: 1 iteration
 **Dependencies**: Task 2.1.2 Complete
 **Test-First**: Yes
+**Completed**: 2026-02-06 (merged with 2.1.2)
 
 **Implementation Steps**:
 1. **Write tests**:
@@ -167,11 +169,11 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
    - Run Docker tests: `cd tests/integration && ./run-integration-tests.sh`
 
 **Acceptance Criteria**:
-- [ ] `process_chow_claim()` method exists in GameState
-- [ ] Method validates turn order correctly
-- [ ] Hand and revealed sets updated correctly
-- [ ] Game state advances properly after chow
-- [ ] All tests pass
+- [x] `process_chow_claim()` method exists in GameState
+- [x] Method validates turn order correctly
+- [x] Hand and revealed sets updated correctly
+- [x] Game state advances properly after chow
+- [x] All tests pass (105 total)
 
 ### 2.2 Game History & Replay
 **Status**: Not Started | **Dependencies**: None | **Priority**: Medium
@@ -671,11 +673,11 @@ black mahjong_engine/  # if installed
 - Unit tests: 50+ passing (tests/engine/)
 - Integration tests: 34+ passing (tests/integration/)
 
-**Next Action**: Implement Task 2.1.2 - Add chow claim API endpoint in `app.py`
+**Next Action**: Implement Task 2.2.1 - Create GameHistory tracker class in `mahjong_engine/game_history.py`
 
 **Blockers**: None
 
-**Ready to Start**: Task 2.1.2
+**Ready to Start**: Task 2.2.1
 
 ---
 
