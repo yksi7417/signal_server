@@ -3,8 +3,8 @@
 Last updated: 2026-02-07
 
 **Status**: Planning Complete - Ready for Implementation  
-**Current Phase**: Priority 3 - Multiplayer & Rooms
-**Next Task**: Task 3.1.4 (Room-based WebSocket messaging)
+**Current Phase**: Priority 4 - Chat & Communication
+**Next Task**: Task 4.1.1 (Chat message data model)
 **Active Branch**: claude-code
 
 ---
@@ -399,10 +399,11 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
 - Test: `tests/integration/test_game_rooms.py`
 - Validation: `pytest tests/integration/test_game_rooms.py -v`
 
-#### Task 3.1.4: Add room-based WebSocket messaging
+#### Task 3.1.4: Add room-based WebSocket messaging ✅ COMPLETE
 **Estimated Time**: 1 iteration
 **Dependencies**: Task 3.1.3 Complete
 **Test-First**: Yes
+**Completed**: 2026-02-06
 
 **Implementation**:
 - File: `app.py` (extend `websocket_handler`)
@@ -681,11 +682,11 @@ black mahjong_engine/  # if installed
 - Unit tests: 50+ passing (tests/engine/)
 - Integration tests: 34+ passing (tests/integration/)
 
-**Next Action**: Implement Task 3.1.4 - Room-based WebSocket messaging
+**Next Action**: Implement Task 4.1.1 - Chat message data model
 
 **Blockers**: None
 
-**Ready to Start**: Task 3.1.4
+**Ready to Start**: Task 4.1.1
 
 ---
 

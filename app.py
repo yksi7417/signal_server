@@ -7,6 +7,7 @@ from aiohttp import web, WSMsgType
 from mahjong_engine.game_state import GameState
 from mahjong_engine.player_agent import AIPlayerAgent
 from mahjong_engine.room_manager import RoomManager
+from mahjong_engine.ws_room_tracker import WebSocketRoomTracker
 from mahjong_engine.game_session import (
     GameSession,
     reset_dealer_rotation_state,
@@ -34,6 +35,9 @@ game_sessions = {}
 
 # Room management for multiplayer lobbies
 room_manager = RoomManager()
+
+# WebSocket room-based peer tracking
+ws_room_tracker = WebSocketRoomTracker()
 
 clients = {}
 
@@ -75,12 +79,14 @@ async def websocket_handler(request: web.Request):
     logger.debug("Headers: %s", dict(request.headers))
 
     client_id = None
+    room_id = None
 
     msg = await ws.receive()
     if msg.type == WSMsgType.TEXT:
         try:
             client_info = json.loads(msg.data)
             client_id = client_info["id"]
+            room_id = client_info.get("room_id", "lobby")
         except Exception as e:
             logger.error("Invalid JSON message: %s", e)
             await ws.close()
@@ -90,15 +96,19 @@ async def websocket_handler(request: web.Request):
         return ws
 
     clients[client_id] = ws
+    ws_room_tracker.register(client_id, room_id)
 
-    for other_id, other_ws in clients.items():
-        if other_ws != ws:
-            await other_ws.send_str(
-                json.dumps({"type": "new-peer", "id": client_id})
+    # Notify only peers in the same room
+    room_peers = ws_room_tracker.get_room_peers(client_id)
+    for peer_id in room_peers:
+        if peer_id in clients:
+            await clients[peer_id].send_str(
+                json.dumps({"type": "new-peer", "id": client_id, "room_id": room_id})
             )
 
+    # Send peer list (only peers in the same room)
     await ws.send_str(
-        json.dumps({"type": "peer-list", "peers": [pid for pid in clients if pid != client_id]})
+        json.dumps({"type": "peer-list", "peers": room_peers, "room_id": room_id})
     )
 
     try:
@@ -106,15 +116,23 @@ async def websocket_handler(request: web.Request):
             if msg.type == WSMsgType.TEXT:
                 data = json.loads(msg.data)
                 to_id = data.get("to")
-                if to_id in clients:
+                if to_id and to_id in clients:
                     await clients[to_id].send_str(msg.data)
+                elif data.get("type") == "room-broadcast":
+                    # Broadcast to all peers in the same room
+                    for peer_id in ws_room_tracker.get_room_peers(client_id):
+                        if peer_id in clients:
+                            await clients[peer_id].send_str(msg.data)
     finally:
+        ws_room_tracker.unregister(client_id)
         if client_id in clients:
             del clients[client_id]
-            for other_ws in clients.values():
-                await other_ws.send_str(
-                    json.dumps({"type": "peer-disconnect", "id": client_id})
-                )
+            # Notify only room peers of disconnect
+            for peer_id in ws_room_tracker.clients_in_room(room_id):
+                if peer_id in clients:
+                    await clients[peer_id].send_str(
+                        json.dumps({"type": "peer-disconnect", "id": client_id, "room_id": room_id})
+                    )
 
     return ws
 
