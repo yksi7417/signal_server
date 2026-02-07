@@ -4,7 +4,7 @@ Last updated: 2026-02-07
 
 **Status**: Planning Complete - Ready for Implementation  
 **Current Phase**: Priority 4 - Chat & Communication
-**Next Task**: Task 4.1.1 (Chat message data model)
+**Next Task**: Task 4.1.2 (In-memory chat persistence)
 **Active Branch**: claude-code
 
 ---
@@ -421,10 +421,11 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
 ### 4.1 Text Chat System
 **Status**: Not Started | **Dependencies**: Priority 3 Complete | **Priority**: Medium
 
-#### Task 4.1.1: Implement chat message data model
+#### Task 4.1.1: Implement chat message data model ✅ COMPLETE
 **Estimated Time**: 1 iteration
 **Dependencies**: Task 3.1 Complete
 **Test-First**: Yes
+**Completed**: 2026-02-06
 
 **Implementation**:
 - File: `mahjong_engine/chat.py` (new file)
@@ -682,11 +683,11 @@ black mahjong_engine/  # if installed
 - Unit tests: 50+ passing (tests/engine/)
 - Integration tests: 34+ passing (tests/integration/)
 
-**Next Action**: Implement Task 4.1.1 - Chat message data model
+**Next Action**: Implement Task 4.1.2 - In-memory chat persistence
 
 **Blockers**: None
 
-**Ready to Start**: Task 4.1.1
+**Ready to Start**: Task 4.1.2
 
 ---
 
