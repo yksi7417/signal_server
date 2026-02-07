@@ -1,5 +1,8 @@
 """Global game session management for persistent dealer rotation across hands."""
 
+import uuid
+from datetime import datetime
+
 from .dealer_rotation import DealerRotationState
 
 # Global dealer rotation state that persists across game resets
@@ -61,3 +64,49 @@ def set_dealer_rotation_state(dealer_index, round_wind):
         round_wind: Current round wind
     """
     _global_dealer_rotation.set_state(dealer_index, round_wind)
+
+
+class GameSession:
+    """Represents a game session with unique ID, timestamps, and game state.
+
+    Wraps a GameState with session-level metadata for multi-session support.
+    """
+
+    def __init__(self, session_id=None):
+        from .game_state import GameState
+
+        self.session_id = session_id or str(uuid.uuid4())
+        self.created_at = datetime.utcnow().isoformat()
+        self.last_activity = self.created_at
+        self.game_state = GameState()
+
+    def update_activity(self):
+        """Update the last_activity timestamp to now."""
+        self.last_activity = datetime.utcnow().isoformat()
+
+    def to_dict(self):
+        """Serialize session metadata to dictionary.
+
+        Returns:
+            dict: Session metadata (session_id, created_at, last_activity).
+        """
+        return {
+            "session_id": self.session_id,
+            "created_at": self.created_at,
+            "last_activity": self.last_activity,
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        """Reconstruct a GameSession from a serialized dictionary.
+
+        Args:
+            data: Dictionary with session_id, created_at, last_activity.
+
+        Returns:
+            GameSession: Restored session instance.
+        """
+        session = cls(session_id=data["session_id"])
+        session.created_at = data["created_at"]
+        session.last_activity = data["last_activity"]
+        return session

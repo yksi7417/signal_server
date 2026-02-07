@@ -4,7 +4,7 @@ Last updated: 2026-02-07
 
 **Status**: Planning Complete - Ready for Implementation  
 **Current Phase**: Priority 2 - Core Game Features
-**Next Task**: Task 2.3.1 (Complete GameSession class)
+**Next Task**: Task 2.3.2 (Session management API)
 **Active Branch**: claude-code
 
 ---
@@ -275,9 +275,10 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
 ### 2.3 Game Session Management
 **Status**: Partial (game_session.py exists) | **Dependencies**: None | **Priority**: Medium
 
-#### Task 2.3.1: Complete GameSession class implementation
+#### Task 2.3.1: Complete GameSession class implementation ✅ COMPLETE
 **Estimated Time**: 1 iteration
 **Test-First**: Yes
+**Completed**: 2026-02-06
 
 **Current State**:
 - File: `mahjong_engine/game_session.py` exists (64 lines)
@@ -308,11 +309,11 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
    - Run all engine tests: `pytest tests/engine/ -v`
 
 **Acceptance Criteria**:
-- [ ] GameSession has unique UUID
-- [ ] Tracks creation and last activity times
-- [ ] Can serialize/deserialize game state
-- [ ] Supports multiple concurrent sessions
-- [ ] Tests pass
+- [x] GameSession has unique UUID
+- [x] Tracks creation and last activity times (ISO 8601)
+- [x] to_dict/from_dict serialization works
+- [x] Each instance wraps its own GameState
+- [x] 7 tests pass, 128 total
 
 #### Task 2.3.2: Add session management API
 **Estimated Time**: 1 iteration
@@ -676,11 +677,11 @@ black mahjong_engine/  # if installed
 - Unit tests: 50+ passing (tests/engine/)
 - Integration tests: 34+ passing (tests/integration/)
 
-**Next Action**: Implement Task 2.3.1 - Complete GameSession class with UUIDs and serialization
+**Next Action**: Implement Task 2.3.2 - Add session management API endpoints
 
 **Blockers**: None
 
-**Ready to Start**: Task 2.3.1
+**Ready to Start**: Task 2.3.2
 
 ---
 
