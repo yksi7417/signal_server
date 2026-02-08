@@ -58,6 +58,7 @@ class GameState:
         self.winner_found = False
         self.winning_player_id = None
         self.action_log = ActionLog()
+        self.history = GameHistory()
 
         # Record game initialization with wall order for replay
         wall_order = [t.unicode for t in self.wall]
@@ -92,7 +93,8 @@ class GameState:
 
     def get_history(self):
         """Return the game action history."""
-        return self.history.get_history()
+        # Use action_log instead of separate history for consistency
+        return self.action_log.decode()
 
     def deal_tiles(self):
         for player in self.players:
@@ -743,6 +745,9 @@ class GameState:
 
         # Use global dealer rotation to advance dealer if needed
         advance_dealer_rotation(winner_id, wall_empty)
+
+        # Clear action log for new hand (fresh start)
+        self.action_log.clear()
 
         # Reset game state for next hand
         self.current_player_index = self.dealer_index  # Next hand starts with dealer

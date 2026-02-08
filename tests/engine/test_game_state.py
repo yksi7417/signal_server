@@ -1054,9 +1054,13 @@ class TestGameHistoryIntegration:
 
     def test_get_history_method(self, game):
         """get_history() returns action list."""
-        assert game.get_history() == []
+        # game_init is always recorded at creation
+        history = game.get_history()
+        assert len(history) >= 1
+        assert history[0]["action"] == "game_init"
+
         game.draw_tile_for_current_player()
-        assert len(game.get_history()) >= 1
+        assert len(game.get_history()) >= 2
 
     def test_end_hand_clears_history(self, game):
         """end_hand() clears the history for the new hand."""

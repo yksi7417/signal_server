@@ -199,7 +199,7 @@ class TestScenarioLoader:
     
     def load_scenario(self, filename: str) -> Dict[str, Any]:
         """Load a scenario from JSON file."""
-        with open(f"{self.SCENARIOS_DIR}/{filename}", "r") as f:
+        with open(f"{self.SCENARIOS_DIR}/{filename}", "r", encoding='utf-8') as f:
             return json.load(f)
     
     def test_winning_hand_scenario(self):
