@@ -27,7 +27,8 @@
       "Bash(python -m pytest:*)",
       "Bash(python -m py_compile:*)",
       "Bash(del C:dvlpsignal_serverPLAN.md)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(ls:*)"
     ]
   }
 }
