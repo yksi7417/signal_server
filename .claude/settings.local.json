@@ -28,7 +28,9 @@
       "Bash(python -m py_compile:*)",
       "Bash(del C:dvlpsignal_serverPLAN.md)",
       "Bash(python:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

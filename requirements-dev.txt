@@ -1,0 +1,12 @@
+# Development and UI testing dependencies
+# Install with: pip install -r requirements.txt -r requirements-dev.txt
+
+# UI Testing
+pytest-playwright==0.6.2
+playwright==1.49.1
+
+# Additional development tools (if needed)
+# scipy==1.15.3
+# vosk==0.3.45
+# srt==3.5.3
+# tqdm==4.67.1
