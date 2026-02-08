@@ -4,6 +4,7 @@ import logging
 import aiohttp_cors
 from aiohttp import web, WSMsgType
 
+<<<<<<< HEAD
 try:
     from github import Github
     GITHUB_AVAILABLE = True
@@ -11,10 +12,15 @@ except ImportError:
     GITHUB_AVAILABLE = False
     print("Warning: PyGithub not installed. GitHub issue creation will be disabled.")
 
+=======
+>>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
 from mahjong_engine.bug_report import BugReport
 from mahjong_engine.game_state import GameState
 from mahjong_engine.player_agent import AIPlayerAgent
+from mahjong_engine.room_manager import RoomManager
+from mahjong_engine.ws_room_tracker import WebSocketRoomTracker
 from mahjong_engine.game_session import (
+    GameSession,
     reset_dealer_rotation_state,
     advance_dealer_rotation,
     get_current_dealer_info,
@@ -34,6 +40,15 @@ WS_ENDPOINTS = {
 }
 
 current_game_state = GameState()
+
+# Session management for multi-game support
+game_sessions = {}
+
+# Room management for multiplayer lobbies
+room_manager = RoomManager()
+
+# WebSocket room-based peer tracking
+ws_room_tracker = WebSocketRoomTracker()
 
 clients = {}
 
@@ -75,12 +90,14 @@ async def websocket_handler(request: web.Request):
     logger.debug("Headers: %s", dict(request.headers))
 
     client_id = None
+    room_id = None
 
     msg = await ws.receive()
     if msg.type == WSMsgType.TEXT:
         try:
             client_info = json.loads(msg.data)
             client_id = client_info["id"]
+            room_id = client_info.get("room_id", "lobby")
         except Exception as e:
             logger.error("Invalid JSON message: %s", e)
             await ws.close()
@@ -90,15 +107,19 @@ async def websocket_handler(request: web.Request):
         return ws
 
     clients[client_id] = ws
+    ws_room_tracker.register(client_id, room_id)
 
-    for other_id, other_ws in clients.items():
-        if other_ws != ws:
-            await other_ws.send_str(
-                json.dumps({"type": "new-peer", "id": client_id})
+    # Notify only peers in the same room
+    room_peers = ws_room_tracker.get_room_peers(client_id)
+    for peer_id in room_peers:
+        if peer_id in clients:
+            await clients[peer_id].send_str(
+                json.dumps({"type": "new-peer", "id": client_id, "room_id": room_id})
             )
 
+    # Send peer list (only peers in the same room)
     await ws.send_str(
-        json.dumps({"type": "peer-list", "peers": [pid for pid in clients if pid != client_id]})
+        json.dumps({"type": "peer-list", "peers": room_peers, "room_id": room_id})
     )
 
     try:
@@ -106,15 +127,23 @@ async def websocket_handler(request: web.Request):
             if msg.type == WSMsgType.TEXT:
                 data = json.loads(msg.data)
                 to_id = data.get("to")
-                if to_id in clients:
+                if to_id and to_id in clients:
                     await clients[to_id].send_str(msg.data)
+                elif data.get("type") == "room-broadcast":
+                    # Broadcast to all peers in the same room
+                    for peer_id in ws_room_tracker.get_room_peers(client_id):
+                        if peer_id in clients:
+                            await clients[peer_id].send_str(msg.data)
     finally:
+        ws_room_tracker.unregister(client_id)
         if client_id in clients:
             del clients[client_id]
-            for other_ws in clients.values():
-                await other_ws.send_str(
-                    json.dumps({"type": "peer-disconnect", "id": client_id})
-                )
+            # Notify only room peers of disconnect
+            for peer_id in ws_room_tracker.clients_in_room(room_id):
+                if peer_id in clients:
+                    await clients[peer_id].send_str(
+                        json.dumps({"type": "peer-disconnect", "id": client_id, "room_id": room_id})
+                    )
 
     return ws
 
@@ -749,6 +778,106 @@ async def request_ai_turn(request: web.Request) -> web.Response:
         )
 
 
+<<<<<<< HEAD
+=======
+async def create_room(request: web.Request) -> web.Response:
+    """Create a new game room."""
+    room = room_manager.create_room()
+    return web.json_response({"success": True, "room": room.to_dict()})
+
+
+async def get_room(request: web.Request) -> web.Response:
+    """Get room details by ID."""
+    room_id = request.match_info["room_id"]
+    room = room_manager.get_room(room_id)
+    if not room:
+        return web.json_response({"success": False, "message": "Room not found."}, status=404)
+    return web.json_response({"success": True, "room": room.to_dict()})
+
+
+async def list_rooms(request: web.Request) -> web.Response:
+    """List all active rooms."""
+    rooms = room_manager.list_rooms()
+    rooms_list = [r.to_dict() for r in rooms.values()]
+    return web.json_response({"success": True, "rooms": rooms_list, "count": len(rooms_list)})
+
+
+async def join_room(request: web.Request) -> web.Response:
+    """Join a game room."""
+    room_id = request.match_info["room_id"]
+    data = await request.json()
+    player_id = data.get("player_id")
+
+    if not player_id:
+        return web.json_response({"success": False, "message": "player_id required."})
+
+    room = room_manager.get_room(room_id)
+    if not room:
+        return web.json_response({"success": False, "message": "Room not found."}, status=404)
+
+    if room.add_player(player_id):
+        return web.json_response({"success": True, "message": f"Player {player_id} joined room.", "room": room.to_dict()})
+    return web.json_response({"success": False, "message": "Cannot join room (full or already joined)."})
+
+
+async def leave_room(request: web.Request) -> web.Response:
+    """Leave a game room."""
+    room_id = request.match_info["room_id"]
+    data = await request.json()
+    player_id = data.get("player_id")
+
+    if not player_id:
+        return web.json_response({"success": False, "message": "player_id required."})
+
+    room = room_manager.get_room(room_id)
+    if not room:
+        return web.json_response({"success": False, "message": "Room not found."}, status=404)
+
+    if room.remove_player(player_id):
+        return web.json_response({"success": True, "message": f"Player {player_id} left room.", "room": room.to_dict()})
+    return web.json_response({"success": False, "message": "Player not in room."})
+
+
+async def create_session(request: web.Request) -> web.Response:
+    """Create a new game session."""
+    session = GameSession()
+    game_sessions[session.session_id] = session
+    return web.json_response({
+        "success": True,
+        "session_id": session.session_id,
+        "created_at": session.created_at,
+    })
+
+
+async def get_session(request: web.Request) -> web.Response:
+    """Get session state by ID."""
+    session_id = request.match_info["session_id"]
+    session = game_sessions.get(session_id)
+    if not session:
+        return web.json_response({"success": False, "message": "Session not found."}, status=404)
+    session.update_activity()
+    data = session.to_dict()
+    data["success"] = True
+    data["player_count"] = len(session.game_state.players)
+    return web.json_response(data)
+
+
+async def list_sessions(request: web.Request) -> web.Response:
+    """List all active sessions."""
+    sessions_list = [
+        {"session_id": s.session_id, "created_at": s.created_at, "last_activity": s.last_activity}
+        for s in game_sessions.values()
+    ]
+    return web.json_response({"success": True, "sessions": sessions_list, "count": len(sessions_list)})
+
+
+async def game_history(request: web.Request) -> web.Response:
+    global current_game_state
+    history = current_game_state.get_history()
+    return web.json_response({"success": True, "history": history, "count": len(history)})
+
+
+>>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
 async def action_log(request: web.Request) -> web.Response:
     """Return decoded action log for the current game."""
     global current_game_state
@@ -771,10 +900,13 @@ async def report_bug(request: web.Request) -> web.Response:
     """Create a bug report capturing action log and game state.
 
     Request body: {"description": "What went wrong..."}
+<<<<<<< HEAD
 
     Environment variables:
         GITHUB_TOKEN: Personal access token for automatic issue creation (optional)
         GITHUB_REPO: Repository in format "owner/repo" (default: "yksi7417/signal_server")
+=======
+>>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
     """
     global current_game_state
 
@@ -795,6 +927,7 @@ async def report_bug(request: web.Request) -> web.Response:
     report_dir = report.save()
     markdown = report.to_github_markdown()
 
+<<<<<<< HEAD
     # Try to automatically create GitHub issue
     github_token = os.getenv("GITHUB_TOKEN")
     github_repo = os.getenv("GITHUB_REPO", "yksi7417/signal_server")
@@ -829,10 +962,14 @@ async def report_bug(request: web.Request) -> web.Response:
         issue_url = f"https://github.com/{github_repo}/issues/new"
 
     response = {
+=======
+    return web.json_response({
+>>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
         "success": True,
         "bug_id": report.bug_id,
         "report_dir": report_dir,
         "markdown": markdown,
+<<<<<<< HEAD
         "issue_url": issue_url,
         "auto_created": auto_created,
     }
@@ -841,6 +978,10 @@ async def report_bug(request: web.Request) -> web.Response:
         response["issue_number"] = issue_number
 
     return web.json_response(response)
+=======
+        "issue_url": "https://github.com/yksi7417/signal_server/issues/new",
+    })
+>>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
 
 
 @web.middleware
@@ -871,8 +1012,22 @@ app.router.add_post("/api/player_declares_hidden_kong", player_declares_hidden_k
 app.router.add_post("/api/draw_tile", draw_tile)
 app.router.add_post("/api/discard_tile", discard_tile)
 app.router.add_post("/api/request_ai_turn", request_ai_turn)
+<<<<<<< HEAD
 app.router.add_get("/api/action_log", action_log)
 app.router.add_post("/api/report_bug", report_bug)
+=======
+app.router.add_get("/api/game_history", game_history)
+app.router.add_get("/api/action_log", action_log)
+app.router.add_post("/api/report_bug", report_bug)
+app.router.add_post("/api/rooms/create", create_room)
+app.router.add_get("/api/rooms", list_rooms)
+app.router.add_get("/api/rooms/{room_id}", get_room)
+app.router.add_post("/api/rooms/{room_id}/join", join_room)
+app.router.add_post("/api/rooms/{room_id}/leave", leave_room)
+app.router.add_post("/api/sessions/create", create_session)
+app.router.add_get("/api/sessions", list_sessions)
+app.router.add_get("/api/sessions/{session_id}", get_session)
+>>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
 app.router.add_get("/voice.html", voice_handler)
 app.router.add_get("/voice_command.html", voice_command_handler)
 app.router.add_get("/ws", websocket_handler)

@@ -7,6 +7,10 @@ Provides encode/decode, parquet save/load, and a CLI reader.
 import json
 import os
 import sys
+<<<<<<< HEAD
+=======
+import time
+>>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
 import threading
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
@@ -16,6 +20,11 @@ import pyarrow.parquet as pq
 
 from .constants import (
     SUIT_CHARACTERS, SUIT_BAMBOO, SUIT_DOTS, SUIT_WINDS, SUIT_DRAGONS,
+<<<<<<< HEAD
+=======
+    WIND_EAST, WIND_SOUTH, WIND_WEST, WIND_NORTH,
+    DRAGON_RED, DRAGON_GREEN, DRAGON_WHITE,
+>>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
     TILE_VALUES_NUMERIC, WINDS_ALL, DRAGONS_ALL,
 )
 
@@ -44,16 +53,26 @@ _TILE_TO_ID = {None: 0}
 _ID_TO_TILE = {0: None}
 
 _id = 1
+<<<<<<< HEAD
 for _suit, _values in [
+=======
+for suit, values in [
+>>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
     (SUIT_CHARACTERS, TILE_VALUES_NUMERIC),
     (SUIT_BAMBOO, TILE_VALUES_NUMERIC),
     (SUIT_DOTS, TILE_VALUES_NUMERIC),
     (SUIT_WINDS, WINDS_ALL),
     (SUIT_DRAGONS, DRAGONS_ALL),
 ]:
+<<<<<<< HEAD
     for _val in _values:
         _TILE_TO_ID[(_suit, _val)] = _id
         _ID_TO_TILE[_id] = (_suit, _val)
+=======
+    for val in values:
+        _TILE_TO_ID[(suit, val)] = _id
+        _ID_TO_TILE[_id] = (suit, val)
+>>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
         _id += 1
 
 

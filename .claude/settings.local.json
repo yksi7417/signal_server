@@ -1,6 +1,7 @@
 {
   "permissions": {
     "allow": [
+<<<<<<< HEAD
       "Bash(pip freeze:*)",
       "Bash(python -m py_compile:*)",
       "Bash(if [ -f .env.example ])",
@@ -23,6 +24,12 @@
       "Bash(python -m pytest:*)",
       "Bash(gh issue list:*)",
       "Bash(python -c \"\nimport requests\nimport json\n\ntoken = ''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''\nheaders = {\n    ''Authorization'': f''token {token}'',\n    ''Accept'': ''application/vnd.github.v3+json''\n}\n\nresponse = requests.get\\(''https://api.github.com/repos/yksi7417/signal_server/issues?state=open&per_page=100'', headers=headers\\)\n\nif response.status_code == 200:\n    issues = response.json\\(\\)\n    print\\(f''Found {len\\(issues\\)} open issues:\\\\n''\\)\n    for issue in issues:\n        print\\(f''#{issue[\"\"number\"\"]}: {issue[\"\"title\"\"]}''\\)\n        print\\(f''   URL: {issue[\"\"html_url\"\"]}''\\)\n        print\\(f''   Labels: {[label[\"\"name\"\"] for label in issue[\"\"labels\"\"]]}''\\)\n        print\\(f''   Created: {issue[\"\"created_at\"\"]}''\\)\n        print\\(\\)\nelse:\n    print\\(f''Error: {response.status_code}''\\)\n    print\\(response.text\\)\n\")"
+=======
+      "Bash(pip install:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(python -m py_compile:*)",
+      "Bash(del C:dvlpsignal_serverPLAN.md)"
+>>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
     ]
   }
 }

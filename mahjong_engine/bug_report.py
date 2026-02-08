@@ -62,16 +62,27 @@ class BugReport:
         }
         json_path = os.path.join(report_dir, "report.json")
         with open(json_path, "w", encoding="utf-8") as f:
+<<<<<<< HEAD
+=======
+            json.dumps(metadata, ensure_ascii=False, indent=2)
+>>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
             f.write(json.dumps(metadata, ensure_ascii=False, indent=2))
 
         return report_dir
 
+<<<<<<< HEAD
     def to_github_markdown(self, max_actions=None):
+=======
+    def to_github_markdown(self, max_actions=50):
+>>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
         """Generate markdown suitable for a GitHub issue body.
 
         Args:
             max_actions: Maximum number of recent actions to include.
+<<<<<<< HEAD
                         None or 0 = show all actions (default).
+=======
+>>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
 
         Returns:
             str: Markdown-formatted bug report.
@@ -120,12 +131,17 @@ class BugReport:
                     )
                 lines.append("")
 
+<<<<<<< HEAD
         # Action log
+=======
+        # Recent actions
+>>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
         decoded = self.action_log.decode()
         total = len(decoded)
         if total > 0:
             lines.append("### Action Log")
             lines.append("")
+<<<<<<< HEAD
 
             # Show all actions by default, or limit if max_actions is specified
             if max_actions and max_actions > 0 and total > max_actions:
@@ -134,6 +150,11 @@ class BugReport:
             else:
                 lines.append(f"_Showing all {total} actions_")
 
+=======
+            if total > max_actions:
+                lines.append(f"_Showing last {max_actions} of {total} actions_")
+                decoded = decoded[-max_actions:]
+>>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
             lines.append("")
             lines.append("| # | Player | Action | Tile |")
             lines.append("|---|--------|--------|------|")
