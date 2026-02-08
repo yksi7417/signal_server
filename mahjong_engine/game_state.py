@@ -177,6 +177,9 @@ class GameState:
         player.discards.append(tile_object_to_discard)
         self.action_log.record("discard", player_id=player.player_id, tile=tile_object_to_discard)
 
+        # Record state snapshot after each discard for debugging
+        self.action_log.record_state_snapshot(self.get_state_snapshot())
+
         self.potential_claim_tile = self.current_discard
         # Reset pending claims before checks
         self.pending_claim_player_id = None
@@ -327,6 +330,7 @@ class GameState:
         except UnicodeEncodeError:
             print(f"Player {claiming_player_id} formed Pung from player {discarding_player_original_index}'s discard.")
         self.action_log.record("pung", player_id=claiming_player_id, tile=claimed_tile)
+        self.action_log.record_state_snapshot(self.get_state_snapshot())
 
         self.current_player_index = claiming_player_id
 
@@ -409,6 +413,7 @@ class GameState:
         except UnicodeEncodeError:
             print(f"Player {claiming_player_id} formed Chow from player {discarding_player_original_index}'s discard.")
         self.action_log.record("chow", player_id=claiming_player_id, tile=claimed_tile)
+        self.action_log.record_state_snapshot(self.get_state_snapshot())
 
         self.current_player_index = claiming_player_id
 
@@ -458,6 +463,7 @@ class GameState:
         self.winner_found = True
         self.winning_player_id = claiming_player_id
         self.action_log.record("win", player_id=claiming_player_id, tile=claimed_tile)
+        self.action_log.record_state_snapshot(self.get_state_snapshot())
 
         print(
             f"Player {claiming_player_id} has claimed WIN with tile {claimed_tile}!")        # Clear pending claim and discard information
@@ -609,6 +615,7 @@ class GameState:
         print(
             f"Player {claiming_player_id} formed Kong from player {discarding_player_original_index}'s discard.")
         self.action_log.record("kong", player_id=claiming_player_id, tile=claimed_tile)
+        self.action_log.record_state_snapshot(self.get_state_snapshot())
 
         self.current_player_index = claiming_player_id
         self.current_discard = None
@@ -732,6 +739,7 @@ class GameState:
             "winner_id": winner_id,
             "wall_empty": wall_empty,
         })
+        self.action_log.record_state_snapshot(self.get_state_snapshot())
 
         # Use global dealer rotation to advance dealer if needed
         advance_dealer_rotation(winner_id, wall_empty)

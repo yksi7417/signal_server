@@ -30,6 +30,7 @@ ACTION_CODES = {
     "hidden_kong": 6,
     "win": 7,
     "end_hand": 8,
+    "snapshot": 9,
 }
 ACTION_NAMES = {v: k for k, v in ACTION_CODES.items()}
 
@@ -130,6 +131,23 @@ class ActionLog:
         with self._lock:
             self._entries.append(entry)
             self._seq += 1
+
+    def record_state_snapshot(self, game_state_snapshot):
+        """Record a game state snapshot for debugging.
+
+        This stores a complete snapshot of the game state at a specific point,
+        making it easier to debug issues by seeing the full context.
+
+        Args:
+            game_state_snapshot: Dict with game state (from GameState.get_state_snapshot())
+        """
+        # Record as a special "snapshot" action with full state in extra
+        self.record(
+            action_type="snapshot",
+            player_id=None,
+            tile=None,
+            extra=game_state_snapshot
+        )
 
     @property
     def count(self):
