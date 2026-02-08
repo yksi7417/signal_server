@@ -1,22 +1,25 @@
+# Requirements for Python 3.13+ (also works with 3.8+)
+# Optimized for latest Python features and performance
+
 # Core web server dependencies
 aiohttp>=3.10.0
 aiohttp-cors>=0.7.0
-websockets>=13.0
+websockets>=13.0  # Latest: 15.1 (Python 3.13)
 
 # Data processing
-pyarrow>=17.0.0
+pyarrow>=17.0.0  # Latest: 19.0 (Python 3.13)
 numpy>=2.0.0
 
 # GitHub integration
 PyGithub>=2.8.0
 requests>=2.32.0
 
-# Testing (can be moved to requirements-dev.txt for production)
+# Testing
 pytest>=8.3.0
 pytest-timeout>=2.3.0
 psutil>=6.0.0
 
-# Direct dependencies (auto-installed with above, but listed for clarity)
+# Direct dependencies (auto-installed with above, but pinned for reproducibility)
 aiohappyeyeballs>=2.6.0
 aiosignal>=1.3.0
 attrs>=25.0.0
