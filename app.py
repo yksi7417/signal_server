@@ -4,7 +4,6 @@ import logging
 import aiohttp_cors
 from aiohttp import web, WSMsgType
 
-<<<<<<< HEAD
 try:
     from github import Github
     GITHUB_AVAILABLE = True
@@ -12,8 +11,6 @@ except ImportError:
     GITHUB_AVAILABLE = False
     print("Warning: PyGithub not installed. GitHub issue creation will be disabled.")
 
-=======
->>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
 from mahjong_engine.bug_report import BugReport
 from mahjong_engine.game_state import GameState
 from mahjong_engine.player_agent import AIPlayerAgent
@@ -778,8 +775,6 @@ async def request_ai_turn(request: web.Request) -> web.Response:
         )
 
 
-<<<<<<< HEAD
-=======
 async def create_room(request: web.Request) -> web.Response:
     """Create a new game room."""
     room = room_manager.create_room()
@@ -877,7 +872,6 @@ async def game_history(request: web.Request) -> web.Response:
     return web.json_response({"success": True, "history": history, "count": len(history)})
 
 
->>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
 async def action_log(request: web.Request) -> web.Response:
     """Return decoded action log for the current game."""
     global current_game_state
@@ -900,13 +894,10 @@ async def report_bug(request: web.Request) -> web.Response:
     """Create a bug report capturing action log and game state.
 
     Request body: {"description": "What went wrong..."}
-<<<<<<< HEAD
 
     Environment variables:
         GITHUB_TOKEN: Personal access token for automatic issue creation (optional)
         GITHUB_REPO: Repository in format "owner/repo" (default: "yksi7417/signal_server")
-=======
->>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
     """
     global current_game_state
 
@@ -927,7 +918,6 @@ async def report_bug(request: web.Request) -> web.Response:
     report_dir = report.save()
     markdown = report.to_github_markdown()
 
-<<<<<<< HEAD
     # Try to automatically create GitHub issue
     github_token = os.getenv("GITHUB_TOKEN")
     github_repo = os.getenv("GITHUB_REPO", "yksi7417/signal_server")
@@ -962,14 +952,10 @@ async def report_bug(request: web.Request) -> web.Response:
         issue_url = f"https://github.com/{github_repo}/issues/new"
 
     response = {
-=======
-    return web.json_response({
->>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
         "success": True,
         "bug_id": report.bug_id,
         "report_dir": report_dir,
         "markdown": markdown,
-<<<<<<< HEAD
         "issue_url": issue_url,
         "auto_created": auto_created,
     }
@@ -978,10 +964,6 @@ async def report_bug(request: web.Request) -> web.Response:
         response["issue_number"] = issue_number
 
     return web.json_response(response)
-=======
-        "issue_url": "https://github.com/yksi7417/signal_server/issues/new",
-    })
->>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
 
 
 @web.middleware
@@ -1012,10 +994,6 @@ app.router.add_post("/api/player_declares_hidden_kong", player_declares_hidden_k
 app.router.add_post("/api/draw_tile", draw_tile)
 app.router.add_post("/api/discard_tile", discard_tile)
 app.router.add_post("/api/request_ai_turn", request_ai_turn)
-<<<<<<< HEAD
-app.router.add_get("/api/action_log", action_log)
-app.router.add_post("/api/report_bug", report_bug)
-=======
 app.router.add_get("/api/game_history", game_history)
 app.router.add_get("/api/action_log", action_log)
 app.router.add_post("/api/report_bug", report_bug)
@@ -1027,7 +1005,6 @@ app.router.add_post("/api/rooms/{room_id}/leave", leave_room)
 app.router.add_post("/api/sessions/create", create_session)
 app.router.add_get("/api/sessions", list_sessions)
 app.router.add_get("/api/sessions/{session_id}", get_session)
->>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
 app.router.add_get("/voice.html", voice_handler)
 app.router.add_get("/voice_command.html", voice_command_handler)
 app.router.add_get("/ws", websocket_handler)

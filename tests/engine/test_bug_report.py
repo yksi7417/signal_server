@@ -133,7 +133,6 @@ class TestBugReport:
         md = report.to_github_markdown(max_actions=10)
         assert "Showing last 10" in md
 
-<<<<<<< HEAD
     def test_to_github_markdown_shows_all_actions_by_default(self):
         """By default, all actions should be shown (not truncated)."""
         log = self._make_log_with_actions(75)
@@ -145,8 +144,6 @@ class TestBugReport:
         assert "| 0 |" in md  # First action
         assert "| 150 |" in md  # Last action (0-indexed)
 
-=======
->>>>>>> 45e16b8178c4ff0a18775514e95795d458c77023
     def test_to_github_markdown_contains_bug_id(self):
         log = self._make_log_with_actions()
         report = BugReport("ID check", log)
