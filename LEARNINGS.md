@@ -219,6 +219,37 @@ Fixed all 33 integration tests and resolved Docker dependency conflicts for fly.
 
 **5. Test Results**: 249 total passing tests (216 unit + 33 integration)
 
+## 2026-02-08 (PM): Bug #30 - Parquet File Gist Attachment Fix
+
+### Issue
+GitHub issues created successfully but parquet files not attached as gists.
+
+### Root Cause
+Silent failures: missing file checks, generic exceptions, no logging, empty action logs not detected.
+
+### Solution
+- Added file existence and size logging
+- Specific exception handling (FileNotFoundError, PermissionError)
+- Empty action log detection
+- Cross-platform base64 decode instructions (PowerShell + Linux)
+- exc_info=True for stack traces
+
+### Cross-Platform Tools
+Created `autonomous_loop.py` - Python script works on Windows PowerShell AND Linux:
+```bash
+python autonomous_loop.py --dry-run    # Test mode
+python autonomous_loop.py --max-bugs 5 # Fix bugs
+```
+
+Created `POWERSHELL_SETUP.md` - Complete Windows development guide
+
+### Key Learnings
+1. Check file existence before operations
+2. Use specific exceptions, not generic Exception
+3. Add detailed logging with file sizes
+4. Python scripts > Shell scripts for cross-platform
+5. Provide platform-specific instructions
+
 ---
 
 **Key Principle**: "Capture everything for debugging" - The more context we save during gameplay, the easier it is to reproduce and fix bugs.
