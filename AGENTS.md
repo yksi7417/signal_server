@@ -32,7 +32,16 @@ signal_server/
 │   ├── ruleset.py         # Game rules
 │   ├── melds.py           # Meld (set) logic
 │   ├── player_agent.py    # AI player agent
-│   └── constants.py       # Game constants
+│   ├── constants.py       # Game constants
+│   ├── chat.py            # ChatMessage data model
+│   ├── chat_protocol.py   # WebSocket chat message handlers
+│   ├── room.py            # GameRoom with chat persistence
+│   ├── room_manager.py    # Room management singleton
+│   ├── ws_room_tracker.py # WebSocket room-based peer tracking
+│   ├── game_history.py    # Game history tracker
+│   ├── game_session.py    # Game session management
+│   ├── action_log.py      # Persistent action logging (parquet)
+│   └── bug_report.py      # Bug report generation
 ├── tests/                  # Test suite
 │   ├── engine/            # Unit tests for game engine
 │   ├── integration/       # Integration tests (require server)

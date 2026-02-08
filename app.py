@@ -16,6 +16,7 @@ from mahjong_engine.game_state import GameState
 from mahjong_engine.player_agent import AIPlayerAgent
 from mahjong_engine.room_manager import RoomManager
 from mahjong_engine.ws_room_tracker import WebSocketRoomTracker
+from mahjong_engine.chat_protocol import handle_chat_message, handle_chat_history, handle_chat_typing
 from mahjong_engine.game_session import (
     GameSession,
     reset_dealer_rotation_state,
@@ -123,10 +124,31 @@ async def websocket_handler(request: web.Request):
         async for msg in ws:
             if msg.type == WSMsgType.TEXT:
                 data = json.loads(msg.data)
+                msg_type = data.get("type", "")
                 to_id = data.get("to")
-                if to_id and to_id in clients:
+
+                if msg_type in ("chat:message", "chat:history", "chat:typing"):
+                    room = room_manager.get_room(room_id)
+                    if msg_type == "chat:message":
+                        result = handle_chat_message(data, room)
+                    elif msg_type == "chat:history":
+                        result = handle_chat_history(data, room)
+                    else:
+                        result = handle_chat_typing(data, room)
+
+                    result_json = json.dumps(result)
+                    if result.get("success") and msg_type in ("chat:message", "chat:typing"):
+                        # Broadcast to all peers in room (including sender)
+                        await ws.send_str(result_json)
+                        for peer_id in ws_room_tracker.get_room_peers(client_id):
+                            if peer_id in clients:
+                                await clients[peer_id].send_str(result_json)
+                    else:
+                        # Send response only to requester
+                        await ws.send_str(result_json)
+                elif to_id and to_id in clients:
                     await clients[to_id].send_str(msg.data)
-                elif data.get("type") == "room-broadcast":
+                elif msg_type == "room-broadcast":
                     # Broadcast to all peers in the same room
                     for peer_id in ws_room_tracker.get_room_peers(client_id):
                         if peer_id in clients:

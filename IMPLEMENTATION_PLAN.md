@@ -2,10 +2,10 @@
 
 Last updated: 2026-02-07
 
-**Status**: Planning Complete - Ready for Implementation  
-**Current Phase**: Priority 4 - Chat & Communication
-**Next Task**: Task 4.1.2 (In-memory chat persistence)
-**Active Branch**: claude-code
+**Status**: Planning Complete - Ready for Implementation
+**Current Phase**: Priority 5 - Video & Voice
+**Next Task**: Task 5.1.1 (Evaluate SFU options)
+**Active Branch**: main
 
 ---
 
@@ -416,10 +416,10 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
 
 ---
 
-## Priority 4: Chat & Communication ⏳ PLANNED
+## Priority 4: Chat & Communication ✅ COMPLETE
 
 ### 4.1 Text Chat System
-**Status**: Not Started | **Dependencies**: Priority 3 Complete | **Priority**: Medium
+**Status**: Complete | **Dependencies**: Priority 3 Complete | **Priority**: Medium
 
 #### Task 4.1.1: Implement chat message data model ✅ COMPLETE
 **Estimated Time**: 1 iteration
@@ -434,33 +434,53 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
 - Test: `tests/engine/test_chat_message.py`
 - Validation: `pytest tests/engine/test_chat_message.py -v`
 
-#### Task 4.1.2: Implement in-memory chat persistence
+#### Task 4.1.2: Implement in-memory chat persistence ✅ COMPLETE
 **Estimated Time**: 1 iteration
 **Dependencies**: Task 4.1.1 Complete
 **Test-First**: Yes
+**Completed**: 2026-02-07
 
 **Implementation**:
 - File: `mahjong_engine/room.py` (add to Room class)
 - Features:
-  - Store last 100 messages (circular buffer)
-  - New joiners receive message history
+  - Store last 100 messages (circular buffer via `deque(maxlen=100)`)
+  - New joiners receive message history via `get_messages_as_dicts()`
+  - `add_message()`, `get_messages()`, `message_count`, `clear_messages()`
 - Test: `tests/engine/test_chat_persistence.py`
 - Validation: `pytest tests/engine/test_chat_persistence.py -v`
 
-#### Task 4.1.3: Implement WebSocket chat protocol
+**Acceptance Criteria**:
+- [x] Circular buffer stores last 100 messages
+- [x] `get_messages()` returns copy (not internal reference)
+- [x] `get_messages_as_dicts()` returns serialized messages for new joiners
+- [x] 8 tests pass
+
+#### Task 4.1.3: Implement WebSocket chat protocol ✅ COMPLETE
 **Estimated Time**: 1 iteration
 **Dependencies**: Task 4.1.2 Complete
 **Test-First**: Yes
+**Completed**: 2026-02-08
 
 **Implementation**:
-- File: `app.py` (extend WebSocket handler)
+- File: `mahjong_engine/chat_protocol.py` (new - transport-agnostic handlers)
+- File: `app.py` (extend WebSocket handler with chat message routing)
 - Message Types:
-  - `chat:message` - Text message
-  - `chat:history` - Request history
-  - `chat:typing` - Typing indicator
-  - `chat:system` - System messages
-- Test: `tests/integration/test_chat_protocol.py`
-- Validation: `pytest tests/integration/test_chat_protocol.py -v`
+  - `chat:message` - Text message (broadcast to room)
+  - `chat:history` - Request history (response to sender only)
+  - `chat:typing` - Typing indicator (broadcast to room)
+  - `chat:system` - System messages (via message_type field)
+- Test: `tests/engine/test_chat_protocol.py`
+- Validation: `pytest tests/engine/test_chat_protocol.py -v`
+
+**Acceptance Criteria**:
+- [x] `handle_chat_message()` validates and stores messages in room
+- [x] `handle_chat_history()` returns serialized message history
+- [x] `handle_chat_typing()` returns typing indicator broadcast data
+- [x] Input validation: rejects empty content, missing sender, None room
+- [x] WebSocket handler routes chat:* messages to protocol handlers
+- [x] chat:message and chat:typing broadcast to all room peers
+- [x] chat:history responds only to requester
+- [x] 14 unit tests pass, 230 total
 
 ---
 
@@ -680,17 +700,17 @@ black mahjong_engine/  # if installed
 ## Current Status Summary
 
 **Test Count**:
-- Unit tests: 50+ passing (tests/engine/)
+- Unit tests: 230 passing (tests/engine/)
 - Integration tests: 34+ passing (tests/integration/)
 
-**Next Action**: Implement Task 4.1.2 - In-memory chat persistence
+**Next Action**: Task 5.1.1 - Evaluate SFU options (research)
 
 **Blockers**: None
 
-**Ready to Start**: Task 4.1.2
+**Ready to Start**: Task 5.1.1
 
 ---
 
-**Last Updated**: 2026-02-07
-**Version**: 2.0
+**Last Updated**: 2026-02-08
+**Version**: 2.1
 **Status**: Planning Complete
