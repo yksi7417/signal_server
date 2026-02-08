@@ -5,25 +5,50 @@ import { displayHand, displayRevealedSets } from './tileDisplay.js';
 
 export function showClaimPrompt(tile, claimType) {
     store.activeClaimType = claimType;
-    
-    // Clear any existing claim timeout
+
+    // Clear any existing claim timeout and countdown
     if (store.claimTimeoutId) {
         clearTimeout(store.claimTimeoutId);
         store.claimTimeoutId = null;
     }
-    
+    if (store.claimCountdownId) {
+        clearInterval(store.claimCountdownId);
+        store.claimCountdownId = null;
+    }
+
+    // Initialize countdown
+    store.claimCountdownSeconds = Math.floor(store.CLAIM_TIMEOUT_MS / 1000);
+
     if (claimType === "SELF_DRAW_WIN") {
+        // Update initial message
         elements.playerConsoleEl.textContent =
-            `You drew ${tile} and can WIN! Do you want to claim WIN? (5s timeout)`;
-        
-        // No auto-timeout for self-draw wins - let player decide
+            `You drew ${tile} and can WIN! Do you want to claim WIN? (${store.claimCountdownSeconds}s)`;
+
+        // Start countdown display (but no auto-decline for self-draw wins)
+        store.claimCountdownId = setInterval(() => {
+            store.claimCountdownSeconds--;
+            if (store.claimCountdownSeconds > 0 && elements.playerConsoleEl) {
+                elements.playerConsoleEl.textContent =
+                    `You drew ${tile} and can WIN! Do you want to claim WIN? (${store.claimCountdownSeconds}s)`;
+            }
+        }, 1000);
     } else {
+        // Update initial message
         elements.playerConsoleEl.textContent =
-            `Player discarded ${tile}. Do you want to claim ${claimType}? (Auto-decline in 5s)`;
-        
-        // Set timeout to automatically decline Pung/Kong claims
+            `Player discarded ${tile}. Do you want to claim ${claimType}? (Auto-decline in ${store.claimCountdownSeconds}s)`;
+
+        // Start countdown display
+        store.claimCountdownId = setInterval(() => {
+            store.claimCountdownSeconds--;
+            if (store.claimCountdownSeconds > 0 && elements.playerConsoleEl) {
+                elements.playerConsoleEl.textContent =
+                    `Player discarded ${tile}. Do you want to claim ${claimType}? (Auto-decline in ${store.claimCountdownSeconds}s)`;
+            }
+        }, 1000);
+
+        // Set timeout to automatically decline claims
         store.claimTimeoutId = setTimeout(() => {
-            console.log(`Auto-declining ${claimType} claim after 5 seconds`);
+            console.log(`Auto-declining ${claimType} claim after ${store.CLAIM_TIMEOUT_MS / 1000} seconds`);
             if (elements.playerConsoleEl) {
                 elements.playerConsoleEl.textContent = `Auto-declined ${claimType} claim due to timeout.`;
             }
@@ -38,12 +63,16 @@ export function showClaimPrompt(tile, claimType) {
 }
 
 export function hideClaimPrompt() {
-    // Clear any active claim timeout
+    // Clear any active claim timeout and countdown
     if (store.claimTimeoutId) {
         clearTimeout(store.claimTimeoutId);
         store.claimTimeoutId = null;
     }
-    
+    if (store.claimCountdownId) {
+        clearInterval(store.claimCountdownId);
+        store.claimCountdownId = null;
+    }
+
     if (elements.btnClaimNo) elements.btnClaimNo.disabled = true;
     if (elements.btnClaimYes) elements.btnClaimYes.disabled = true;
 }
@@ -54,9 +83,11 @@ export async function handleClaimYes() {
         clearTimeout(store.claimTimeoutId);
         store.claimTimeoutId = null;
     }
-    
+
     if (store.activeClaimType === 'PUNG') {
         await handleClaimPungYes();
+    } else if (store.activeClaimType === 'CHOW') {
+        await handleClaimChowYes();
     } else if (store.activeClaimType === 'KONG') {
         await handleClaimKongYes();
     } else if (store.activeClaimType === 'WIN' || store.activeClaimType === 'SELF_DRAW_WIN') {
@@ -70,9 +101,11 @@ export async function handleClaimNo() {
         clearTimeout(store.claimTimeoutId);
         store.claimTimeoutId = null;
     }
-    
+
     if (store.activeClaimType === 'PUNG') {
         await handleClaimPungNo();
+    } else if (store.activeClaimType === 'CHOW') {
+        await handleClaimChowNo();
     } else if (store.activeClaimType === 'KONG') {
         await handleClaimKongNo();
     } else if (store.activeClaimType === 'WIN' || store.activeClaimType === 'SELF_DRAW_WIN') {
@@ -102,6 +135,48 @@ export async function handleClaimPungNo() {
     if (store.currentGameInfo.winner_found) return;
 
     const response = await fetch('/api/player_claims_pung', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm_claim: false })
+    });
+    const result = await response.json();
+    hideClaimPrompt();
+
+    if (elements.playerConsoleEl) {
+        elements.playerConsoleEl.textContent = result.message;
+    }
+
+    if (result && result.success && result.action === "claim_declined") {
+        handleClaimDeclined(result);
+    } else {
+        if (result?.winner_found !== undefined) {
+            store.currentGameInfo.winner_found = result.winner_found;
+        }
+    }
+}
+
+export async function handleClaimChowYes() {
+    if (store.currentGameInfo.winner_found) return;
+
+    const response = await fetch('/api/player_claims_chow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm_claim: true })
+    });
+    const result = await response.json();
+    hideClaimPrompt();
+
+    if (result && result.success) {
+        handleSuccessfulChowClaim(result);
+    } else {
+        handleFailedChowClaim(result);
+    }
+}
+
+export async function handleClaimChowNo() {
+    if (store.currentGameInfo.winner_found) return;
+
+    const response = await fetch('/api/player_claims_chow', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ confirm_claim: false })
@@ -176,6 +251,32 @@ function handleSuccessfulClaim(result) {
 function handleFailedPungClaim(result) {
     if (elements.playerConsoleEl && result) {
         elements.playerConsoleEl.textContent = "Error claiming Pung: " + (result.message || "Unknown");
+    }
+    if (result?.winner_found !== undefined) {
+        store.currentGameInfo.winner_found = result.winner_found;
+    }
+}
+
+function handleSuccessfulChowClaim(result) {
+    if (elements.playerConsoleEl) {
+        elements.playerConsoleEl.textContent = result.message;
+    }
+    displayHand(result.player_hand);
+    displayRevealedSets(result.revealed_sets);
+
+    store.currentGameInfo.winner_found = result.winner_found;
+    store.currentGameInfo.winning_player_id = result.winning_player_id;
+
+    if (store.currentGameInfo.winner_found) {
+        handleWinAfterClaim();
+    } else if (result.action === "discard_after_chow") {
+        enableDiscardAfterClaim();
+    }
+}
+
+function handleFailedChowClaim(result) {
+    if (elements.playerConsoleEl && result) {
+        elements.playerConsoleEl.textContent = "Error claiming Chow: " + (result.message || "Unknown");
     }
     if (result?.winner_found !== undefined) {
         store.currentGameInfo.winner_found = result.winner_found;

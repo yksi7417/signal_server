@@ -21,6 +21,8 @@ propcache==0.3.1
 psutil==6.1.0
 pytest==8.3.3
 pytest-timeout==2.3.1
+pytest-playwright==0.6.2
+playwright==1.49.1
 requests==2.32.3
 scipy==1.15.3
 setuptools==80.1.0
@@ -34,3 +36,5 @@ wheel==0.45.1
 yarl==1.20.0
 zope.event==5.0
 zope.interface==7.2
+PyGithub==2.8.1
+pyarrow==23.0.0

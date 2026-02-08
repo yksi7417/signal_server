@@ -91,3 +91,160 @@ img.emoji {
   vertical-align: -0.1em;
   display: inline-block;
 }
+
+/* ── Bug Report Modal ─────────────────────────────────────────────── */
+
+#bug-report-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+
+.br-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+}
+
+.br-dialog {
+  position: relative;
+  max-width: 520px;
+  margin: 10vh auto;
+  background: #fff;
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  font-family: sans-serif;
+}
+
+.br-dialog h3 {
+  margin: 0 0 8px;
+  font-size: 1.2em;
+}
+
+.br-hint {
+  margin: 0 0 12px;
+  color: #555;
+  font-size: 0.9em;
+}
+
+.br-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.br-input-row textarea {
+  flex: 1;
+  resize: vertical;
+  font-size: 1em;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+#br-mic {
+  width: 44px;
+  height: 44px;
+  font-size: 1.4em;
+  border: 2px solid #ccc;
+  border-radius: 50%;
+  background: #f9f9f9;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+#br-mic:hover {
+  background: #eee;
+}
+
+#br-mic.br-mic-active {
+  background: #ffebee;
+  border-color: #e53935;
+  animation: br-pulse 1.2s infinite;
+}
+
+@keyframes br-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(229,57,53,0.4); }
+  50%      { box-shadow: 0 0 0 8px rgba(229,57,53,0); }
+}
+
+.br-status {
+  min-height: 1.2em;
+  margin: 8px 0;
+  font-size: 0.85em;
+}
+
+.br-result {
+  margin: 10px 0;
+  padding: 10px;
+  background: #f0f8f0;
+  border-radius: 6px;
+  font-size: 0.9em;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.br-result pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.8em;
+  max-height: 150px;
+  overflow-y: auto;
+  background: #f5f5f5;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.br-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  justify-content: flex-end;
+}
+
+.br-actions button {
+  padding: 8px 18px;
+  font-size: 0.95em;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#br-submit {
+  background: #1976d2;
+  color: #fff;
+}
+
+#br-submit:hover:not(:disabled) {
+  background: #1565c0;
+}
+
+#br-submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+#br-cancel {
+  background: #eee;
+  color: #333;
+}
+
+#br-cancel:hover {
+  background: #ddd;
+}
+
+#btnBugReport {
+  background: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+#btnBugReport:hover {
+  background: #e0e0e0;
+}

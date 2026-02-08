@@ -15,9 +15,11 @@ export const store = {
     claimableTile: null,
     activeClaimType: null, // Will track the type of claim being made (PUNG, KONG, WIN)    // Timeout management
     claimTimeoutId: null,
+    claimCountdownId: null, // For visual countdown display
+    claimCountdownSeconds: 0, // Current countdown value
     discardTimeoutId: null,
     discardCountdownId: null, // For visual countdown display
-    CLAIM_TIMEOUT_MS: 5000, // 5 seconds for claim decisions
+    CLAIM_TIMEOUT_MS: 30000, // 30 seconds for claim decisions (configurable for debugging)
     DISCARD_TIMEOUT_MS: 5000 // 5 seconds for discard actions
 };
 
@@ -41,6 +43,10 @@ export function clearAllTimeouts() {
     if (store.claimTimeoutId) {
         clearTimeout(store.claimTimeoutId);
         store.claimTimeoutId = null;
+    }
+    if (store.claimCountdownId) {
+        clearInterval(store.claimCountdownId);
+        store.claimCountdownId = null;
     }
     if (store.discardTimeoutId) {
         clearTimeout(store.discardTimeoutId);

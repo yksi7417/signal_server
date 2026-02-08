@@ -175,6 +175,72 @@ def can_form_kong_with_discard(hand, discarded_tile):
     return count >= 3
 
 
+def can_form_chow_with_discard(hand, discarded_tile, discarder_position, claimer_position):
+    """
+    Checks if a player's hand can form a Chow with a given discarded tile.
+
+    Args:
+        hand: List of Tile objects in the player's hand.
+        discarded_tile: The Tile object that was discarded.
+        discarder_position: Position (0-3) of the player who discarded.
+        claimer_position: Position (0-3) of the player attempting to claim.
+
+    Returns:
+        True if a Chow can be formed, False otherwise.
+
+    Rules:
+        - Only the left neighbor can claim chow: (discarder_position + 1) % 4 == claimer_position
+        - Only numeric suits (Dots, Bamboo, Characters) can form chows
+        - Must form a sequence of 3 consecutive values
+    """
+    if not hand or not discarded_tile:
+        return False
+
+    # Position check: Only left neighbor can claim
+    if (discarder_position + 1) % 4 != claimer_position:
+        return False
+
+    # Suit check: Only numeric suits (no winds/dragons)
+    if not discarded_tile.is_numeric_suit():
+        return False
+
+    # Check for three possible chow patterns
+    discarded_value = int(discarded_tile.value)
+
+    # Pattern A: discarded is highest (e.g., discard 7, need 5-6 in hand)
+    # Pattern B: discarded is middle (e.g., discard 6, need 5-7 in hand)
+    # Pattern C: discarded is lowest (e.g., discard 5, need 6-7 in hand)
+
+    patterns = [
+        # Pattern A: [N-2, N-1, N(discarded)]
+        ([discarded_value - 2, discarded_value - 1], discarded_value >= 3),
+        # Pattern B: [N-1, N(discarded), N+1]
+        ([discarded_value - 1, discarded_value + 1], 2 <= discarded_value <= 8),
+        # Pattern C: [N(discarded), N+1, N+2]
+        ([discarded_value + 1, discarded_value + 2], discarded_value <= 7),
+    ]
+
+    for needed_values, valid_range in patterns:
+        if not valid_range:
+            continue
+
+        # Check if hand has tiles of same suit with needed values
+        found_tiles = []
+        for needed_val in needed_values:
+            for tile in hand:
+                if (tile.suit == discarded_tile.suit and
+                    tile.is_numeric_suit() and
+                    int(tile.value) == needed_val and
+                    tile not in found_tiles):
+                    found_tiles.append(tile)
+                    break
+
+        if len(found_tiles) == 2:
+            return True
+
+    return False
+
+
 def can_form_self_kong(hand):
     """
     Checks if a player's hand contains any Kong (4 identical tiles).

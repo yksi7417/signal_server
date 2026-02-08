@@ -4,6 +4,14 @@ import logging
 import aiohttp_cors
 from aiohttp import web, WSMsgType
 
+try:
+    from github import Github
+    GITHUB_AVAILABLE = True
+except ImportError:
+    GITHUB_AVAILABLE = False
+    print("Warning: PyGithub not installed. GitHub issue creation will be disabled.")
+
+from mahjong_engine.bug_report import BugReport
 from mahjong_engine.game_state import GameState
 from mahjong_engine.player_agent import AIPlayerAgent
 from mahjong_engine.game_session import (
@@ -239,6 +247,77 @@ async def player_claims_pung(request: web.Request) -> web.Response:
         response = {
             "success": True,
             "message": "Pung claim declined. Game continues.",
+            "action": "claim_declined",
+            "next_player_id": current_game_state.players[
+                current_game_state.current_player_index
+            ].player_id,
+            "discarded_tile": current_game_state.current_discard.unicode
+            if current_game_state.current_discard
+            else None,
+            "winner_found": current_game_state.winner_found,
+        }
+
+    return web.json_response(response)
+
+
+async def player_claims_chow(request: web.Request) -> web.Response:
+    global current_game_state
+    data = await request.json()
+    confirm_claim = data.get("confirm_claim", False)
+
+    response = {"success": False, "message": "Claim processing failed."}
+
+    if (
+        current_game_state.pending_claim_player_id is None
+        or current_game_state.potential_claim_tile is None
+        or current_game_state.claim_type_pending != "CHOW"
+    ):
+        response["message"] = "No Chow claim was pending or tile info missing."
+        return web.json_response(response)
+
+    claiming_player_id = current_game_state.pending_claim_player_id
+
+    if claiming_player_id != 0:
+        response["message"] = "Pending claim is not for the human player."
+        return web.json_response(response)
+
+    if confirm_claim:
+        claimed_tile = current_game_state.potential_claim_tile
+        success = current_game_state.process_chow_claim(claiming_player_id, claimed_tile)
+        if success:
+            player = current_game_state.players[claiming_player_id]
+            hand_serializable = [t.unicode for t in player.hand]
+            revealed_sets_serializable = [
+                {"type": meld.meld_type.value, "tiles": [t.unicode for t in meld.raw_tiles]}
+                for meld in player.revealed_sets
+            ]
+            response = {
+                "success": True,
+                "message": f"Player {claiming_player_id} claimed Chow. Your turn to discard.",
+                "player_hand": hand_serializable,
+                "revealed_sets": revealed_sets_serializable,
+                "current_player_id": current_game_state.current_player_index,
+                "action": "discard_after_chow",
+                "winner_found": current_game_state.winner_found,
+            }
+        else:
+            response["message"] = "Backend failed to process Chow claim."
+            response["winner_found"] = current_game_state.winner_found
+    else:
+        discarder_player_id = current_game_state.current_player_index
+
+        current_game_state.potential_claim_tile = None
+        current_game_state.pending_claim_player_id = None
+        current_game_state.claim_type_pending = None
+
+        current_game_state.current_player_index = (
+            discarder_player_id + 1
+        ) % len(current_game_state.players)
+        current_game_state.turn_number += 1
+
+        response = {
+            "success": True,
+            "message": "Chow claim declined. Game continues.",
             "action": "claim_declined",
             "next_player_id": current_game_state.players[
                 current_game_state.current_player_index
@@ -670,6 +749,100 @@ async def request_ai_turn(request: web.Request) -> web.Response:
         )
 
 
+async def action_log(request: web.Request) -> web.Response:
+    """Return decoded action log for the current game."""
+    global current_game_state
+    player_filter = request.rel_url.query.get("player_id")
+    if player_filter is not None:
+        try:
+            player_filter = int(player_filter)
+        except ValueError:
+            return web.json_response(
+                {"success": False, "error": "player_id must be an integer."})
+
+    decoded = current_game_state.action_log.decode(player_filter=player_filter)
+    return web.json_response(
+        {"success": True, "actions": decoded, "count": len(decoded)},
+        content_type="application/json",
+    )
+
+
+async def report_bug(request: web.Request) -> web.Response:
+    """Create a bug report capturing action log and game state.
+
+    Request body: {"description": "What went wrong..."}
+
+    Environment variables:
+        GITHUB_TOKEN: Personal access token for automatic issue creation (optional)
+        GITHUB_REPO: Repository in format "owner/repo" (default: "yksi7417/signal_server")
+    """
+    global current_game_state
+
+    data = await request.json()
+    description = data.get("description", "").strip()
+
+    if not description:
+        return web.json_response(
+            {"success": False, "error": "description is required."})
+
+    snapshot = current_game_state.get_state_snapshot()
+    report = BugReport(
+        description=description,
+        action_log=current_game_state.action_log,
+        game_state_snapshot=snapshot,
+    )
+
+    report_dir = report.save()
+    markdown = report.to_github_markdown()
+
+    # Try to automatically create GitHub issue
+    github_token = os.getenv("GITHUB_TOKEN")
+    github_repo = os.getenv("GITHUB_REPO", "yksi7417/signal_server")
+    issue_url = None
+    issue_number = None
+    auto_created = False
+
+    if GITHUB_AVAILABLE and github_token:
+        try:
+            # Create GitHub issue automatically
+            gh = Github(github_token)
+            repo = gh.get_repo(github_repo)
+
+            # Create issue with bug report
+            issue = repo.create_issue(
+                title=f"Bug Report: {description[:80]}{'...' if len(description) > 80 else ''}",
+                body=markdown,
+                labels=["bug", "auto-reported"]
+            )
+
+            issue_url = issue.html_url
+            issue_number = issue.number
+            auto_created = True
+
+            logger.info(f"Auto-created GitHub issue #{issue_number}: {issue_url}")
+        except Exception as e:
+            logger.error(f"Failed to auto-create GitHub issue: {e}")
+            # Fall back to manual URL
+            issue_url = f"https://github.com/{github_repo}/issues/new"
+    else:
+        # No token or PyGithub not available - provide manual URL
+        issue_url = f"https://github.com/{github_repo}/issues/new"
+
+    response = {
+        "success": True,
+        "bug_id": report.bug_id,
+        "report_dir": report_dir,
+        "markdown": markdown,
+        "issue_url": issue_url,
+        "auto_created": auto_created,
+    }
+
+    if issue_number is not None:
+        response["issue_number"] = issue_number
+
+    return web.json_response(response)
+
+
 @web.middleware
 async def security_headers(request: web.Request, handler):
     response = await handler(request)
@@ -691,12 +864,15 @@ app.router.add_post("/api/reset_dealer_rotation", reset_dealer_rotation)
 app.router.add_post("/api/advance_dealer", advance_dealer)
 app.router.add_get("/api/get_dealer_info", get_dealer_info)
 app.router.add_post("/api/player_claims_pung", player_claims_pung)
+app.router.add_post("/api/player_claims_chow", player_claims_chow)
 app.router.add_post("/api/player_claims_win", player_claims_win)
 app.router.add_post("/api/player_claims_kong", player_claims_kong)
 app.router.add_post("/api/player_declares_hidden_kong", player_declares_hidden_kong)
 app.router.add_post("/api/draw_tile", draw_tile)
 app.router.add_post("/api/discard_tile", discard_tile)
 app.router.add_post("/api/request_ai_turn", request_ai_turn)
+app.router.add_get("/api/action_log", action_log)
+app.router.add_post("/api/report_bug", report_bug)
 app.router.add_get("/voice.html", voice_handler)
 app.router.add_get("/voice_command.html", voice_command_handler)
 app.router.add_get("/ws", websocket_handler)

@@ -1,0 +1,126 @@
+{
+  "bug_id": "1478f587",
+  "description": "AI turn error",
+  "created_at": "2026-02-08T00:38:12.735933+00:00",
+  "game_state": {
+    "turn_number": 15,
+    "current_player_index": 3,
+    "wall_size": 68,
+    "game_wind": "East",
+    "winner_found": false,
+    "winning_player_id": null,
+    "players": [
+      {
+        "player_id": 0,
+        "wind": "East",
+        "hand": [
+          "🀉",
+          "🀞",
+          "🀎",
+          "🀊",
+          "🀚",
+          "🀍",
+          "🀚",
+          "🀄",
+          "🀝",
+          "🀓",
+          "🀋",
+          "🀜",
+          "🀠"
+        ],
+        "discards": [
+          "🀀",
+          "🀘",
+          "🀔",
+          "🀑"
+        ],
+        "revealed_sets": []
+      },
+      {
+        "player_id": 1,
+        "wind": "South",
+        "hand": [
+          "🀒",
+          "🀃",
+          "🀅",
+          "🀈",
+          "🀒",
+          "🀞",
+          "🀗",
+          "🀒",
+          "🀙",
+          "🀡",
+          "🀗",
+          "🀃",
+          "🀈"
+        ],
+        "discards": [
+          "🀓",
+          "🀀",
+          "🀑",
+          "🀂"
+        ],
+        "revealed_sets": []
+      },
+      {
+        "player_id": 2,
+        "wind": "West",
+        "hand": [
+          "🀟",
+          "🀖",
+          "🀅",
+          "🀊",
+          "🀉",
+          "🀅",
+          "🀏",
+          "🀕",
+          "🀁",
+          "🀇",
+          "🀐",
+          "🀊",
+          "🀏"
+        ],
+        "discards": [
+          "🀠",
+          "🀠",
+          "🀃",
+          "🀒"
+        ],
+        "revealed_sets": []
+      },
+      {
+        "player_id": 3,
+        "wind": "North",
+        "hand": [
+          "🀌",
+          "🀓",
+          "🀞",
+          "🀜",
+          "🀙",
+          "🀑",
+          "🀄",
+          "🀞",
+          "🀆",
+          "🀎",
+          "🀘",
+          "🀇",
+          "🀌"
+        ],
+        "discards": [
+          "🀡",
+          "🀐",
+          "🀕",
+          "🀝"
+        ],
+        "revealed_sets": []
+      }
+    ],
+    "pending_claim": {
+      "player_id": 0,
+      "claim_type": "CHOW",
+      "tile": "🀝"
+    },
+    "current_discard": "🀝"
+  },
+  "action_count": 33
+}

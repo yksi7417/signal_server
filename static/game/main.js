@@ -1,3 +1,4 @@
+import { openBugReport } from './js/bugReport.js';
 import { handleClaimNo, handleClaimYes } from './js/claimsHandler.js';
 import { handleDiscardTile, handleDrawTile, handleReset } from './js/gameActions.js';
 import { elements, store } from './js/gameStore.js';
@@ -24,6 +25,11 @@ function initializeEventListeners() {
 
     if (elements.btnClaimNo) {
         elements.btnClaimNo.onclick = handleClaimNo;
+    }
+
+    const btnBugReport = document.getElementById('btnBugReport');
+    if (btnBugReport) {
+        btnBugReport.onclick = openBugReport;
     }
 }
 
