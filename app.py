@@ -931,6 +931,56 @@ async def report_bug(request: web.Request) -> web.Response:
             gh = Github(github_token)
             repo = gh.get_repo(github_repo)
 
+            # Upload parquet file as a Gist
+            gist_url = None
+            parquet_path = os.path.join(report_dir, "actions.parquet")
+            try:
+                with open(parquet_path, "rb") as f:
+                    parquet_content = f.read()
+
+                # Convert to base64 for text-based gist storage
+                import base64
+                parquet_b64 = base64.b64encode(parquet_content).decode('ascii')
+
+                # Create gist with both the parquet (as base64) and a README
+                gist_files = {
+                    "actions.parquet.b64": {
+                        "content": parquet_b64
+                    },
+                    "README.md": {
+                        "content": f"# Bug Report Action Log\n\n"
+                                   f"Bug ID: `{report.bug_id}`\n\n"
+                                   f"This gist contains the action log for bug report {report.bug_id}.\n\n"
+                                   f"## Files\n"
+                                   f"- `actions.parquet.b64`: Base64-encoded parquet file with {report.action_log.count} actions\n\n"
+                                   f"## How to Use\n"
+                                   f"Download `actions.parquet.b64` and decode:\n"
+                                   f"```bash\n"
+                                   f"base64 -d actions.parquet.b64 > actions.parquet\n"
+                                   f"python -m mahjong_engine.action_log actions.parquet\n"
+                                   f"```"
+                    }
+                }
+
+                user = gh.get_user()
+                gist = user.create_gist(
+                    public=False,
+                    files=gist_files,
+                    description=f"Action log for bug {report.bug_id}"
+                )
+                gist_url = gist.html_url
+                logger.info(f"Created gist with action log: {gist_url}")
+
+                # Append gist link to markdown
+                markdown += f"\n\n---\n\n### 📎 Action Log File\n\n"
+                markdown += f"The complete action log ({report.action_log.count} actions) is available as a parquet file:\n"
+                markdown += f"**[Download from Gist]({gist_url})**\n\n"
+                markdown += f"Use `python -m mahjong_engine.action_log <file.parquet>` to view the decoded actions."
+
+            except Exception as gist_error:
+                logger.warning(f"Failed to create gist for action log: {gist_error}")
+                # Continue without gist - issue will still be created
+
             # Create issue with bug report
             issue = repo.create_issue(
                 title=f"Bug Report: {description[:80]}{'...' if len(description) > 80 else ''}",
@@ -962,6 +1012,10 @@ async def report_bug(request: web.Request) -> web.Response:
 
     if issue_number is not None:
         response["issue_number"] = issue_number
+
+    # Include gist_url if it was created
+    if 'gist_url' in locals() and gist_url:
+        response["gist_url"] = gist_url
 
     return web.json_response(response)
 
