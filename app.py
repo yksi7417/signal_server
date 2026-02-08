@@ -934,52 +934,70 @@ async def report_bug(request: web.Request) -> web.Response:
             # Upload parquet file as a Gist
             gist_url = None
             parquet_path = os.path.join(report_dir, "actions.parquet")
-            try:
-                with open(parquet_path, "rb") as f:
-                    parquet_content = f.read()
 
-                # Convert to base64 for text-based gist storage
-                import base64
-                parquet_b64 = base64.b64encode(parquet_content).decode('ascii')
+            # Check if parquet file exists before trying to upload
+            if not os.path.exists(parquet_path):
+                logger.warning(f"Parquet file not found at {parquet_path}, skipping gist creation")
+            elif report.action_log.count == 0:
+                logger.warning(f"Action log is empty (0 actions), skipping gist creation")
+            else:
+                try:
+                    logger.info(f"Reading parquet file from {parquet_path} ({os.path.getsize(parquet_path)} bytes)")
+                    with open(parquet_path, "rb") as f:
+                        parquet_content = f.read()
 
-                # Create gist with both the parquet (as base64) and a README
-                gist_files = {
-                    "actions.parquet.b64": {
-                        "content": parquet_b64
-                    },
-                    "README.md": {
-                        "content": f"# Bug Report Action Log\n\n"
-                                   f"Bug ID: `{report.bug_id}`\n\n"
-                                   f"This gist contains the action log for bug report {report.bug_id}.\n\n"
-                                   f"## Files\n"
-                                   f"- `actions.parquet.b64`: Base64-encoded parquet file with {report.action_log.count} actions\n\n"
-                                   f"## How to Use\n"
-                                   f"Download `actions.parquet.b64` and decode:\n"
-                                   f"```bash\n"
-                                   f"base64 -d actions.parquet.b64 > actions.parquet\n"
-                                   f"python -m mahjong_engine.action_log actions.parquet\n"
-                                   f"```"
+                    # Convert to base64 for text-based gist storage
+                    import base64
+                    parquet_b64 = base64.b64encode(parquet_content).decode('ascii')
+                    logger.info(f"Encoded parquet to base64 ({len(parquet_b64)} chars)")
+
+                    # Create gist with both the parquet (as base64) and a README
+                    gist_files = {
+                        "actions.parquet.b64": {
+                            "content": parquet_b64
+                        },
+                        "README.md": {
+                            "content": f"# Bug Report Action Log\n\n"
+                                       f"Bug ID: `{report.bug_id}`\n\n"
+                                       f"This gist contains the action log for bug report {report.bug_id}.\n\n"
+                                       f"## Files\n"
+                                       f"- `actions.parquet.b64`: Base64-encoded parquet file with {report.action_log.count} actions\n\n"
+                                       f"## How to Use\n"
+                                       f"Download `actions.parquet.b64` and decode:\n"
+                                       f"```bash\n"
+                                       f"# On Linux/Mac:\n"
+                                       f"base64 -d actions.parquet.b64 > actions.parquet\n\n"
+                                       f"# On Windows PowerShell:\n"
+                                       f"[System.Convert]::FromBase64String((Get-Content actions.parquet.b64)) | Set-Content actions.parquet -Encoding Byte\n\n"
+                                       f"# Then view the actions:\n"
+                                       f"python -m mahjong_engine.action_log actions.parquet\n"
+                                       f"```"
+                        }
                     }
-                }
 
-                user = gh.get_user()
-                gist = user.create_gist(
-                    public=False,
-                    files=gist_files,
-                    description=f"Action log for bug {report.bug_id}"
-                )
-                gist_url = gist.html_url
-                logger.info(f"Created gist with action log: {gist_url}")
+                    logger.info(f"Creating private gist for bug {report.bug_id}")
+                    user = gh.get_user()
+                    gist = user.create_gist(
+                        public=False,
+                        files=gist_files,
+                        description=f"Action log for bug {report.bug_id}"
+                    )
+                    gist_url = gist.html_url
+                    logger.info(f"Successfully created gist with action log: {gist_url}")
 
-                # Append gist link to markdown
-                markdown += f"\n\n---\n\n### 📎 Action Log File\n\n"
-                markdown += f"The complete action log ({report.action_log.count} actions) is available as a parquet file:\n"
-                markdown += f"**[Download from Gist]({gist_url})**\n\n"
-                markdown += f"Use `python -m mahjong_engine.action_log <file.parquet>` to view the decoded actions."
+                    # Append gist link to markdown
+                    markdown += f"\n\n---\n\n### 📎 Action Log File\n\n"
+                    markdown += f"The complete action log ({report.action_log.count} actions) is available as a parquet file:\n"
+                    markdown += f"**[Download from Gist]({gist_url})**\n\n"
+                    markdown += f"Use `python -m mahjong_engine.action_log <file.parquet>` to view the decoded actions."
 
-            except Exception as gist_error:
-                logger.warning(f"Failed to create gist for action log: {gist_error}")
-                # Continue without gist - issue will still be created
+                except FileNotFoundError as e:
+                    logger.error(f"Parquet file not found: {e}")
+                except PermissionError as e:
+                    logger.error(f"Permission denied reading parquet file: {e}")
+                except Exception as gist_error:
+                    logger.error(f"Failed to create gist for action log: {gist_error}", exc_info=True)
+                    # Continue without gist - issue will still be created
 
             # Create issue with bug report
             issue = repo.create_issue(
