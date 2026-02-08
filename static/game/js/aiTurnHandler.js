@@ -1,3 +1,4 @@
+import { showCelebrationScreen } from './celebrationScreen.js';
 import { hideClaimPrompt, showClaimPrompt } from './claimsHandler.js';
 import { handleDiscardTileResult } from './gameActions.js';
 import { elements, store } from './gameStore.js';
@@ -44,11 +45,12 @@ function handleGameOver() {
     if (store.currentGameInfo.winner_found) {
         if (elements.playerConsoleEl) {
             elements.playerConsoleEl.textContent =
-                `Game over. Player ${store.currentGameInfo.winning_player_id} has won. Please reset.`;
+                `Game over. Player ${store.currentGameInfo.winning_player_id} has won!`;
         }
         if (elements.gameInfoEl && store.currentGameInfo.winning_player_id !== undefined) {
             elements.gameInfoEl.innerHTML += `<br><b>Player ${store.currentGameInfo.winning_player_id} WINS!</b>`;
         }
+        showCelebrationScreen(store.currentGameInfo.winning_player_id);
     } else if (store.currentGameInfo.game_ended) {
         if (elements.playerConsoleEl) {
             elements.playerConsoleEl.textContent = "Draw game - Wall empty. Click 'Start New Hand' to continue.";

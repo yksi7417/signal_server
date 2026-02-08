@@ -37,6 +37,11 @@
       <button id="btnClaimNo" disabled>No</button>
       <button id="reset" disabled>Reset</button>
       <button id="btnBugReport">Report Bug</button>
+      <span class="timer-slider-group">
+        <label for="discardTimerSlider">Auto-discard:</label>
+        <input type="range" id="discardTimerSlider" min="5" max="120" value="30" step="5">
+        <span id="discardTimerValue">30s</span>
+      </span>
     </div>
 
     <script type="module" src="/static/game/main.js"></script>

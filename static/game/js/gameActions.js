@@ -1,4 +1,5 @@
 import { processAiTurns } from './aiTurnHandler.js';
+import { showCelebrationScreen } from './celebrationScreen.js';
 import { enableHumanTurn, hideClaimPrompt, showClaimPrompt } from './claimsHandler.js';
 import { elements, store, clearAllTimeouts } from './gameStore.js';
 import { displayDiscardedTiles, displayGameInfo, displayHand, displayRevealedSets } from './tileDisplay.js';
@@ -40,7 +41,7 @@ function autoSelectDrawnTile(drawnTile) {
 }
 
 // Start the discard countdown timer with visual feedback
-function startDiscardCountdown(drawnTile) {
+export function startDiscardCountdown(drawnTile) {
     let timeLeft = store.DISCARD_TIMEOUT_MS / 1000; // Convert to seconds
     
     // Clear any existing countdown
@@ -73,7 +74,7 @@ function startDiscardCountdown(drawnTile) {
             store.discardCountdownId = null;
         }
         
-        console.log("Auto-discarding after 5 seconds");
+        console.log(`Auto-discarding after ${store.DISCARD_TIMEOUT_MS / 1000} seconds`);
         
         // Check if no tile is selected, then auto-select the rightmost tile
         if (!store.selectedTileForDiscard && store.currentHandTiles.length > 0) {
@@ -253,6 +254,18 @@ function handleWinAfterDraw(result) {
 
     displayRevealedSets(result.revealed_sets);
     displayHand(result.hand);
+    showCelebrationScreen(result.winning_player_id);
+}
+
+function handleWinAfterDiscard() {
+    clearAllTimeouts();
+    if (elements.playerConsoleEl) {
+        elements.playerConsoleEl.textContent =
+            `Player ${store.currentGameInfo.winning_player_id} WINS!`;
+    }
+    if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
+    if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
+    showCelebrationScreen(store.currentGameInfo.winning_player_id);
 }
 
 function handleWallEmpty(result) {

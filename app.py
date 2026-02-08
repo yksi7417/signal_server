@@ -23,6 +23,7 @@ from mahjong_engine.game_session import (
     advance_dealer_rotation,
     get_current_dealer_info,
 )
+from mahjong_engine.livekit_service import LiveKitService
 
 
 BASE_DIR = os.path.dirname(__file__)
@@ -47,6 +48,9 @@ room_manager = RoomManager()
 
 # WebSocket room-based peer tracking
 ws_room_tracker = WebSocketRoomTracker()
+
+# LiveKit video chat service
+livekit_service = LiveKitService()
 
 clients = {}
 
@@ -888,6 +892,29 @@ async def list_sessions(request: web.Request) -> web.Response:
     return web.json_response({"success": True, "sessions": sessions_list, "count": len(sessions_list)})
 
 
+async def livekit_token(request: web.Request) -> web.Response:
+    """Generate a LiveKit token for a participant to join a video room."""
+    data = await request.json()
+    room_id = data.get("room_id")
+    participant_name = data.get("participant_name")
+
+    if not room_id or not participant_name:
+        return web.json_response(
+            {"success": False, "error": "room_id and participant_name are required."}, status=400
+        )
+
+    info = livekit_service.get_connection_info(room_id, participant_name)
+    return web.json_response({"success": True, **info})
+
+
+async def livekit_config(request: web.Request) -> web.Response:
+    """Return LiveKit connection URL (for frontend to know where to connect)."""
+    return web.json_response({
+        "success": True,
+        "url": livekit_service.livekit_url,
+    })
+
+
 async def game_history(request: web.Request) -> web.Response:
     global current_game_state
     history = current_game_state.get_history()
@@ -1018,8 +1045,17 @@ async def report_bug(request: web.Request) -> web.Response:
                 except PermissionError as e:
                     logger.error(f"Permission denied reading parquet file: {e}")
                 except Exception as gist_error:
-                    logger.error(f"Failed to create gist for action log: {gist_error}", exc_info=True)
-                    # Continue without gist - issue will still be created
+                    logger.warning(f"Gist creation failed ({gist_error}), embedding parquet in issue body")
+                    # Fallback: embed base64 parquet directly in the issue body
+                    try:
+                        markdown += f"\n\n---\n\n### Action Log File\n\n"
+                        markdown += f"Action log ({report.action_log.count} actions) as base64-encoded parquet.\n"
+                        markdown += f"Save the block below to `actions.parquet.b64` then run: "
+                        markdown += f"`base64 -d actions.parquet.b64 > actions.parquet`\n\n"
+                        markdown += f"<details>\n<summary>Base64 parquet data</summary>\n\n"
+                        markdown += f"```\n{parquet_b64}\n```\n\n</details>"
+                    except Exception:
+                        logger.error("Failed to embed parquet fallback", exc_info=True)
 
             # Create issue with bug report
             issue = repo.create_issue(
@@ -1099,6 +1135,8 @@ app.router.add_post("/api/rooms/{room_id}/leave", leave_room)
 app.router.add_post("/api/sessions/create", create_session)
 app.router.add_get("/api/sessions", list_sessions)
 app.router.add_get("/api/sessions/{session_id}", get_session)
+app.router.add_post("/api/livekit/token", livekit_token)
+app.router.add_get("/api/livekit/config", livekit_config)
 app.router.add_get("/voice.html", voice_handler)
 app.router.add_get("/voice_command.html", voice_command_handler)
 app.router.add_get("/ws", websocket_handler)

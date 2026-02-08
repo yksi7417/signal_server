@@ -193,25 +193,11 @@ function createTileElement(tile) {
 }
 
 function handleTileClick(tile, tileEl) {
-    if (store.currentGameInfo.winner_found) return;    // Allow tile selection when it's our turn to discard (button is enabled)
+    if (store.currentGameInfo.winner_found) return;
     if (elements.btnDiscardTile && !elements.btnDiscardTile.disabled) {
-        // Don't clear timeouts when manually selecting a tile - let countdown continue
-        
-        store.selectedTileForDiscard = tile;
-        if (elements.selectedTileDisplayEl) {
-            elements.selectedTileDisplayEl.textContent = `Selected: ${tile}`;
-        }
-        document.querySelectorAll('#player-hand span').forEach(el => {
-            el.style.backgroundColor = 'transparent';
-            // Ensure self-kongable tiles retain their border if not selected
-            if (!el.classList.contains('self-kongable') || el === tileEl) {
-                // If it is self-kongable and selected, lightblue is fine.
-                // If not self-kongable, or self-kongable and selected, apply/remove background.
-            }
-        });        tileEl.style.backgroundColor = 'lightblue'; // Highlight selected tile
-        
-        // Update console message to indicate manual selection (but don't override countdown)
-        // We'll let the countdown message continue to display the time remaining
+        const tileElements = document.querySelectorAll('#player-hand span');
+        const index = Array.from(tileElements).indexOf(tileEl);
+        selectTileByIndex(index);
     } else {
         if (elements.playerConsoleEl) {
             if (elements.btnDrawTile && !elements.btnDrawTile.disabled) {
@@ -221,6 +207,25 @@ function handleTileClick(tile, tileEl) {
             }
         }
     }
+}
+
+export function selectTileByIndex(index) {
+    const tileElements = document.querySelectorAll('#player-hand span');
+    if (tileElements.length === 0) return;
+    if (index < 0) index = 0;
+    if (index >= tileElements.length) index = tileElements.length - 1;
+
+    store.selectedTileIndex = index;
+    store.selectedTileForDiscard = store.currentHandTiles[index];
+
+    if (elements.selectedTileDisplayEl) {
+        elements.selectedTileDisplayEl.textContent = `Selected: ${store.selectedTileForDiscard}`;
+    }
+
+    tileElements.forEach(el => {
+        el.style.backgroundColor = 'transparent';
+    });
+    tileElements[index].style.backgroundColor = 'lightblue';
 }
 
 export function displayRevealedSets(revealed_sets_data) {

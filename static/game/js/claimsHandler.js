@@ -1,7 +1,8 @@
 import { processAiTurns } from './aiTurnHandler.js';
 import { showCelebrationScreen } from './celebrationScreen.js';
+import { startDiscardCountdown } from './gameActions.js';
 import { elements, store, clearAllTimeouts } from './gameStore.js';
-import { displayHand, displayRevealedSets } from './tileDisplay.js';
+import { displayHand, displayRevealedSets, selectTileByIndex } from './tileDisplay.js';
 
 export function showClaimPrompt(tile, claimType) {
     store.activeClaimType = claimType;
@@ -320,6 +321,12 @@ function handleWinAfterClaimDecline() {
 function enableDiscardAfterClaim() {
     if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
     if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = false;
+
+    // Auto-select leftmost tile and start discard countdown
+    if (store.currentHandTiles && store.currentHandTiles.length > 0) {
+        selectTileByIndex(0);
+        startDiscardCountdown(store.currentHandTiles[0]);
+    }
 }
 
 export function enableHumanTurn() {

@@ -1,7 +1,12 @@
+import logging
 import random
 
 from .action_log import ActionLog
 from .constants import INIT_HAND_SIZE, NUM_COPIES_PER_TILE, NUM_PLAYERS, TILE_CATEGORIES_FOR_GENERATION, WIND_EAST, WINDS_ALL
+
+logger = logging.getLogger(__name__)
+
+TOTAL_TILES = sum(len(values) for _, values in TILE_CATEGORIES_FOR_GENERATION) * NUM_COPIES_PER_TILE
 from .action_log import ActionLog
 from .game_history import GameHistory
 from .game_session import get_dealer_rotation_state, assign_player_winds_globally, advance_dealer_rotation, get_current_dealer_info, set_dealer_rotation_state
@@ -129,6 +134,7 @@ class GameState:
         drawn_tile = self.wall.pop(0)
         player.hand.append(drawn_tile)
         self.action_log.record("draw", player_id=player.player_id, tile=drawn_tile)
+        self.validate_tile_accounting()
         # Check for win if hand size % 3 == 2
         if len(player.hand) % 3 == 2:
             is_win = self.rules.is_winning_hand(
@@ -178,6 +184,7 @@ class GameState:
         self.current_discard = tile_object_to_discard
         player.discards.append(tile_object_to_discard)
         self.action_log.record("discard", player_id=player.player_id, tile=tile_object_to_discard)
+        self.validate_tile_accounting()
 
         # Record state snapshot after each discard for debugging
         self.action_log.record_state_snapshot(self.get_state_snapshot())
@@ -210,9 +217,11 @@ class GameState:
                     except UnicodeEncodeError:
                         print(f"Player {other_player.player_id} (Human) can WIN with [tile]. Waiting for UI.")
                     return True  # Human win claim takes priority
-                # Optional: Logic for AI win claim can be added here if needed in future.
-                # For now, if an AI can win, it doesn't immediately halt flow for UI.
-                # It might be recorded or handled by AI's own turn logic.
+                elif isinstance(other_player.agent, AIPlayerAgent):
+                    claim = other_player.agent.decide_claim(self, self.potential_claim_tile, ["WIN"])
+                    if claim:
+                        self.process_win_claim(other_player.player_id, self.potential_claim_tile)
+                        return True  # Game over
 
         # 2. If no WIN claim by a Human, check for PUNG/KONG claims
         if self.pending_claim_player_id is None:  # Only proceed if no Human WIN claim took precedence
@@ -237,8 +246,18 @@ class GameState:
                             print(f"Player {other_player.player_id} can Kong [tile]")
                         return True
                     elif isinstance(other_player.agent, AIPlayerAgent):
-                        # TODO: Implement AI Kong decision
-                        pass
+                        claim = other_player.agent.decide_claim(self, self.potential_claim_tile, ["KONG"])
+                        if claim:
+                            self.process_kong_claim(other_player.player_id, self.potential_claim_tile)
+                            if self.winner_found:
+                                return True  # Won on replacement draw
+                            ai_p = self.players[self.current_player_index]
+                            if len(ai_p.hand) % 3 != 2:
+                                return True  # Wall empty during replacement draw
+                            discard_tile = ai_p.agent.choose_discard(self, ai_p.hand, None)
+                            d_repr = {"suit": discard_tile.suit, "value": discard_tile.value, "unicode": discard_tile.unicode}
+                            self.discard_tile_for_current_player(d_repr)
+                            return True
 
                 # Then check for Pung
                 elif can_form_pung_with_discard(other_player.hand, self.potential_claim_tile):
@@ -255,9 +274,15 @@ class GameState:
                         except UnicodeEncodeError:
                             print(f"Player {other_player.player_id} (Human) can Pung [tile]. Waiting for UI.")
                         return True
-                    # elif isinstance(other_player.agent, AIPlayerAgent): pass
-                        # AI Pung claim logic could be triggered here if AI should pre-emptively claim.
-                        # Current game flow usually has AI decide on its turn.
+                    elif isinstance(other_player.agent, AIPlayerAgent):
+                        claim = other_player.agent.decide_claim(self, self.potential_claim_tile, ["PUNG"])
+                        if claim:
+                            self.process_pung_claim(other_player.player_id, self.potential_claim_tile)
+                            ai_p = self.players[self.current_player_index]
+                            discard_tile = ai_p.agent.choose_discard(self, ai_p.hand, None)
+                            d_repr = {"suit": discard_tile.suit, "value": discard_tile.value, "unicode": discard_tile.unicode}
+                            self.discard_tile_for_current_player(d_repr)
+                            return True
 
                 # Then check for Chow (lowest priority, only left neighbor)
                 elif can_form_chow_with_discard(
@@ -274,6 +299,15 @@ class GameState:
                         except UnicodeEncodeError:
                             print(f"Player {other_player.player_id} (Human) can Chow [tile]. Waiting for UI.")
                         return True
+                    elif isinstance(other_player.agent, AIPlayerAgent):
+                        claim = other_player.agent.decide_claim(self, self.potential_claim_tile, ["CHOW"])
+                        if claim:
+                            self.process_chow_claim(other_player.player_id, self.potential_claim_tile)
+                            ai_p = self.players[self.current_player_index]
+                            discard_tile = ai_p.agent.choose_discard(self, ai_p.hand, None)
+                            d_repr = {"suit": discard_tile.suit, "value": discard_tile.value, "unicode": discard_tile.unicode}
+                            self.discard_tile_for_current_player(d_repr)
+                            return True
 
         # 3. If no claims by a human player that require UI interaction,
         # advance turn
@@ -320,6 +354,13 @@ class GameState:
         for tile_to_remove in tiles_to_remove_for_pung:
             claiming_player.hand.remove(tile_to_remove)
 
+        # Remove the claimed tile from the discarder's discard pile
+        discarding_player = self.players[discarding_player_original_index]
+        for t in reversed(discarding_player.discards):
+            if t == claimed_tile:
+                discarding_player.discards.remove(t)
+                break
+
         new_pung = Pung(
             tile=claimed_tile,
             revealed=True,
@@ -332,6 +373,7 @@ class GameState:
         except UnicodeEncodeError:
             print(f"Player {claiming_player_id} formed Pung from player {discarding_player_original_index}'s discard.")
         self.action_log.record("pung", player_id=claiming_player_id, tile=claimed_tile)
+        self.validate_tile_accounting()
         self.action_log.record_state_snapshot(self.get_state_snapshot())
 
         self.current_player_index = claiming_player_id
@@ -399,6 +441,13 @@ class GameState:
         for tile in tiles_to_remove:
             claiming_player.hand.remove(tile)
 
+        # Remove the claimed tile from the discarder's discard pile
+        discarding_player = self.players[discarding_player_original_index]
+        for t in reversed(discarding_player.discards):
+            if t == claimed_tile:
+                discarding_player.discards.remove(t)
+                break
+
         # Create chow meld with all three tiles sorted
         chow_tiles = sorted(tiles_to_remove + [claimed_tile])
         new_chow = Chow(
@@ -415,6 +464,7 @@ class GameState:
         except UnicodeEncodeError:
             print(f"Player {claiming_player_id} formed Chow from player {discarding_player_original_index}'s discard.")
         self.action_log.record("chow", player_id=claiming_player_id, tile=claimed_tile)
+        self.validate_tile_accounting()
         self.action_log.record_state_snapshot(self.get_state_snapshot())
 
         self.current_player_index = claiming_player_id
@@ -460,6 +510,12 @@ class GameState:
             return False        # Add the claimed tile to the player's hand for completeness,
         # but only if it's not a self-draw win (tile already in hand)
         if self.claim_type_pending != "SELF_DRAW_WIN":
+            # Remove the claimed tile from the discarder's discard pile
+            discarding_player = self.players[self.current_player_index]
+            for t in reversed(discarding_player.discards):
+                if t == claimed_tile:
+                    discarding_player.discards.remove(t)
+                    break
             claiming_player.hand.append(claimed_tile)
 
         self.winner_found = True
@@ -541,6 +597,7 @@ class GameState:
             revealed=False,
             claimed_from=player_id)
         player.add_revealed_set(new_kong)
+        self.validate_tile_accounting()
 
         # Draw Replacement Tile
         # This appends to hand and checks for win
@@ -607,6 +664,13 @@ class GameState:
         for tile_to_remove in tiles_to_remove_for_kong:
             claiming_player.hand.remove(tile_to_remove)
 
+        # Remove the claimed tile from the discarder's discard pile
+        discarding_player = self.players[discarding_player_original_index]
+        for t in reversed(discarding_player.discards):
+            if t == claimed_tile:
+                discarding_player.discards.remove(t)
+                break
+
         # Create and add the Kong meld
         new_kong = Kong(
             tile=claimed_tile,
@@ -617,6 +681,7 @@ class GameState:
         print(
             f"Player {claiming_player_id} formed Kong from player {discarding_player_original_index}'s discard.")
         self.action_log.record("kong", player_id=claiming_player_id, tile=claimed_tile)
+        self.validate_tile_accounting()
         self.action_log.record_state_snapshot(self.get_state_snapshot())
 
         self.current_player_index = claiming_player_id
@@ -746,28 +811,71 @@ class GameState:
         # Use global dealer rotation to advance dealer if needed
         advance_dealer_rotation(winner_id, wall_empty)
 
-        # Clear action log for new hand (fresh start)
-        self.action_log.clear()
+        # NOTE: Do NOT clear action_log here. The ActionLog accumulates across
+        # the entire session for debugging/bug reports. A fresh ActionLog is
+        # created when a new GameState is constructed.
 
-        # Reset game state for next hand
-        self.current_player_index = self.dealer_index  # Next hand starts with dealer
-        self.winner_found = False
-        self.winning_player_id = None
+        # Clear transient claim/discard state (no longer relevant after hand ends)
         self.current_discard = None
-        self.turn_number = 0
         self.pending_claim_player_id = None
         self.potential_claim_tile = None
         self.claim_type_pending = None
+        # NOTE: Do NOT reset winner_found, winning_player_id, current_player_index,
+        # or turn_number here. These must persist so the API can correctly report
+        # the game outcome to the frontend. They are reset when a new GameState
+        # is constructed via __init__.
+
+    def validate_tile_accounting(self):
+        """Count tiles in all locations and verify invariant: total == TOTAL_TILES (136).
+
+        Returns a dict with per-location counts and a `valid` boolean.
+        Logs a warning if the checksum fails (non-fatal).
+        """
+        wall_count = len(self.wall)
+        player_details = []
+        for p in self.players:
+            hand_count = len(p.hand)
+            discard_count = len(p.discards)
+            meld_tile_count = sum(len(m.raw_tiles) for m in p.revealed_sets)
+            player_details.append({
+                "player_id": p.player_id,
+                "hand": hand_count,
+                "discards": discard_count,
+                "meld_tiles": meld_tile_count,
+                "total": hand_count + discard_count + meld_tile_count,
+            })
+
+        total = wall_count + sum(pd["total"] for pd in player_details)
+        valid = total == TOTAL_TILES
+        result = {
+            "valid": valid,
+            "total": total,
+            "expected": TOTAL_TILES,
+            "wall": wall_count,
+            "players": player_details,
+            "discrepancy": total - TOTAL_TILES,
+        }
+
+        if not valid:
+            logger.warning(
+                "Tile accounting mismatch: total=%d expected=%d discrepancy=%d",
+                total, TOTAL_TILES, total - TOTAL_TILES,
+            )
+
+        return result
 
     def get_state_snapshot(self):
         """Capture current game state as a serializable dict for bug reports."""
         players_snap = []
         for p in self.players:
+            meld_tile_count = sum(len(m.raw_tiles) for m in p.revealed_sets)
             player_data = {
                 "player_id": p.player_id,
                 "wind": p.wind,
                 "hand": [t.unicode for t in p.hand],
+                "hand_count": len(p.hand),
                 "discards": [t.unicode for t in p.discards],
+                "discard_count": len(p.discards),
                 "revealed_sets": [
                     {
                         "type": m.meld_type.value,
@@ -775,6 +883,7 @@ class GameState:
                     }
                     for m in p.revealed_sets
                 ],
+                "meld_tile_count": meld_tile_count,
             }
             players_snap.append(player_data)
 
@@ -786,6 +895,7 @@ class GameState:
             "winner_found": self.winner_found,
             "winning_player_id": self.winning_player_id,
             "players": players_snap,
+            "tile_checksum": self.validate_tile_accounting(),
         }
 
         if self.pending_claim_player_id is not None:

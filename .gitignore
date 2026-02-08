@@ -176,3 +176,4 @@ cython_debug/
 # Local env file 
 .env
 .claude/settings.local.json
+bug_reports/

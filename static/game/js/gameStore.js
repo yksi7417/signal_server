@@ -8,6 +8,7 @@ export const store = {
         remaining_tiles: null
     },
     selectedTileForDiscard: null,
+    selectedTileIndex: -1,
     currentHandTiles: [],
     discardedTiles: [],
     INIT_HAND_SIZE: 13,
@@ -20,7 +21,7 @@ export const store = {
     discardTimeoutId: null,
     discardCountdownId: null, // For visual countdown display
     CLAIM_TIMEOUT_MS: 30000, // 30 seconds for claim decisions (configurable for debugging)
-    DISCARD_TIMEOUT_MS: 5000 // 5 seconds for discard actions
+    DISCARD_TIMEOUT_MS: 30000 // 30 seconds for discard actions (configurable via slider)
 };
 
 // DOM element references

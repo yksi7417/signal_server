@@ -75,4 +75,8 @@ class AIPlayerAgent(PlayerAgent):
             return chosen
 
     def decide_claim(self, game_state, discarded_tile, claim_options):
+        # Priority: WIN > KONG > PUNG > CHOW
+        for claim in ["WIN", "KONG", "PUNG", "CHOW"]:
+            if claim in claim_options:
+                return claim
         return None

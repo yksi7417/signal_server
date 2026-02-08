@@ -22,10 +22,10 @@ from mahjong_engine.constants import (
     WIND_WEST,
     WINDS_ALL,
 )
-from mahjong_engine.game_state import GameState
+from mahjong_engine.game_state import GameState, TOTAL_TILES
 from mahjong_engine.game_session import reset_dealer_rotation_state
-from mahjong_engine.hand_validator import can_form_chow_with_discard, can_form_pung_with_discard
-from mahjong_engine.melds import MeldType, Pung, Chow
+from mahjong_engine.hand_validator import can_form_chow_with_discard, can_form_kong_with_discard, can_form_pung_with_discard
+from mahjong_engine.melds import MeldType, Pung, Chow, Kong
 from mahjong_engine.player import Player
 from mahjong_engine.player_agent import AIPlayerAgent, HumanPlayerAgent
 from mahjong_engine.tile import Tile
@@ -314,6 +314,41 @@ def test_draw_tile_empty_wall(game):
 
 def test_discard_tile_for_current_player_basic(game):
     player = game.players[game.current_player_index]
+
+    # Control the human's hand and the wall tile so we know what's discarded
+    player.hand = [
+        Tile(SUIT_WINDS, 'East'), Tile(SUIT_WINDS, 'South'), Tile(SUIT_WINDS, 'West'),
+        Tile(SUIT_WINDS, 'North'), Tile(SUIT_DRAGONS, 'Red'),
+        Tile(SUIT_DRAGONS, 'Green'), Tile(SUIT_DRAGONS, 'White'),
+        Tile(SUIT_BAMBOO, '1'), Tile(SUIT_BAMBOO, '3'), Tile(SUIT_BAMBOO, '5'),
+        Tile(SUIT_BAMBOO, '7'), Tile(SUIT_BAMBOO, '9'), Tile(SUIT_DOTS, '1'),
+    ]
+    # Put a safe tile on top of wall for drawing (honor tile = no chow possible)
+    game.wall.insert(0, Tile(SUIT_WINDS, 'East'))
+
+    # Give all AI players single honor tiles only — no pairs, no sequences
+    game.players[1].hand = [
+        Tile(SUIT_WINDS, 'East'), Tile(SUIT_WINDS, 'South'), Tile(SUIT_WINDS, 'West'),
+        Tile(SUIT_WINDS, 'North'), Tile(SUIT_DRAGONS, 'Red'),
+        Tile(SUIT_DOTS, '1'), Tile(SUIT_DOTS, '3'), Tile(SUIT_DOTS, '5'),
+        Tile(SUIT_DOTS, '7'), Tile(SUIT_DOTS, '9'),
+        Tile(SUIT_BAMBOO, '2'), Tile(SUIT_BAMBOO, '4'), Tile(SUIT_BAMBOO, '6'),
+    ]
+    game.players[2].hand = [
+        Tile(SUIT_DRAGONS, 'Green'), Tile(SUIT_DRAGONS, 'White'),
+        Tile(SUIT_BAMBOO, '1'), Tile(SUIT_BAMBOO, '3'), Tile(SUIT_BAMBOO, '5'),
+        Tile(SUIT_BAMBOO, '7'), Tile(SUIT_BAMBOO, '9'),
+        Tile(SUIT_CHARACTERS, '1'), Tile(SUIT_CHARACTERS, '3'), Tile(SUIT_CHARACTERS, '5'),
+        Tile(SUIT_CHARACTERS, '7'), Tile(SUIT_CHARACTERS, '9'), Tile(SUIT_DOTS, '2'),
+    ]
+    game.players[3].hand = [
+        Tile(SUIT_DOTS, '4'), Tile(SUIT_DOTS, '6'), Tile(SUIT_DOTS, '8'),
+        Tile(SUIT_CHARACTERS, '2'), Tile(SUIT_CHARACTERS, '4'), Tile(SUIT_CHARACTERS, '6'),
+        Tile(SUIT_CHARACTERS, '8'), Tile(SUIT_BAMBOO, '2'), Tile(SUIT_BAMBOO, '4'),
+        Tile(SUIT_BAMBOO, '6'), Tile(SUIT_BAMBOO, '8'),
+        Tile(SUIT_WINDS, 'East'), Tile(SUIT_WINDS, 'South'),
+    ]
+
     draw_success = game.draw_tile_for_current_player()
     assert draw_success is not None, "Setup: Player failed to draw a tile."
     assert len(player.hand) == INIT_HAND_SIZE + 1
@@ -361,6 +396,10 @@ def test_discard_leads_to_human_pung_claim_opportunity(game):
     game.current_player_index = 1
     player1.hand = [Tile(SUIT_BAMBOO, str(i)) for i in range(1, 14)]
     player1.discards = []
+
+    # Ensure P2 and P3 have no Dots-1 tiles (so they can't claim before human P0)
+    game.players[2].hand = [Tile(SUIT_CHARACTERS, str(i)) for i in range(1, 10)] + [Tile(SUIT_WINDS, w) for w in ['East', 'South', 'West', 'North']]
+    game.players[3].hand = [Tile(SUIT_DRAGONS, 'Red'), Tile(SUIT_DRAGONS, 'Green'), Tile(SUIT_DRAGONS, 'White')] + [Tile(SUIT_BAMBOO, str(i)) for i in range(1, 10)] + [Tile(SUIT_DOTS, '9')]
 
     game.draw_tile_for_current_player()
     assert len(player1.hand) == INIT_HAND_SIZE + 1
@@ -454,6 +493,30 @@ def test_run_ai_turn_successful_no_human_claim(game):
     if not game.wall:
         game.wall = [Tile(SUIT_DOTS, str(i % 9 + 1)) for i in range(20)]
 
+    # Give all other players hands with all unique tiles (no pairs/sequences that could claim)
+    game.players[0].hand = [
+        Tile(SUIT_BAMBOO, '1'), Tile(SUIT_BAMBOO, '3'), Tile(SUIT_BAMBOO, '5'),
+        Tile(SUIT_BAMBOO, '7'), Tile(SUIT_BAMBOO, '9'),
+        Tile(SUIT_CHARACTERS, '2'), Tile(SUIT_CHARACTERS, '4'),
+        Tile(SUIT_CHARACTERS, '6'), Tile(SUIT_CHARACTERS, '8'),
+        Tile(SUIT_WINDS, 'East'), Tile(SUIT_WINDS, 'South'),
+        Tile(SUIT_WINDS, 'West'), Tile(SUIT_WINDS, 'North'),
+    ]
+    game.players[2].hand = [
+        Tile(SUIT_DOTS, '1'), Tile(SUIT_DOTS, '3'), Tile(SUIT_DOTS, '5'),
+        Tile(SUIT_DOTS, '7'), Tile(SUIT_DOTS, '9'),
+        Tile(SUIT_DRAGONS, 'Red'), Tile(SUIT_DRAGONS, 'Green'), Tile(SUIT_DRAGONS, 'White'),
+        Tile(SUIT_BAMBOO, '2'), Tile(SUIT_BAMBOO, '4'),
+        Tile(SUIT_CHARACTERS, '1'), Tile(SUIT_CHARACTERS, '3'), Tile(SUIT_CHARACTERS, '5'),
+    ]
+    game.players[3].hand = [
+        Tile(SUIT_DOTS, '2'), Tile(SUIT_DOTS, '4'), Tile(SUIT_DOTS, '6'),
+        Tile(SUIT_DOTS, '8'), Tile(SUIT_BAMBOO, '6'), Tile(SUIT_BAMBOO, '8'),
+        Tile(SUIT_CHARACTERS, '7'), Tile(SUIT_CHARACTERS, '9'),
+        Tile(SUIT_WINDS, 'East'), Tile(SUIT_WINDS, 'South'),
+        Tile(SUIT_WINDS, 'West'), Tile(SUIT_WINDS, 'North'), Tile(SUIT_DRAGONS, 'Red'),
+    ]
+
     result = game.run_ai_turn()
     assert result["success"]
     assert result["ai_player_id"] == ai_player.player_id
@@ -475,6 +538,11 @@ def test_run_ai_turn_leads_to_human_pung_claim(game):
     tile_ai_will_discard = Tile(SUIT_DOTS, '5')
     human_player.hand = [Tile(SUIT_DOTS, '5'), Tile(SUIT_DOTS, '5'), Tile(SUIT_BAMBOO, '1')] + [Tile(SUIT_DOTS, str(i)) for i in range(1,11) if str(i) != '5']
     human_player.hand = human_player.hand[:INIT_HAND_SIZE]
+
+    # Ensure P2 and P3 can't claim Dots-5
+    game.players[2].hand = [Tile(SUIT_CHARACTERS, str(i)) for i in range(1, 10)] + [Tile(SUIT_WINDS, w) for w in ['East', 'South', 'West', 'North']]
+    game.players[3].hand = [Tile(SUIT_DRAGONS, 'Red'), Tile(SUIT_DRAGONS, 'Green'), Tile(SUIT_DRAGONS, 'White')] + [Tile(SUIT_BAMBOO, str(i)) for i in range(1, 10)] + [Tile(SUIT_DOTS, '9')]
+
     original_ai_choose_discard = ai_player.agent.choose_discard
 
     def mock_choose_discard(game_state, hand, drawn_tile):
@@ -520,45 +588,245 @@ def test_run_ai_turn_called_on_human_player(game):
     assert not result["success"]
     assert result.get("error") == "Not an AI player."
 
-#### Disabled test - not implemented in the game logic yet
-# def test_discard_tile_ai_hypothetically_claims_pung(game):
-#     human_player = game.players[0]
+class TestAIClaimingBehavior:
+    """Tests for AI claiming tiles during discard_tile_for_current_player()."""
 
-#     ai_agent_in_game = game.players[1].agent
-#     assert isinstance(ai_agent_in_game, AIPlayerAgent), "Player 1 is not an AI agent as expected in fixture."
+    def test_ai_claims_pung_on_discard(self, game):
+        """AI forms pung from human's discard, verify meld created and AI discards."""
+        human_player = game.players[0]
+        ai_player = game.players[1]
 
-#     tile_to_be_discarded_by_human = Tile(SUIT_DOTS, '1')
-#     game.players[1].hand = [
-#         Tile(SUIT_DOTS, '1'), Tile(SUIT_DOTS, '1'),
-#         Tile(SUIT_BAMBOO, '2'), Tile(SUIT_BAMBOO, '3'), Tile(SUIT_BAMBOO, '4'),
-#         Tile(SUIT_BAMBOO, '5'), Tile(SUIT_BAMBOO, '6'), Tile(SUIT_BAMBOO, '7'),
-#         Tile(SUIT_BAMBOO, '8'), Tile(SUIT_BAMBOO, '9'),
-#         Tile(SUIT_CHARACTERS, '1'), Tile(SUIT_CHARACTERS, '2'), Tile(SUIT_CHARACTERS, '3')
-#     ]
-#     assert len(game.players[1].hand) == INIT_HAND_SIZE
-#     game.current_player_index = 0
+        # AI has two Dots-1 to form pung
+        ai_player.hand = [
+            Tile(SUIT_DOTS, '1'), Tile(SUIT_DOTS, '1'),
+            Tile(SUIT_BAMBOO, '2'), Tile(SUIT_BAMBOO, '3'), Tile(SUIT_BAMBOO, '4'),
+            Tile(SUIT_BAMBOO, '5'), Tile(SUIT_BAMBOO, '6'), Tile(SUIT_BAMBOO, '7'),
+            Tile(SUIT_BAMBOO, '8'), Tile(SUIT_BAMBOO, '9'),
+            Tile(SUIT_CHARACTERS, '1'), Tile(SUIT_CHARACTERS, '2'), Tile(SUIT_CHARACTERS, '3'),
+        ]
+        assert len(ai_player.hand) == INIT_HAND_SIZE
 
-#     human_player.hand = [Tile(SUIT_BAMBOO, str(i)) for i in range(1, INIT_HAND_SIZE + 1)]
-#     game.draw_tile_for_current_player()
-#     assert len(human_player.hand) == INIT_HAND_SIZE + 1
+        # Human has a Dots-1 to discard, plus unique tiles so no other claims fire
+        game.current_player_index = 0
+        human_player.hand = [
+            Tile(SUIT_DOTS, '1'),
+            Tile(SUIT_CHARACTERS, '4'), Tile(SUIT_CHARACTERS, '5'),
+            Tile(SUIT_CHARACTERS, '6'), Tile(SUIT_CHARACTERS, '7'),
+            Tile(SUIT_CHARACTERS, '8'), Tile(SUIT_CHARACTERS, '9'),
+            Tile(SUIT_WINDS, 'East'), Tile(SUIT_WINDS, 'South'),
+            Tile(SUIT_WINDS, 'West'), Tile(SUIT_WINDS, 'North'),
+            Tile(SUIT_DRAGONS, 'Red'), Tile(SUIT_DRAGONS, 'Green'),
+            Tile(SUIT_DRAGONS, 'White'),
+        ]
+        assert len(human_player.hand) == INIT_HAND_SIZE + 1
 
-#     human_player.hand[0] = tile_to_be_discarded_by_human
-#     discard_repr = {"suit": tile_to_be_discarded_by_human.suit,
-#                     "value": tile_to_be_discarded_by_human.value}
-#     assert can_form_pung_with_discard(game.players[1].hand,
-#                                       tile_to_be_discarded_by_human), \
-#         "Test setup error: AI hand cannot form Pung with the discard according to can_form_pung_with_discard."
-#     original_decide_claim = ai_agent_in_game.decide_claim
-#     ai_agent_in_game.decide_claim = MagicMock(return_value=None)
-#     discard_successful = game.discard_tile_for_current_player(discard_repr)
-#     assert discard_successful, "Discard itself failed."
-#     try:
-#         ai_agent_in_game.decide_claim.assert_called_once_with(
-#             game, tile_to_be_discarded_by_human, ["PUNG"])
-#     finally:
-#         ai_agent_in_game.decide_claim = original_decide_claim
-#     assert game.pending_claim_player_id is None
-#     assert game.current_player_index == (0 + 1) % NUM_PLAYERS
+        # Ensure P2 and P3 can't claim
+        game.players[2].hand = [Tile(SUIT_CHARACTERS, str(i)) for i in range(1, 10)] + [Tile(SUIT_WINDS, w) for w in ['East', 'South', 'West', 'North']]
+        game.players[3].hand = [Tile(SUIT_DRAGONS, 'Red'), Tile(SUIT_DRAGONS, 'Green'), Tile(SUIT_DRAGONS, 'White')] + [Tile(SUIT_BAMBOO, str(i)) for i in range(1, 10)] + [Tile(SUIT_DOTS, '9')]
+
+        tile_to_discard = Tile(SUIT_DOTS, '1')
+        assert can_form_pung_with_discard(ai_player.hand, tile_to_discard)
+
+        discard_repr = {"suit": tile_to_discard.suit, "value": tile_to_discard.value}
+        result = game.discard_tile_for_current_player(discard_repr)
+        assert result is True
+
+        # AI should have formed a pung
+        assert len(ai_player.revealed_sets) == 1
+        assert ai_player.revealed_sets[0].meld_type == MeldType.PUNG
+        assert ai_player.revealed_sets[0].key_tile == tile_to_discard
+
+        # AI should have discarded (hand = 13 - 2 for pung + need to discard = 10 tiles)
+        assert len(ai_player.hand) == INIT_HAND_SIZE - 2 - 1  # 13 - 2 (pung) - 1 (discard)
+
+    def test_ai_claims_kong_on_discard(self, game):
+        """AI forms kong from discard, draws replacement, and discards."""
+        human_player = game.players[0]
+        ai_player = game.players[1]
+
+        kong_tile = Tile(SUIT_DOTS, '5')
+        # AI has three Dots-5 to form kong
+        ai_player.hand = [
+            kong_tile, kong_tile, kong_tile,
+            Tile(SUIT_BAMBOO, '1'), Tile(SUIT_BAMBOO, '2'), Tile(SUIT_BAMBOO, '3'),
+            Tile(SUIT_BAMBOO, '4'), Tile(SUIT_BAMBOO, '5'), Tile(SUIT_BAMBOO, '6'),
+            Tile(SUIT_BAMBOO, '7'), Tile(SUIT_BAMBOO, '8'), Tile(SUIT_BAMBOO, '9'),
+            Tile(SUIT_CHARACTERS, '1'),
+        ]
+        assert len(ai_player.hand) == INIT_HAND_SIZE
+
+        # Human discards the kong tile
+        game.current_player_index = 0
+        human_player.hand = [
+            kong_tile,
+            Tile(SUIT_CHARACTERS, '2'), Tile(SUIT_CHARACTERS, '3'),
+            Tile(SUIT_CHARACTERS, '4'), Tile(SUIT_CHARACTERS, '5'),
+            Tile(SUIT_CHARACTERS, '6'), Tile(SUIT_CHARACTERS, '7'),
+            Tile(SUIT_CHARACTERS, '8'), Tile(SUIT_CHARACTERS, '9'),
+            Tile(SUIT_WINDS, 'East'), Tile(SUIT_WINDS, 'South'),
+            Tile(SUIT_WINDS, 'West'), Tile(SUIT_WINDS, 'North'),
+            Tile(SUIT_DRAGONS, 'Red'),
+        ]
+        assert len(human_player.hand) == INIT_HAND_SIZE + 1
+
+        # Ensure P2 and P3 can't claim
+        game.players[2].hand = [Tile(SUIT_CHARACTERS, str(i)) for i in range(1, 10)] + [Tile(SUIT_WINDS, w) for w in ['East', 'South', 'West', 'North']]
+        game.players[3].hand = [Tile(SUIT_DRAGONS, 'Red'), Tile(SUIT_DRAGONS, 'Green'), Tile(SUIT_DRAGONS, 'White')] + [Tile(SUIT_BAMBOO, str(i)) for i in range(1, 10)] + [Tile(SUIT_DOTS, '9')]
+
+        assert can_form_kong_with_discard(ai_player.hand, kong_tile)
+
+        discard_repr = {"suit": kong_tile.suit, "value": kong_tile.value}
+        result = game.discard_tile_for_current_player(discard_repr)
+        assert result is True
+
+        # AI should have formed a kong
+        assert len(ai_player.revealed_sets) == 1
+        assert ai_player.revealed_sets[0].meld_type == MeldType.KONG
+
+    def test_ai_claims_chow_on_discard(self, game):
+        """Left-neighbor AI forms chow from discard."""
+        # Player 0 (human) discards, player 1 (AI, left neighbor) claims chow
+        human_player = game.players[0]
+        ai_player = game.players[1]  # left neighbor of player 0
+
+        chow_tile = Tile(SUIT_DOTS, '5')
+        # AI has Dots-4 and Dots-6 for chow
+        ai_player.hand = [
+            Tile(SUIT_DOTS, '4'), Tile(SUIT_DOTS, '6'),
+            Tile(SUIT_BAMBOO, '1'), Tile(SUIT_BAMBOO, '2'), Tile(SUIT_BAMBOO, '3'),
+            Tile(SUIT_BAMBOO, '4'), Tile(SUIT_BAMBOO, '5'), Tile(SUIT_BAMBOO, '6'),
+            Tile(SUIT_BAMBOO, '7'), Tile(SUIT_BAMBOO, '8'), Tile(SUIT_BAMBOO, '9'),
+            Tile(SUIT_CHARACTERS, '1'), Tile(SUIT_CHARACTERS, '2'),
+        ]
+        assert len(ai_player.hand) == INIT_HAND_SIZE
+
+        # Human discards Dots-5
+        game.current_player_index = 0
+        human_player.hand = [
+            chow_tile,
+            Tile(SUIT_CHARACTERS, '3'), Tile(SUIT_CHARACTERS, '4'),
+            Tile(SUIT_CHARACTERS, '5'), Tile(SUIT_CHARACTERS, '6'),
+            Tile(SUIT_CHARACTERS, '7'), Tile(SUIT_CHARACTERS, '8'),
+            Tile(SUIT_CHARACTERS, '9'), Tile(SUIT_WINDS, 'East'),
+            Tile(SUIT_WINDS, 'South'), Tile(SUIT_WINDS, 'West'),
+            Tile(SUIT_WINDS, 'North'), Tile(SUIT_DRAGONS, 'Red'),
+            Tile(SUIT_DRAGONS, 'Green'),
+        ]
+        assert len(human_player.hand) == INIT_HAND_SIZE + 1
+
+        # Ensure P2 and P3 can't claim
+        game.players[2].hand = [Tile(SUIT_CHARACTERS, str(i)) for i in range(1, 10)] + [Tile(SUIT_WINDS, w) for w in ['East', 'South', 'West', 'North']]
+        game.players[3].hand = [Tile(SUIT_DRAGONS, 'Red'), Tile(SUIT_DRAGONS, 'Green'), Tile(SUIT_DRAGONS, 'White')] + [Tile(SUIT_BAMBOO, str(i)) for i in range(1, 10)] + [Tile(SUIT_DOTS, '9')]
+
+        # Verify chow is possible: discarder=0, claimer=1, left neighbor check passes
+        assert can_form_chow_with_discard(ai_player.hand, chow_tile, 0, 1)
+
+        discard_repr = {"suit": chow_tile.suit, "value": chow_tile.value}
+        result = game.discard_tile_for_current_player(discard_repr)
+        assert result is True
+
+        # AI should have formed a chow
+        assert len(ai_player.revealed_sets) == 1
+        assert ai_player.revealed_sets[0].meld_type == MeldType.CHOW
+
+        # AI should have discarded after claiming
+        assert len(ai_player.hand) == INIT_HAND_SIZE - 2 - 1  # 13 - 2 (chow) - 1 (discard)
+
+    def test_ai_claims_win_on_discard(self, game):
+        """AI wins by claiming a discard."""
+        human_player = game.players[0]
+        ai_player = game.players[1]
+
+        # AI has a hand one tile away from winning
+        win_tile = Tile(SUIT_BAMBOO, '1')
+        ai_player.hand = [
+            Tile(SUIT_DOTS, '1'), Tile(SUIT_DOTS, '2'), Tile(SUIT_DOTS, '3'),
+            Tile(SUIT_DOTS, '4'), Tile(SUIT_DOTS, '5'), Tile(SUIT_DOTS, '6'),
+            Tile(SUIT_DOTS, '7'), Tile(SUIT_DOTS, '8'), Tile(SUIT_DOTS, '9'),
+            Tile(SUIT_BAMBOO, '1'), Tile(SUIT_BAMBOO, '1'),
+            Tile(SUIT_BAMBOO, '2'), Tile(SUIT_BAMBOO, '3'),
+        ]
+        assert len(ai_player.hand) == INIT_HAND_SIZE
+
+        # Human discards the winning tile
+        game.current_player_index = 0
+        human_player.hand = [
+            win_tile,
+            Tile(SUIT_CHARACTERS, '1'), Tile(SUIT_CHARACTERS, '2'),
+            Tile(SUIT_CHARACTERS, '3'), Tile(SUIT_CHARACTERS, '4'),
+            Tile(SUIT_CHARACTERS, '5'), Tile(SUIT_CHARACTERS, '6'),
+            Tile(SUIT_CHARACTERS, '7'), Tile(SUIT_CHARACTERS, '8'),
+            Tile(SUIT_CHARACTERS, '9'), Tile(SUIT_WINDS, 'East'),
+            Tile(SUIT_WINDS, 'South'), Tile(SUIT_WINDS, 'West'),
+            Tile(SUIT_WINDS, 'North'),
+        ]
+        assert len(human_player.hand) == INIT_HAND_SIZE + 1
+
+        # Ensure P2 and P3 can't win
+        game.players[2].hand = [Tile(SUIT_CHARACTERS, str(i)) for i in range(1, 10)] + [Tile(SUIT_WINDS, w) for w in ['East', 'South', 'West', 'North']]
+        game.players[3].hand = [Tile(SUIT_DRAGONS, 'Red'), Tile(SUIT_DRAGONS, 'Green'), Tile(SUIT_DRAGONS, 'White')] + [Tile(SUIT_BAMBOO, str(i)) for i in range(4, 10)] + [Tile(SUIT_DOTS, '9'), Tile(SUIT_CHARACTERS, '9'), Tile(SUIT_CHARACTERS, '8'), Tile(SUIT_CHARACTERS, '7')]
+
+        discard_repr = {"suit": win_tile.suit, "value": win_tile.value}
+        result = game.discard_tile_for_current_player(discard_repr)
+        assert result is True
+
+        # AI should have won
+        assert game.winner_found is True
+        assert game.winning_player_id == 1
+
+    def test_ai_declines_claim(self, game):
+        """When decide_claim returns None, no claim occurs and turn advances."""
+        human_player = game.players[0]
+        ai_player = game.players[1]
+
+        # AI has two Dots-1 (could pung) but we mock decide_claim to return None
+        ai_player.hand = [
+            Tile(SUIT_DOTS, '1'), Tile(SUIT_DOTS, '1'),
+            Tile(SUIT_BAMBOO, '2'), Tile(SUIT_BAMBOO, '3'), Tile(SUIT_BAMBOO, '4'),
+            Tile(SUIT_BAMBOO, '5'), Tile(SUIT_BAMBOO, '6'), Tile(SUIT_BAMBOO, '7'),
+            Tile(SUIT_BAMBOO, '8'), Tile(SUIT_BAMBOO, '9'),
+            Tile(SUIT_CHARACTERS, '1'), Tile(SUIT_CHARACTERS, '2'), Tile(SUIT_CHARACTERS, '3'),
+        ]
+        assert len(ai_player.hand) == INIT_HAND_SIZE
+
+        game.current_player_index = 0
+        human_player.hand = [
+            Tile(SUIT_DOTS, '1'),
+            Tile(SUIT_CHARACTERS, '4'), Tile(SUIT_CHARACTERS, '5'),
+            Tile(SUIT_CHARACTERS, '6'), Tile(SUIT_CHARACTERS, '7'),
+            Tile(SUIT_CHARACTERS, '8'), Tile(SUIT_CHARACTERS, '9'),
+            Tile(SUIT_WINDS, 'East'), Tile(SUIT_WINDS, 'South'),
+            Tile(SUIT_WINDS, 'West'), Tile(SUIT_WINDS, 'North'),
+            Tile(SUIT_DRAGONS, 'Red'), Tile(SUIT_DRAGONS, 'Green'),
+            Tile(SUIT_DRAGONS, 'White'),
+        ]
+        assert len(human_player.hand) == INIT_HAND_SIZE + 1
+
+        # Ensure P2 and P3 can't claim
+        game.players[2].hand = [Tile(SUIT_CHARACTERS, str(i)) for i in range(1, 10)] + [Tile(SUIT_WINDS, w) for w in ['East', 'South', 'West', 'North']]
+        game.players[3].hand = [Tile(SUIT_DRAGONS, 'Red'), Tile(SUIT_DRAGONS, 'Green'), Tile(SUIT_DRAGONS, 'White')] + [Tile(SUIT_BAMBOO, str(i)) for i in range(1, 10)] + [Tile(SUIT_DOTS, '9')]
+
+        # Mock decide_claim to always return None (decline)
+        original_decide_claim = ai_player.agent.decide_claim
+        ai_player.agent.decide_claim = MagicMock(return_value=None)
+
+        discard_repr = {"suit": SUIT_DOTS, "value": "1"}
+        result = game.discard_tile_for_current_player(discard_repr)
+        assert result is True
+
+        # AI should NOT have claimed
+        assert len(ai_player.revealed_sets) == 0
+        assert len(ai_player.hand) == INIT_HAND_SIZE  # unchanged
+
+        # decide_claim was called with PUNG option
+        ai_player.agent.decide_claim.assert_called_once_with(
+            game, Tile(SUIT_DOTS, '1'), ["PUNG"])
+
+        # Turn should have advanced past the human
+        assert game.pending_claim_player_id is None
+
+        # Restore
+        ai_player.agent.decide_claim = original_decide_claim
 
 
 def test_run_ai_turn_ai_hand_empty_after_draw_failsafe(game):
@@ -679,39 +947,39 @@ class TestDealerRotationSystem:
     def test_end_hand_dealer_wins(self, game):
         """Test hand end when dealer wins (dealer continues)."""
         game.dealer_index = 1
-        
+        game.winner_found = True
+        game.winning_player_id = 1
+
         # Dealer wins - should continue
         game.end_hand(winner_id=1)
-        
+
         assert game.dealer_index == 1  # Same dealer
-        assert game.current_player_index == 1  # Next hand starts with dealer
-        assert game.winner_found is False  # Reset for next hand
-        assert game.winning_player_id is None
+        # winner state persists (NOT reset by end_hand)
+        assert game.winner_found is True
+        assert game.winning_player_id == 1
     
     def test_end_hand_non_dealer_wins(self, game):
         """Test hand end when non-dealer wins (advance dealer)."""
         game.dealer_index = 1
         game.round_wind = WIND_EAST
-        
+
         # Non-dealer wins - should advance dealer
         game.end_hand(winner_id=2)
-        
+
         assert game.dealer_index == 2  # Advanced to next dealer
         assert game.round_wind == WIND_EAST  # Same round
-        assert game.current_player_index == 2  # Next hand starts with new dealer
     
     def test_end_hand_wall_empty_no_winner(self, game):
         """Test hand end when wall is empty with no winner (dealer continues)."""
         game.dealer_index = 2
-        
+
         # Wall empty, no winner - dealer continues
         game.end_hand(winner_id=None, wall_empty=True)
-        
+
         assert game.dealer_index == 2  # Same dealer
-        assert game.current_player_index == 2  # Next hand starts with dealer
     
-    def test_end_hand_resets_game_state(self, game):
-        """Test that end_hand properly resets game state for next hand."""
+    def test_end_hand_resets_transient_state(self, game):
+        """Test that end_hand resets claim/discard state but preserves outcome state."""
         # Set up some game state
         game.winner_found = True
         game.winning_player_id = 1
@@ -720,16 +988,19 @@ class TestDealerRotationSystem:
         game.pending_claim_player_id = 2
         game.potential_claim_tile = Tile(SUIT_BAMBOO, '3')
         game.claim_type_pending = "PUNG"
-        
+
         game.end_hand(winner_id=2)
-          # Verify all state is reset
-        assert game.winner_found is False
-        assert game.winning_player_id is None
+
+        # Transient claim/discard state IS cleared
         assert game.current_discard is None
-        assert game.turn_number == 0
         assert game.pending_claim_player_id is None
         assert game.potential_claim_tile is None
         assert game.claim_type_pending is None
+
+        # Outcome state is NOT cleared (persists for API/frontend)
+        assert game.winner_found is True
+        assert game.winning_player_id == 1
+        assert game.turn_number == 10
     
     def test_complete_round_cycle(self, game):
         """Test a complete round cycle with all dealer rotations."""
@@ -856,7 +1127,6 @@ class TestWinDetectionWithDealerRotation:
         # Dealer should continue (same dealer)
         assert game.dealer_index == initial_dealer
         assert game.round_wind == initial_round  # Same round
-        assert game.current_player_index == initial_dealer  # Next hand starts with dealer
     
     def test_end_hand_resets_claim_state(self, game):
         """Test that end_hand properly resets all claim-related state."""
@@ -865,20 +1135,77 @@ class TestWinDetectionWithDealerRotation:
         game.potential_claim_tile = Tile(SUIT_DOTS, '5')
         game.claim_type_pending = "PUNG"
         game.current_discard = Tile(SUIT_BAMBOO, '3')
-        
+
         # End the hand
         game.end_hand(winner_id=2)
-        
+
         # Verify all claim state is reset
         assert game.pending_claim_player_id is None
         assert game.potential_claim_tile is None
         assert game.claim_type_pending is None
         assert game.current_discard is None
-        
-        # Verify other state is reset
+
+
+class TestWinnerStatePersistence:
+    """Tests verifying that winner state persists after end_hand (bug fix for issue #34)."""
+
+    def test_process_win_claim_winner_persists(self, game):
+        """process_win_claim sets winner_found=True and it survives end_hand()."""
+        player0 = game.players[0]
+        # Build a hand that's one tile away from winning: 3 complete sets + a pair
+        # [1d,2d,3d, 4d,5d,6d, 7d,8d,9d, 1b,1b] + one more tile for the pair
+        player0.hand = [
+            Tile(SUIT_DOTS, '1'), Tile(SUIT_DOTS, '2'), Tile(SUIT_DOTS, '3'),
+            Tile(SUIT_DOTS, '4'), Tile(SUIT_DOTS, '5'), Tile(SUIT_DOTS, '6'),
+            Tile(SUIT_DOTS, '7'), Tile(SUIT_DOTS, '8'), Tile(SUIT_DOTS, '9'),
+            Tile(SUIT_BAMBOO, '1'), Tile(SUIT_BAMBOO, '1'),
+            Tile(SUIT_BAMBOO, '2'), Tile(SUIT_BAMBOO, '3'),
+        ]
+        # Set up a win claim scenario: another player discarded 1b
+        win_tile = Tile(SUIT_BAMBOO, '1')
+        game.current_player_index = 1  # Some other player discarded
+        game.pending_claim_player_id = 0
+        game.claim_type_pending = "WIN"
+        game.potential_claim_tile = win_tile
+        game.current_discard = win_tile
+
+        success = game.process_win_claim(0, win_tile)
+        assert success
+        # Winner state must persist after process_win_claim (which calls end_hand)
+        assert game.winner_found is True
+        assert game.winning_player_id == 0
+
+    def test_ai_self_draw_win_detected_after_end_hand(self, game):
+        """AI self-draw win: winner_found stays True after end_hand so run_ai_turn detects it."""
+        ai_player = game.players[1]  # AI player
+        game.current_player_index = 1
+
+        # Build a hand that's one tile away from winning
+        ai_player.hand = [
+            Tile(SUIT_DOTS, '1'), Tile(SUIT_DOTS, '2'), Tile(SUIT_DOTS, '3'),
+            Tile(SUIT_DOTS, '4'), Tile(SUIT_DOTS, '5'), Tile(SUIT_DOTS, '6'),
+            Tile(SUIT_DOTS, '7'), Tile(SUIT_DOTS, '8'), Tile(SUIT_DOTS, '9'),
+            Tile(SUIT_BAMBOO, '1'), Tile(SUIT_BAMBOO, '1'),
+            Tile(SUIT_BAMBOO, '2'), Tile(SUIT_BAMBOO, '3'),
+        ]
+        # Put the winning tile on top of the wall
+        game.wall = [Tile(SUIT_BAMBOO, '1')] + game.wall
+
+        drawn = game.draw_tile_for_current_player()
+        assert drawn is not None
+        # After draw_tile_for_current_player detects AI win and calls end_hand,
+        # winner_found must still be True
+        assert game.winner_found is True
+        assert game.winning_player_id == 1
+
+    def test_end_hand_wall_empty_no_false_winner(self, game):
+        """Wall-empty end_hand must not accidentally set winner_found."""
+        game.wall = []
+        game.winner_found = False
+
+        game.draw_tile_for_current_player()  # triggers end_hand(wall_empty=True)
         assert game.winner_found is False
         assert game.winning_player_id is None
-        assert game.turn_number == 0
 
 
 class TestChowIntegration:
@@ -1009,9 +1336,23 @@ class TestGameHistoryIntegration:
     def test_discard_records_history(self, game):
         """Discarding a tile records a 'discard' action in history."""
         player = game.players[game.current_player_index]
+
+        # Control hands and wall so discard of honor tile triggers no AI claims
+        player.hand = [
+            Tile(SUIT_WINDS, 'East'), Tile(SUIT_WINDS, 'South'), Tile(SUIT_WINDS, 'West'),
+            Tile(SUIT_WINDS, 'North'), Tile(SUIT_DRAGONS, 'Red'),
+            Tile(SUIT_DRAGONS, 'Green'), Tile(SUIT_DRAGONS, 'White'),
+            Tile(SUIT_BAMBOO, '1'), Tile(SUIT_BAMBOO, '3'), Tile(SUIT_BAMBOO, '5'),
+            Tile(SUIT_BAMBOO, '7'), Tile(SUIT_BAMBOO, '9'), Tile(SUIT_DOTS, '1'),
+        ]
+        game.wall.insert(0, Tile(SUIT_WINDS, 'East'))
+        game.players[1].hand = [Tile(SUIT_DOTS, str(i)) for i in range(1, 10)] + [Tile(SUIT_BAMBOO, '2'), Tile(SUIT_BAMBOO, '4'), Tile(SUIT_BAMBOO, '6'), Tile(SUIT_BAMBOO, '8')]
+        game.players[2].hand = [Tile(SUIT_CHARACTERS, str(i)) for i in range(1, 10)] + [Tile(SUIT_DOTS, '2'), Tile(SUIT_DOTS, '4'), Tile(SUIT_DOTS, '6'), Tile(SUIT_DOTS, '8')]
+        game.players[3].hand = [Tile(SUIT_BAMBOO, str(i)) for i in range(1, 10)] + [Tile(SUIT_CHARACTERS, '2'), Tile(SUIT_CHARACTERS, '4'), Tile(SUIT_CHARACTERS, '6'), Tile(SUIT_CHARACTERS, '8')]
+
         # Draw first to get to valid hand size
         game.draw_tile_for_current_player()
-        tile = player.hand[0]
+        tile = player.hand[0]  # Will be Tile(SUIT_WINDS, 'East') — honor, no claims
         discard_repr = {'suit': tile.suit, 'value': tile.value}
         game.discard_tile_for_current_player(discard_repr)
 
@@ -1062,10 +1403,123 @@ class TestGameHistoryIntegration:
         game.draw_tile_for_current_player()
         assert len(game.get_history()) >= 2
 
-    def test_end_hand_clears_history(self, game):
-        """end_hand() clears the history for the new hand."""
+    def test_end_hand_preserves_action_log(self, game):
+        """end_hand() preserves the action log for debugging/bug reports."""
         game.draw_tile_for_current_player()
-        assert len(game.get_history()) >= 1
+        count_before = len(game.get_history())
+        assert count_before >= 1
 
         game.end_hand(wall_empty=True)
-        assert game.get_history() == []
+        # Action log should still contain entries (plus end_hand + snapshot)
+        assert len(game.get_history()) > count_before
+
+
+class TestTileChecksum:
+    """Tests for the tile accounting checksum (validate_tile_accounting)."""
+
+    def test_tile_checksum_valid_after_init(self, game):
+        """All 136 tiles are accounted for right after deal."""
+        result = game.validate_tile_accounting()
+        assert result["valid"] is True
+        assert result["total"] == TOTAL_TILES
+        assert result["expected"] == TOTAL_TILES
+        assert result["discrepancy"] == 0
+
+    def test_tile_checksum_valid_after_draw(self, game):
+        """Still 136 tiles after a player draws."""
+        game.draw_tile_for_current_player()
+        result = game.validate_tile_accounting()
+        assert result["valid"] is True
+        assert result["total"] == TOTAL_TILES
+
+    def test_tile_checksum_valid_after_discard(self, game):
+        """Still 136 tiles after draw + discard cycle."""
+        player = game.players[game.current_player_index]
+        game.draw_tile_for_current_player()
+        tile = player.hand[0]
+        game.discard_tile_for_current_player({"suit": tile.suit, "value": tile.value})
+        result = game.validate_tile_accounting()
+        assert result["valid"] is True
+        assert result["total"] == TOTAL_TILES
+
+    def test_tile_checksum_valid_after_chow(self, game):
+        """Tile count unchanged after a chow claim (draw → discard → chow flow)."""
+        # Use real game flow: AI (player 3) discards, human (player 0) claims chow
+        game.current_player_index = 3
+        player3 = game.players[3]
+        player0 = game.players[0]
+
+        # Give player 0 tiles that can form a chow with whatever player 3 will discard
+        # We'll use a Dots 4,5,6 sequence: player 0 has 4d and 6d, player 3 discards 5d
+        chow_tile = Tile(SUIT_DOTS, '5')
+        player0.hand = [Tile(SUIT_DOTS, '4'), Tile(SUIT_DOTS, '6')] + player0.hand[2:]
+
+        # Player 3 draws, then discards 5-dots
+        player3.hand[0] = chow_tile
+        game.draw_tile_for_current_player()
+        tile_repr = {"suit": SUIT_DOTS, "value": "5"}
+        game.discard_tile_for_current_player(tile_repr)
+
+        count_before = game.validate_tile_accounting()["total"]
+        game.process_chow_claim(0, chow_tile)
+        count_after = game.validate_tile_accounting()["total"]
+
+        assert count_before == count_after
+        assert count_before == TOTAL_TILES
+
+    def test_tile_checksum_valid_after_pung(self, game):
+        """Tile count unchanged after a pung claim (draw → discard → pung flow)."""
+        # Use real game flow: AI (player 1) discards, human (player 0) claims pung
+        game.current_player_index = 1
+        player1 = game.players[1]
+        player0 = game.players[0]
+
+        pung_tile = Tile(SUIT_DOTS, '5')
+        # Ensure player 0 has two 5-dots for pung
+        player0.hand[0] = pung_tile
+        player0.hand[1] = pung_tile
+
+        # Ensure P2 and P3 can't claim Dots-5: replace any Dots tiles in [3-7] range
+        # with safe non-Dots tiles (same count to preserve tile accounting)
+        for p_idx in [2, 3]:
+            p = game.players[p_idx]
+            for i, tile in enumerate(p.hand):
+                if tile.suit == SUIT_DOTS and tile.value in ['3', '4', '5', '6', '7']:
+                    p.hand[i] = Tile(SUIT_WINDS, 'North')
+
+        # Player 1 draws, then discards 5-dots
+        player1.hand[0] = pung_tile
+        game.draw_tile_for_current_player()
+        tile_repr = {"suit": SUIT_DOTS, "value": "5"}
+        game.discard_tile_for_current_player(tile_repr)
+
+        count_before = game.validate_tile_accounting()["total"]
+        game.process_pung_claim(0, pung_tile)
+        count_after = game.validate_tile_accounting()["total"]
+
+        assert count_before == count_after
+        assert count_before == TOTAL_TILES
+
+    def test_tile_checksum_detects_extra_tile(self, game):
+        """Checksum catches when a tile is manually added (total > 136)."""
+        game.players[0].hand.append(Tile(SUIT_DOTS, '1'))
+        result = game.validate_tile_accounting()
+        assert result["valid"] is False
+        assert result["total"] == TOTAL_TILES + 1
+        assert result["discrepancy"] == 1
+
+    def test_snapshot_includes_tile_checksum(self, game):
+        """get_state_snapshot() includes tile_checksum and per-player counts."""
+        snapshot = game.get_state_snapshot()
+        assert "tile_checksum" in snapshot
+        checksum = snapshot["tile_checksum"]
+        assert checksum["valid"] is True
+        assert checksum["total"] == TOTAL_TILES
+
+        # Verify per-player counts in snapshot
+        for p_snap in snapshot["players"]:
+            assert "hand_count" in p_snap
+            assert "discard_count" in p_snap
+            assert "meld_tile_count" in p_snap
+            assert p_snap["hand_count"] == len(p_snap["hand"])
+            assert p_snap["discard_count"] == len(p_snap["discards"])

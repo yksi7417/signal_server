@@ -2,7 +2,7 @@ import { openBugReport } from './js/bugReport.js';
 import { handleClaimNo, handleClaimYes } from './js/claimsHandler.js';
 import { handleDiscardTile, handleDrawTile, handleReset } from './js/gameActions.js';
 import { elements, store } from './js/gameStore.js';
-import { displayDiscardedTiles } from './js/tileDisplay.js';
+import { displayDiscardedTiles, selectTileByIndex } from './js/tileDisplay.js';
 
 
 // Initialize button event listeners
@@ -34,6 +34,31 @@ function initializeEventListeners() {
 }
 
 
+// Initialize discard timer slider from localStorage
+function initializeTimerSlider() {
+    const slider = document.getElementById('discardTimerSlider');
+    const valueLabel = document.getElementById('discardTimerValue');
+    if (!slider || !valueLabel) return;
+
+    // Load saved value from localStorage
+    const saved = localStorage.getItem('discardTimerSeconds');
+    if (saved) {
+        const seconds = parseInt(saved, 10);
+        if (seconds >= 5 && seconds <= 120) {
+            slider.value = seconds;
+            store.DISCARD_TIMEOUT_MS = seconds * 1000;
+        }
+    }
+    valueLabel.textContent = `${slider.value}s`;
+
+    slider.addEventListener('input', () => {
+        const seconds = parseInt(slider.value, 10);
+        valueLabel.textContent = `${seconds}s`;
+        store.DISCARD_TIMEOUT_MS = seconds * 1000;
+        localStorage.setItem('discardTimerSeconds', seconds);
+    });
+}
+
 // Initialize game state
 async function initializeGame() {
     try {
@@ -46,6 +71,12 @@ async function initializeGame() {
 
 // Add keyboard controls
 document.addEventListener('keydown', (event) => {
+    // Skip game hotkeys when typing in text fields (e.g. bug report)
+    const tag = event.target.tagName;
+    if (tag === 'TEXTAREA' || tag === 'INPUT' || event.target.isContentEditable) {
+        return;
+    }
+
     if ((event.key === 'd' || event.key === 'D') && !event.repeat) {
         event.preventDefault(); // Prevent page scrolling
 
@@ -63,10 +94,23 @@ document.addEventListener('keydown', (event) => {
             elements.playerConsoleEl.textContent = "Select a tile to discard first, or wait for your turn.";
         }
     }
+
+    // Arrow keys to navigate tile selection
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        if (elements.btnDiscardTile && !elements.btnDiscardTile.disabled && store.currentHandTiles.length > 0) {
+            event.preventDefault();
+            let idx = store.selectedTileIndex;
+            if (idx < 0) idx = 0; // start from left if nothing selected
+            else if (event.key === 'ArrowLeft') idx = Math.max(0, idx - 1);
+            else idx = Math.min(store.currentHandTiles.length - 1, idx + 1);
+            selectTileByIndex(idx);
+        }
+    }
 });
 
 window.onload = () => {
     initializeEventListeners();
+    initializeTimerSlider();
     handleReset();
     initializeGame();
 };
