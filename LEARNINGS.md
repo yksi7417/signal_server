@@ -202,6 +202,23 @@ log = ActionLog.load("file.parquet")  # Returns loaded instance
 - Add game room management (Priority 3.1.x)
 - Continue TDD approach for new features
 
+## 2026-02-08: Integration Tests & Docker Deployment Fixes
+
+### Summary
+Fixed all 33 integration tests and resolved Docker dependency conflicts for fly.io deployment.
+
+### Key Learnings
+
+**1. Integration Test Fixtures**: Created conftest.py for shared session-scoped server fixtures
+
+**2. API Endpoint Patterns**: aiohttp uses `/api/endpoint_name` (underscore, not hyphen)
+
+**3. Docker Dependencies**: Removed unused legacy deps (gevent, bottle), separated dev deps (playwright) into requirements-dev.txt
+
+**4. UTF-8 Encoding**: Always use `encoding='utf-8'` when opening files with Unicode characters on Windows
+
+**5. Test Results**: 249 total passing tests (216 unit + 33 integration)
+
 ---
 
 **Key Principle**: "Capture everything for debugging" - The more context we save during gameplay, the easier it is to reproduce and fix bugs.
