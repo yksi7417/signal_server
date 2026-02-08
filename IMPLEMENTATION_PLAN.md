@@ -1,10 +1,10 @@
 # Implementation Plan
 
-Last updated: 2026-02-07
+Last updated: 2026-02-08
 
 **Status**: Planning Complete - Ready for Implementation
 **Current Phase**: Priority 5 - Video & Voice
-**Next Task**: Task 5.1.1 (Evaluate SFU options)
+**Next Task**: Task 5.1.2 (Set up LiveKit development environment)
 **Active Branch**: main
 
 ---
@@ -487,17 +487,60 @@ This plan tracks the implementation of the Signal Server - a multiplayer Mahjong
 ## Priority 5: Video & Voice ⏳ PLANNED
 
 ### 5.1 Video Chat SFU Research
-**Status**: Not Started | **Dependencies**: None | **Priority**: Low
+**Status**: Research Complete (LiveKit selected) | **Dependencies**: None | **Priority**: Medium
 
-#### Task 5.1.1: Evaluate SFU options
+#### Task 5.1.1: Evaluate SFU options ✅ COMPLETE
 **Estimated Time**: 1 iteration (research only)
 **Deliverable**: Decision document
+**Completed**: 2026-02-08
 
 **Research**:
-- Options: Janus Gateway, Mediasoup, Pion
+- Options evaluated: Janus Gateway, Mediasoup, Pion/LiveKit, aiortc
 - Criteria: Integration ease, 4+ player support, Docker deployment, documentation
-- File: `docs/SFU_EVALUATION.md` (new file)
+- File: `docs/SFU_EVALUATION.md`
 - Output: Decision matrix with recommendation
+
+**Decision**: LiveKit (built on Pion/Go) recommended as SFU
+- Best Python integration (official SDK)
+- Complete solution (room management, auth, TURN, simulcast)
+- Official Docker images and excellent documentation
+- Apache-2.0 license (permissive)
+- Fallback: Janus Gateway if more protocol flexibility needed
+
+### 5.1.2 LiveKit Development Environment Setup
+**Status**: Not Started | **Dependencies**: Task 5.1.1 Complete | **Priority**: Medium
+
+#### Task 5.1.2: Set up LiveKit development environment
+**Estimated Time**: 1 iteration
+**Dependencies**: Task 5.1.1 Complete
+**Test-First**: Yes
+
+**Implementation Steps**:
+1. Install LiveKit server locally (`livekit-server --dev`)
+2. Install Python SDK (`pip install livekit`)
+3. Create proof-of-concept: 4 browsers joining a video room
+4. Write integration test for token generation
+
+#### Task 5.1.3: Integrate LiveKit with Signal Server
+**Estimated Time**: 2 iterations
+**Dependencies**: Task 5.1.2 Complete
+**Test-First**: Yes
+
+**Implementation**:
+- Add LiveKit token generation to Python server
+- Add room lifecycle management (create on game start, destroy on game end)
+- Add LiveKit webhooks for participant events
+- Update frontend to connect to LiveKit for video
+
+#### Task 5.1.4: Docker deployment for LiveKit
+**Estimated Time**: 1 iteration
+**Dependencies**: Task 5.1.3 Complete
+**Test-First**: Yes
+
+**Implementation**:
+- Add LiveKit to `docker-compose.yml`
+- Configure networking (UDP ports, public IP)
+- Test in Docker environment
 
 ### 5.2 Voice Command Enhancement
 **Status**: Partial (webrtc_command_server/ exists) | **Dependencies**: None | **Priority**: Low
@@ -703,11 +746,11 @@ black mahjong_engine/  # if installed
 - Unit tests: 230 passing (tests/engine/)
 - Integration tests: 34+ passing (tests/integration/)
 
-**Next Action**: Task 5.1.1 - Evaluate SFU options (research)
+**Next Action**: Task 5.1.2 - Set up LiveKit development environment
 
 **Blockers**: None
 
-**Ready to Start**: Task 5.1.1
+**Ready to Start**: Task 5.1.2
 
 ---
 
