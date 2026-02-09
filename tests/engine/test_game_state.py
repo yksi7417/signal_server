@@ -490,31 +490,43 @@ def test_run_ai_turn_successful_no_human_claim(game):
     game.current_player_index = 1
     ai_player = game.players[1]
     assert isinstance(ai_player.agent, AIPlayerAgent)
-    if not game.wall:
-        game.wall = [Tile(SUIT_DOTS, str(i % 9 + 1)) for i in range(20)]
+    # Wall tiles: honors that can't form chows
+    game.wall = [Tile(SUIT_DRAGONS, 'White')] * 20
 
-    # Give all other players hands with all unique tiles (no pairs/sequences that could claim)
+    # P1 (AI) gets a deterministic hand with isolated honors
+    ai_player.hand = [
+        Tile(SUIT_WINDS, 'East'), Tile(SUIT_WINDS, 'South'),
+        Tile(SUIT_WINDS, 'West'), Tile(SUIT_WINDS, 'North'),
+        Tile(SUIT_DRAGONS, 'Red'), Tile(SUIT_DRAGONS, 'Green'), Tile(SUIT_DRAGONS, 'White'),
+        Tile(SUIT_DOTS, '1'), Tile(SUIT_DOTS, '2'), Tile(SUIT_DOTS, '3'),
+        Tile(SUIT_BAMBOO, '5'), Tile(SUIT_CHARACTERS, '7'), Tile(SUIT_CHARACTERS, '9'),
+    ]
+    # All other players: only isolated honors (no pairs, no chow possible)
     game.players[0].hand = [
         Tile(SUIT_BAMBOO, '1'), Tile(SUIT_BAMBOO, '3'), Tile(SUIT_BAMBOO, '5'),
         Tile(SUIT_BAMBOO, '7'), Tile(SUIT_BAMBOO, '9'),
         Tile(SUIT_CHARACTERS, '2'), Tile(SUIT_CHARACTERS, '4'),
         Tile(SUIT_CHARACTERS, '6'), Tile(SUIT_CHARACTERS, '8'),
+        Tile(SUIT_DOTS, '4'), Tile(SUIT_DOTS, '6'),
+        Tile(SUIT_DOTS, '8'), Tile(SUIT_BAMBOO, '2'),
+    ]
+    # P2 (next after P1, can claim chow): spread tiles far apart so no chow possible
+    game.players[2].hand = [
+        Tile(SUIT_DOTS, '1'), Tile(SUIT_DOTS, '5'), Tile(SUIT_DOTS, '9'),
+        Tile(SUIT_BAMBOO, '1'), Tile(SUIT_BAMBOO, '5'), Tile(SUIT_BAMBOO, '9'),
+        Tile(SUIT_CHARACTERS, '1'), Tile(SUIT_CHARACTERS, '5'), Tile(SUIT_CHARACTERS, '9'),
         Tile(SUIT_WINDS, 'East'), Tile(SUIT_WINDS, 'South'),
         Tile(SUIT_WINDS, 'West'), Tile(SUIT_WINDS, 'North'),
     ]
-    game.players[2].hand = [
-        Tile(SUIT_DOTS, '1'), Tile(SUIT_DOTS, '3'), Tile(SUIT_DOTS, '5'),
-        Tile(SUIT_DOTS, '7'), Tile(SUIT_DOTS, '9'),
-        Tile(SUIT_DRAGONS, 'Red'), Tile(SUIT_DRAGONS, 'Green'), Tile(SUIT_DRAGONS, 'White'),
-        Tile(SUIT_BAMBOO, '2'), Tile(SUIT_BAMBOO, '4'),
-        Tile(SUIT_CHARACTERS, '1'), Tile(SUIT_CHARACTERS, '3'), Tile(SUIT_CHARACTERS, '5'),
-    ]
+    # P3: also spread tiles apart, no pairs with P1's possible discards
     game.players[3].hand = [
-        Tile(SUIT_DOTS, '2'), Tile(SUIT_DOTS, '4'), Tile(SUIT_DOTS, '6'),
-        Tile(SUIT_DOTS, '8'), Tile(SUIT_BAMBOO, '6'), Tile(SUIT_BAMBOO, '8'),
-        Tile(SUIT_CHARACTERS, '7'), Tile(SUIT_CHARACTERS, '9'),
-        Tile(SUIT_WINDS, 'East'), Tile(SUIT_WINDS, 'South'),
-        Tile(SUIT_WINDS, 'West'), Tile(SUIT_WINDS, 'North'), Tile(SUIT_DRAGONS, 'Red'),
+        Tile(SUIT_DOTS, '2'), Tile(SUIT_DOTS, '6'),
+        Tile(SUIT_BAMBOO, '2'), Tile(SUIT_BAMBOO, '6'),
+        Tile(SUIT_CHARACTERS, '2'), Tile(SUIT_CHARACTERS, '6'),
+        Tile(SUIT_DOTS, '4'), Tile(SUIT_DOTS, '8'),
+        Tile(SUIT_BAMBOO, '4'), Tile(SUIT_BAMBOO, '8'),
+        Tile(SUIT_CHARACTERS, '4'), Tile(SUIT_CHARACTERS, '8'),
+        Tile(SUIT_DRAGONS, 'Red'),
     ]
 
     result = game.run_ai_turn()
