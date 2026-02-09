@@ -335,16 +335,20 @@ function renderPlayerMelds(container, sets) {
     });
 }
 
+const WIND_ORDER = { 'East': 0, 'South': 1, 'West': 2, 'North': 3 };
+const WIND_ABBREV = { 'East': 'E', 'South': 'S', 'West': 'W', 'North': 'N' };
+
 export function displayPlayersInfo(playersInfo, currentPlayerId) {
     if (!playersInfo) return;
     store.playersInfo = playersInfo;
 
     playersInfo.forEach((p, idx) => {
-        // Label with wind
+        // Label with wind abbreviation prefix
         const label = elements.playerLabels[idx];
         if (label) {
-            const name = idx === 0 ? "You" : `Player ${idx}`;
-            label.textContent = `${name} (${p.wind || '--'})`;
+            const name = idx === 0 ? "You" : `P${idx}`;
+            const windAbbr = WIND_ABBREV[p.wind] || '--';
+            label.textContent = `${windAbbr} ${name}`;
         }
 
         // Turn indicator
@@ -372,4 +376,34 @@ export function displayPlayersInfo(playersInfo, currentPlayerId) {
             }
         }
     });
+
+    // Update center discard labels with wind abbreviations
+    playersInfo.forEach(p => {
+        const discardLabel = document.getElementById(`discard-label-${p.player_id}`);
+        if (discardLabel) {
+            const windAbbr = WIND_ABBREV[p.wind] || '--';
+            const name = p.player_id === 0 ? 'You' : `P${p.player_id}`;
+            discardLabel.textContent = `${windAbbr} ${name}`;
+        }
+    });
+
+    // Reorder center discard rows by wind sequence (E -> S -> W -> N)
+    const centerDiscards = document.getElementById('center-discards');
+    if (centerDiscards && playersInfo.length > 0) {
+        const rows = Array.from(centerDiscards.querySelectorAll('.center-discard-row'));
+        if (rows.length > 0) {
+            // Build map: player_id -> wind order
+            const playerWindOrder = {};
+            playersInfo.forEach(p => {
+                playerWindOrder[p.player_id] = WIND_ORDER[p.wind] ?? 99;
+            });
+            // Sort rows by their player's wind order
+            rows.sort((a, b) => {
+                const aId = parseInt(a.dataset.playerId ?? '99', 10);
+                const bId = parseInt(b.dataset.playerId ?? '99', 10);
+                return (playerWindOrder[aId] ?? 99) - (playerWindOrder[bId] ?? 99);
+            });
+            rows.forEach(row => centerDiscards.appendChild(row));
+        }
+    }
 }

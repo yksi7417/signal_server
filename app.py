@@ -75,6 +75,8 @@ def _winning_hand_info():
                     {"type": m.meld_type.value, "tiles": [t.unicode for t in m.raw_tiles]}
                     for m in p.revealed_sets
                 ],
+                "faan": current_game_state.winning_faan,
+                "faan_breakdown": current_game_state.winning_faan_breakdown,
             }
     return {}
 
@@ -458,6 +460,8 @@ async def player_claims_win(request: web.Request) -> web.Response:
                 "action": "win_claimed",
                 "players_info": _players_info(),
                 "current_player_id": _current_pid(),
+                "faan": current_game_state.winning_faan,
+                "faan_breakdown": current_game_state.winning_faan_breakdown,
             }
         else:
             response["message"] = "Backend failed to process Win claim."
@@ -667,22 +671,23 @@ async def draw_tile(request: web.Request) -> web.Response:
                 {"type": meld.meld_type.value, "tiles": [t.unicode for t in meld.raw_tiles]}
                 for meld in current_game_state.players[player_id].revealed_sets
             ]
-            return web.json_response(
-                {
-                    "success": True,
-                    "action": "win",
-                    "winner_found": True,
-                    "winning_player_id": player_id,
-                    "hand": hand_serializable,
-                    "revealed_sets": revealed_sets_serializable,
-                    "winning_hand": hand_serializable,
-                    "winning_revealed_sets": revealed_sets_serializable,
-                    "drawn_tile": drawn_tile_serializable,
-                    "remaining_tiles": len(current_game_state.wall),
-                    "players_info": _players_info(),
-                    "current_player_id": _current_pid(),
-                }
-            )
+            resp = {
+                "success": True,
+                "action": "win",
+                "winner_found": True,
+                "winning_player_id": player_id,
+                "hand": hand_serializable,
+                "revealed_sets": revealed_sets_serializable,
+                "winning_hand": hand_serializable,
+                "winning_revealed_sets": revealed_sets_serializable,
+                "drawn_tile": drawn_tile_serializable,
+                "remaining_tiles": len(current_game_state.wall),
+                "players_info": _players_info(),
+                "current_player_id": _current_pid(),
+                "faan": current_game_state.winning_faan,
+                "faan_breakdown": current_game_state.winning_faan_breakdown,
+            }
+            return web.json_response(resp)
 
         return web.json_response(
             {

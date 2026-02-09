@@ -34,6 +34,7 @@ export function showCelebrationScreen(player_id) {
             <div class="celebration-content">
                 <h1>WINNER!</h1>
                 <h2 id="celebrationMessage"></h2>
+                <div id="faanDisplay"></div>
                 <div id="winningHandDisplay"></div>
                 <button id="btnNewGame">Start New Game</button>
                 <button id="btnCelebrationBugReport">Report Bug</button>
@@ -56,6 +57,31 @@ export function showCelebrationScreen(player_id) {
     const name = player_id === 0 ? "You" : `Player ${player_id}`;
     document.getElementById('celebrationMessage').textContent =
         `${name} won the game!`;
+
+    // Display faan score
+    const faanDisplay = document.getElementById('faanDisplay');
+    faanDisplay.innerHTML = '';
+    const faan = store.currentGameInfo.faan;
+    const faanBreakdown = store.currentGameInfo.faan_breakdown;
+
+    if (faan !== undefined && faan !== null) {
+        const faanTotal = document.createElement('div');
+        faanTotal.className = 'faan-total';
+        faanTotal.textContent = `${faan} Faan`;
+        if (faan >= 10) faanTotal.classList.add('faan-limit');
+        faanDisplay.appendChild(faanTotal);
+
+        if (faanBreakdown && faanBreakdown.length > 0) {
+            const list = document.createElement('ul');
+            list.className = 'faan-breakdown';
+            faanBreakdown.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = `${item.name} (+${item.faan})`;
+                list.appendChild(li);
+            });
+            faanDisplay.appendChild(list);
+        }
+    }
 
     // Display winning hand tiles
     const handDisplay = document.getElementById('winningHandDisplay');

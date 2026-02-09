@@ -1,9 +1,7 @@
 from abc import ABC, abstractmethod
 import collections
 from .tile import Tile
-# Meld types like Pung, Kong, Chow, Pair are not directly used by the core win validation logic here,
-# as it works with Tile counts. They are used for forming revealed_sets,
-# which is an input.
+from .melds import Pung, Kong, Chow, Pair, MeldType
 
 
 class RuleSet(ABC):
@@ -195,6 +193,89 @@ class DefaultRuleSet(RuleSet):
                 hand_counts[tile_for_pair] += 2
 
         return False  # No valid pair and meld combination found
+
+    def decompose_winning_hand(self, hand_tiles, revealed_sets):
+        """Return all valid ``(melds, pair)`` decompositions of *hand_tiles*.
+
+        Each result is a tuple ``(melds_list, pair_meld)`` where *melds_list*
+        contains :class:`Pung`, :class:`Kong`, or :class:`Chow` objects and
+        *pair_meld* is a :class:`Pair`.  The caller can iterate over all
+        decompositions and pick the highest-scoring one.
+        """
+        num_melds = 4 - len(revealed_sets)
+        results = []
+
+        if num_melds < 0:
+            return results
+
+        hand_counts = collections.Counter(hand_tiles)
+        unique_tiles = sorted(hand_counts.keys())
+
+        for tile_for_pair in unique_tiles:
+            if hand_counts[tile_for_pair] >= 2:
+                hand_counts[tile_for_pair] -= 2
+                pair_obj = Pair(tile_for_pair)
+                melds_acc = []
+                self._collect_melds(hand_counts.copy(), num_melds,
+                                    melds_acc, results, pair_obj)
+                hand_counts[tile_for_pair] += 2
+
+        return results
+
+    def _collect_melds(self, tile_counts, num_melds, current_melds,
+                       results, pair_obj):
+        """Backtracking helper that collects all decompositions into *results*."""
+        if num_melds == 0:
+            if not any(tile_counts.values()):
+                results.append((list(current_melds), pair_obj))
+            return
+
+        if sum(tile_counts.values()) < num_melds * 3:
+            return
+
+        sorted_tiles = sorted(t for t in tile_counts if tile_counts[t] > 0)
+        if not sorted_tiles:
+            return
+
+        for tile in sorted_tiles:
+            if tile_counts[tile] == 0:
+                continue
+
+            # Kong
+            if tile_counts[tile] >= 4:
+                tile_counts[tile] -= 4
+                current_melds.append(Kong(tile))
+                self._collect_melds(tile_counts, num_melds - 1,
+                                    current_melds, results, pair_obj)
+                current_melds.pop()
+                tile_counts[tile] += 4
+
+            # Pung
+            if tile_counts[tile] >= 3:
+                tile_counts[tile] -= 3
+                current_melds.append(Pung(tile))
+                self._collect_melds(tile_counts, num_melds - 1,
+                                    current_melds, results, pair_obj)
+                current_melds.pop()
+                tile_counts[tile] += 3
+
+            # Chow
+            if tile.is_numeric_suit() and int(tile.value) <= 7:
+                t2 = Tile(tile.suit, str(int(tile.value) + 1))
+                t3 = Tile(tile.suit, str(int(tile.value) + 2))
+                if (tile_counts.get(tile, 0) > 0
+                        and tile_counts.get(t2, 0) > 0
+                        and tile_counts.get(t3, 0) > 0):
+                    tile_counts[tile] -= 1
+                    tile_counts[t2] -= 1
+                    tile_counts[t3] -= 1
+                    current_melds.append(Chow(tile, t2, t3))
+                    self._collect_melds(tile_counts, num_melds - 1,
+                                        current_melds, results, pair_obj)
+                    current_melds.pop()
+                    tile_counts[tile] += 1
+                    tile_counts[t2] += 1
+                    tile_counts[t3] += 1
 
     def calculate_score(self, hand_tiles, revealed_sets, game_context=None):
         if self.is_winning_hand(hand_tiles, revealed_sets, game_context):

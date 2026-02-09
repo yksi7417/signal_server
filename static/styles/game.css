@@ -392,6 +392,25 @@ img.emoji {
   max-width: 90vw;
 }
 
+.faan-total {
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #b8860b;
+  margin-bottom: 0.25rem;
+}
+.faan-total.faan-limit {
+  color: #d4af37;
+  text-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
+}
+.faan-breakdown {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #555;
+}
+.faan-breakdown li { margin: 2px 0; }
+
 #winningHandDisplay {
   margin: 1rem 0;
   padding: 12px;

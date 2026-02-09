@@ -21,6 +21,7 @@ from .melds import Chow, Kong, Pung
 from .player import Player
 from .player_agent import AIPlayerAgent, HumanPlayerAgent
 from .ruleset import DefaultRuleSet  # Added import for DefaultRuleSet
+from .scoring import FaanCalculator
 from .tile import Tile
 
 
@@ -62,6 +63,9 @@ class GameState:
 
         self.winner_found = False
         self.winning_player_id = None
+        self.winning_faan = 0
+        self.winning_faan_breakdown = []
+        self.faan_calculator = FaanCalculator()
         self.action_log = ActionLog()
         self.history = GameHistory()
 
@@ -150,11 +154,13 @@ class GameState:
                     print(msg)
                 else:
                     # For AI players, automatically declare the win
+                    # Compute faan before setting winner state
+                    self._compute_faan(player, is_self_drawn=True)
                     self.winner_found = True
                     self.winning_player_id = player.player_id
                     msg = f"Player {player.player_id} won by self-draw!"
                     print(msg)
-                    
+
                     # Handle dealer rotation based on self-draw win
                     self.end_hand(winner_id=player.player_id)
 
@@ -507,9 +513,14 @@ class GameState:
         if not claiming_player:
             print(
                 f"Error: Claiming player {claiming_player_id} not found for WIN.")
-            return False        # Add the claimed tile to the player's hand for completeness,
+            return False
+
+        # Capture is_self_drawn BEFORE claim_type_pending is cleared
+        is_self_drawn = self.claim_type_pending == "SELF_DRAW_WIN"
+
+        # Add the claimed tile to the player's hand for completeness,
         # but only if it's not a self-draw win (tile already in hand)
-        if self.claim_type_pending != "SELF_DRAW_WIN":
+        if not is_self_drawn:
             # Remove the claimed tile from the discarder's discard pile
             discarding_player = self.players[self.current_player_index]
             for t in reversed(discarding_player.discards):
@@ -517,6 +528,9 @@ class GameState:
                     discarding_player.discards.remove(t)
                     break
             claiming_player.hand.append(claimed_tile)
+
+        # Compute faan scoring
+        self._compute_faan(claiming_player, is_self_drawn)
 
         self.winner_found = True
         self.winning_player_id = claiming_player_id
@@ -829,6 +843,45 @@ class GameState:
         # or turn_number here. These must persist so the API can correctly report
         # the game outcome to the frontend. They are reset when a new GameState
         # is constructed via __init__.
+
+    def _compute_faan(self, player, is_self_drawn):
+        """Compute faan for the winning player's hand. Stores results on self."""
+        decompositions = self.rules.decompose_winning_hand(
+            player.hand, player.revealed_sets)
+
+        best_faan = 0
+        best_breakdown = []
+
+        for melds, pair in decompositions:
+            faan, breakdown = self.faan_calculator.calculate(
+                melds=melds, pair=pair,
+                player_wind=player.wind,
+                game_wind=self.game_wind,
+                is_self_drawn=is_self_drawn,
+                hand_tiles=player.hand,
+                revealed_sets=player.revealed_sets,
+            )
+            if faan > best_faan:
+                best_faan = faan
+                best_breakdown = breakdown
+
+        # If no standard decomposition found, try limit hands directly
+        # (e.g. Thirteen Orphans has no standard meld decomposition)
+        if not decompositions:
+            faan, breakdown = self.faan_calculator.calculate(
+                melds=[], pair=None,
+                player_wind=player.wind,
+                game_wind=self.game_wind,
+                is_self_drawn=is_self_drawn,
+                hand_tiles=player.hand,
+                revealed_sets=player.revealed_sets,
+            )
+            if faan > best_faan:
+                best_faan = faan
+                best_breakdown = breakdown
+
+        self.winning_faan = best_faan
+        self.winning_faan_breakdown = best_breakdown
 
     def validate_tile_accounting(self):
         """Count tiles in all locations and verify invariant: total == TOTAL_TILES (136).
