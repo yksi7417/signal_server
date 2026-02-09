@@ -4,8 +4,8 @@ import { openBugReport } from './bugReport.js';
 // Re-use the spritesheet mapping from tileDisplay.js
 const UNICODE_TO_TILE_ID = {};
 for (let i = 0; i <= 3; i++) UNICODE_TO_TILE_ID[0x1F000 + i] = 27 + i;
-UNICODE_TO_TILE_ID[0x1F004] = 32;
-UNICODE_TO_TILE_ID[0x1F005] = 31;
+UNICODE_TO_TILE_ID[0x1F004] = 31;
+UNICODE_TO_TILE_ID[0x1F005] = 32;
 UNICODE_TO_TILE_ID[0x1F006] = 33;
 for (let i = 0; i <= 8; i++) UNICODE_TO_TILE_ID[0x1F007 + i] = 9 + i;
 for (let i = 0; i <= 8; i++) UNICODE_TO_TILE_ID[0x1F010 + i] = i;

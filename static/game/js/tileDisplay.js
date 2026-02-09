@@ -9,9 +9,9 @@ function sortTiles(tiles) {
 const UNICODE_TO_TILE_ID = {};
 // Winds: U+1F000-U+1F003 → East(27), South(28), West(29), North(30)
 for (let i = 0; i <= 3; i++) UNICODE_TO_TILE_ID[0x1F000 + i] = 27 + i;
-// Dragons: U+1F004=Red(32), U+1F005=Green(31), U+1F006=White(33)
-UNICODE_TO_TILE_ID[0x1F004] = 32;
-UNICODE_TO_TILE_ID[0x1F005] = 31;
+// Dragons: U+1F004=Red(31), U+1F005=Green(32), U+1F006=White(33)
+UNICODE_TO_TILE_ID[0x1F004] = 31;
+UNICODE_TO_TILE_ID[0x1F005] = 32;
 UNICODE_TO_TILE_ID[0x1F006] = 33;
 // Characters 1-9: U+1F007-U+1F00F → 9-17
 for (let i = 0; i <= 8; i++) UNICODE_TO_TILE_ID[0x1F007 + i] = 9 + i;
