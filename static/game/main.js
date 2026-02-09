@@ -2,7 +2,7 @@ import { openBugReport } from './js/bugReport.js';
 import { handleClaimNo, handleClaimYes } from './js/claimsHandler.js';
 import { handleDiscardTile, handleDrawTile, handleReset } from './js/gameActions.js';
 import { elements, store } from './js/gameStore.js';
-import { displayDiscardedTiles, selectTileByIndex } from './js/tileDisplay.js';
+import { selectTileByIndex } from './js/tileDisplay.js';
 
 
 // Initialize button event listeners
@@ -30,6 +30,25 @@ function initializeEventListeners() {
     const btnBugReport = document.getElementById('btnBugReport');
     if (btnBugReport) {
         btnBugReport.onclick = openBugReport;
+    }
+
+    // Mobile tile navigation buttons
+    const btnTileLeft = document.getElementById('btnTileLeft');
+    const btnTileRight = document.getElementById('btnTileRight');
+    if (btnTileLeft) {
+        btnTileLeft.onclick = () => navigateTile(-1);
+    }
+    if (btnTileRight) {
+        btnTileRight.onclick = () => navigateTile(1);
+    }
+}
+
+function navigateTile(direction) {
+    if (elements.btnDiscardTile && !elements.btnDiscardTile.disabled && store.currentHandTiles.length > 0) {
+        let idx = store.selectedTileIndex;
+        if (idx < 0) idx = 0;
+        else idx = Math.max(0, Math.min(store.currentHandTiles.length - 1, idx + direction));
+        selectTileByIndex(idx);
     }
 }
 
@@ -61,12 +80,7 @@ function initializeTimerSlider() {
 
 // Initialize game state
 async function initializeGame() {
-    try {
-        store.discardedTiles = [];
-        displayDiscardedTiles();
-    } catch (error) {
-        console.error('Error initializing game:', error);
-    }
+    // Game state initialization handled by handleReset() → loadInitialGameState()
 }
 
 // Add keyboard controls

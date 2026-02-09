@@ -2,7 +2,7 @@ import { showCelebrationScreen } from './celebrationScreen.js';
 import { hideClaimPrompt, showClaimPrompt } from './claimsHandler.js';
 import { handleDiscardTileResult } from './gameActions.js';
 import { elements, store } from './gameStore.js';
-import { displayGameInfo, displayHand, displayRevealedSets } from './tileDisplay.js';
+import { displayGameInfo, displayHand, displayPlayersInfo, displayRevealedSets } from './tileDisplay.js';
 
 export async function processAiTurns() {
     if (!store.currentGameInfo || store.currentGameInfo.current_player_id === undefined) {
@@ -175,6 +175,7 @@ function handleSuccessfulAiTurn(result) {
 
     if (result.player0_hand) displayHand(result.player0_hand);
     if (result.player0_revealed_sets) displayRevealedSets(result.player0_revealed_sets);
+    displayPlayersInfo(result.players_info, result.current_player_id);
 
     if (result.action === "win" && result.winner_found) {
         handleGameOver();

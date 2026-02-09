@@ -2,7 +2,7 @@ import { processAiTurns } from './aiTurnHandler.js';
 import { showCelebrationScreen } from './celebrationScreen.js';
 import { startDiscardCountdown } from './gameActions.js';
 import { elements, store, clearAllTimeouts } from './gameStore.js';
-import { displayHand, displayRevealedSets, selectTileByIndex } from './tileDisplay.js';
+import { displayHand, displayPlayersInfo, displayRevealedSets, selectTileByIndex } from './tileDisplay.js';
 
 export function showClaimPrompt(tile, claimType) {
     store.activeClaimType = claimType;
@@ -238,6 +238,7 @@ function handleSuccessfulClaim(result) {
     }
     displayHand(result.player_hand);
     displayRevealedSets(result.revealed_sets);
+    displayPlayersInfo(result.players_info, result.current_player_id);
 
     store.currentGameInfo.winner_found = result.winner_found;
     store.currentGameInfo.winning_player_id = result.winning_player_id;
@@ -264,6 +265,7 @@ function handleSuccessfulChowClaim(result) {
     }
     displayHand(result.player_hand);
     displayRevealedSets(result.revealed_sets);
+    displayPlayersInfo(result.players_info, result.current_player_id);
 
     store.currentGameInfo.winner_found = result.winner_found;
     store.currentGameInfo.winning_player_id = result.winning_player_id;
@@ -289,6 +291,7 @@ function handleClaimDeclined(result) {
     store.currentGameInfo.winner_found = result.winner_found;
     store.currentGameInfo.winning_player_id = result.winning_player_id;
 
+    displayPlayersInfo(result.players_info, result.current_player_id);
     updateGameInfoAfterDecline(result);
 
     if (store.currentGameInfo.winner_found) {
@@ -380,10 +383,11 @@ async function handleClaimWinYes() {
         if (result.action === "win_claimed") {
             clearAllTimeouts();
         }
-        
+
         if (elements.playerConsoleEl) {
             elements.playerConsoleEl.textContent = result.message;
         }
+        displayPlayersInfo(result.players_info, result.current_player_id);
         store.currentGameInfo.winner_found = result.winner_found;
         store.currentGameInfo.winning_player_id = result.winning_player_id;
 
@@ -435,9 +439,9 @@ async function handleClaimWinNo() {
                 // Highlight the last tile in the UI
                 const tileElements = document.querySelectorAll('#player-hand span');
                 tileElements.forEach((el, index) => {
-                    el.style.backgroundColor = 'transparent';
+                    el.classList.remove('tile-selected');
                     if (index === tileElements.length - 1) {
-                        el.style.backgroundColor = 'lightblue';
+                        el.classList.add('tile-selected');
                     }
                 });
             }
@@ -476,6 +480,7 @@ function handleSuccessfulKongClaim(result) {
     }
     displayHand(result.hand);
     displayRevealedSets(result.revealed_sets);
+    displayPlayersInfo(result.players_info, result.current_player_id);
 
     store.currentGameInfo.winner_found = result.winner_found;
     store.currentGameInfo.winning_player_id = result.winning_player_id;

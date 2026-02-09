@@ -55,6 +55,14 @@ livekit_service = LiveKitService()
 clients = {}
 
 
+def _players_info():
+    return current_game_state.get_players_public_info()
+
+
+def _current_pid():
+    return current_game_state.players[current_game_state.current_player_index].player_id
+
+
 async def index(request: web.Request) -> web.FileResponse:
     return web.FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
@@ -198,6 +206,7 @@ async def start_new_game(request: web.Request) -> web.Response:
         "remaining_tiles": len(current_game_state.wall),
         "dealer_index": dealer_info["dealer_index"],
         "round_wind": dealer_info["round_wind"],
+        "players_info": _players_info(),
     }
 
     return web.json_response(game_info)
@@ -280,6 +289,7 @@ async def player_claims_pung(request: web.Request) -> web.Response:
                 "current_player_id": current_game_state.current_player_index,
                 "action": "discard_after_pung",
                 "winner_found": current_game_state.winner_found,
+                "players_info": _players_info(),
             }
         else:
             response["message"] = "Backend failed to process Pung claim."
@@ -307,6 +317,8 @@ async def player_claims_pung(request: web.Request) -> web.Response:
             if current_game_state.current_discard
             else None,
             "winner_found": current_game_state.winner_found,
+            "players_info": _players_info(),
+            "current_player_id": _current_pid(),
         }
 
     return web.json_response(response)
@@ -351,6 +363,7 @@ async def player_claims_chow(request: web.Request) -> web.Response:
                 "current_player_id": current_game_state.current_player_index,
                 "action": "discard_after_chow",
                 "winner_found": current_game_state.winner_found,
+                "players_info": _players_info(),
             }
         else:
             response["message"] = "Backend failed to process Chow claim."
@@ -378,6 +391,8 @@ async def player_claims_chow(request: web.Request) -> web.Response:
             if current_game_state.current_discard
             else None,
             "winner_found": current_game_state.winner_found,
+            "players_info": _players_info(),
+            "current_player_id": _current_pid(),
         }
 
     return web.json_response(response)
@@ -423,6 +438,8 @@ async def player_claims_win(request: web.Request) -> web.Response:
                 "winner_found": current_game_state.winner_found,
                 "winning_player_id": current_game_state.winning_player_id,
                 "action": "win_claimed",
+                "players_info": _players_info(),
+                "current_player_id": _current_pid(),
             }
         else:
             response["message"] = "Backend failed to process Win claim."
@@ -441,6 +458,8 @@ async def player_claims_win(request: web.Request) -> web.Response:
                 "action": "self_draw_win_declined",
                 "winner_found": False,
                 "next_player_id": current_game_state.current_player_index,
+                "players_info": _players_info(),
+                "current_player_id": _current_pid(),
             }
         else:
             discarder_player_id = current_game_state.current_player_index
@@ -467,6 +486,8 @@ async def player_claims_win(request: web.Request) -> web.Response:
                 ].player_id,
                 "discarded_tile": discarded_tile_serializable,
                 "winner_found": current_game_state.winner_found,
+                "players_info": _players_info(),
+                "current_player_id": _current_pid(),
             }
 
     return web.json_response(response)
@@ -514,6 +535,8 @@ async def player_claims_kong(request: web.Request) -> web.Response:
                 "winning_player_id": current_game_state.winning_player_id
                 if current_game_state.winner_found
                 else None,
+                "players_info": _players_info(),
+                "current_player_id": _current_pid(),
             }
         else:
             response["message"] = "Backend failed to process Kong claim."
@@ -535,6 +558,8 @@ async def player_claims_kong(request: web.Request) -> web.Response:
             "winning_player_id": current_game_state.winning_player_id
             if current_game_state.winner_found
             else None,
+            "players_info": _players_info(),
+            "current_player_id": _current_pid(),
         }
 
     return web.json_response(response)
@@ -596,6 +621,8 @@ async def player_declares_hidden_kong(request: web.Request) -> web.Response:
             "drawn_tile": result_dict.get("drawn_tile"),
             "winner_found": current_game_state.winner_found,
             "winning_player_id": current_game_state.winning_player_id,
+            "players_info": _players_info(),
+            "current_player_id": _current_pid(),
         }
     else:
         response["error"] = result_dict.get("error", "Unknown error declaring Hidden Kong.")
@@ -632,6 +659,8 @@ async def draw_tile(request: web.Request) -> web.Response:
                     "revealed_sets": revealed_sets_serializable,
                     "drawn_tile": drawn_tile_serializable,
                     "remaining_tiles": len(current_game_state.wall),
+                    "players_info": _players_info(),
+                    "current_player_id": _current_pid(),
                 }
             )
 
@@ -649,6 +678,8 @@ async def draw_tile(request: web.Request) -> web.Response:
                 "claimable_tile": drawn_tile_serializable
                 if current_game_state.claim_type_pending == "SELF_DRAW_WIN"
                 else None,
+                "players_info": _players_info(),
+                "current_player_id": _current_pid(),
             }
         )
     else:
@@ -664,6 +695,8 @@ async def draw_tile(request: web.Request) -> web.Response:
                 "hand": hand_serializable,
                 "player_id": player_id,
                 "remaining_tiles": len(current_game_state.wall),
+                "players_info": _players_info(),
+                "current_player_id": _current_pid(),
             }
         )
 
@@ -721,6 +754,8 @@ async def discard_tile(request: web.Request) -> web.Response:
                 "discarded_tile": discarded_tile_info,
                 "winner_found": current_game_state.winner_found,
                 "remaining_tiles": len(current_game_state.wall),
+                "players_info": _players_info(),
+                "current_player_id": _current_pid(),
             }
 
             if (
@@ -787,6 +822,8 @@ async def request_ai_turn(request: web.Request) -> web.Response:
                 for meld in player0.revealed_sets
             ]
         result["player0_revealed_sets"] = player0_revealed_sets_serializable
+        result["players_info"] = _players_info()
+        result["current_player_id"] = _current_pid()
         try:
             print(f"AI {current_player_id} turn result:", result)
         except UnicodeEncodeError:

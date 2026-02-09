@@ -4,6 +4,53 @@ function sortTiles(tiles) {
     return [...tiles].sort((a, b) => a.localeCompare(b));
 }
 
+// Unicode → Pomax spritesheet tile ID mapping
+// Spritesheet: 9 cols × 5 rows. col = id%9, row = id/9
+const UNICODE_TO_TILE_ID = {};
+// Winds: U+1F000-U+1F003 → East(27), South(28), West(29), North(30)
+for (let i = 0; i <= 3; i++) UNICODE_TO_TILE_ID[0x1F000 + i] = 27 + i;
+// Dragons: U+1F004=Red(32), U+1F005=Green(31), U+1F006=White(33)
+UNICODE_TO_TILE_ID[0x1F004] = 32;
+UNICODE_TO_TILE_ID[0x1F005] = 31;
+UNICODE_TO_TILE_ID[0x1F006] = 33;
+// Characters 1-9: U+1F007-U+1F00F → 9-17
+for (let i = 0; i <= 8; i++) UNICODE_TO_TILE_ID[0x1F007 + i] = 9 + i;
+// Bamboo 1-9: U+1F010-U+1F018 → 0-8
+for (let i = 0; i <= 8; i++) UNICODE_TO_TILE_ID[0x1F010 + i] = i;
+// Dots 1-9: U+1F019-U+1F021 → 18-26
+for (let i = 0; i <= 8; i++) UNICODE_TO_TILE_ID[0x1F019 + i] = 18 + i;
+
+const TILE_SIZES = {
+    'tile-img-hand':    [40, 53],
+    'tile-img-discard': [28, 37],
+    'tile-img-meld':    [28, 37],
+};
+
+function unicodeToTileId(tile) {
+    if (!tile) return -1;
+    const cp = tile.codePointAt(0);
+    return UNICODE_TO_TILE_ID[cp] ?? -1;
+}
+
+function createTileImage(tile, sizeClass = 'tile-img-discard') {
+    const tileId = unicodeToTileId(tile);
+    const el = document.createElement('div');
+    el.className = `tile-img ${sizeClass}`;
+    if (tileId >= 0) {
+        const col = tileId % 9;
+        const row = Math.floor(tileId / 9);
+        const [w, h] = TILE_SIZES[sizeClass] || [28, 37];
+        el.style.backgroundPosition = `${-col * w}px ${-row * h}px`;
+    }
+    return el;
+}
+
+function createTileBack() {
+    const el = document.createElement('div');
+    el.className = 'tile-back';
+    return el;
+}
+
 export function displayHand(tiles) {
     if (!elements.playerHandEl) return;
     store.currentHandTiles = tiles || [];
@@ -127,11 +174,9 @@ export function displayHand(tiles) {
 
 function createTileElement(tile) {
     const tileEl = document.createElement('span');
-    tileEl.textContent = `${tile}`;
-    tileEl.style.border = "1px solid #ccc";
-    tileEl.style.padding = "1px";
-    tileEl.style.margin = "0px";
-    tileEl.style.cursor = "pointer";
+    tileEl.dataset.tile = tile;
+    const img = createTileImage(tile, 'tile-img-hand');
+    tileEl.appendChild(img);
 
     // Count occurrences of this tile in the hand
     const tileCount = store.currentHandTiles.filter(t => t === tile).length;
@@ -222,26 +267,27 @@ export function selectTileByIndex(index) {
         elements.selectedTileDisplayEl.textContent = `Selected: ${store.selectedTileForDiscard}`;
     }
 
-    tileElements.forEach(el => {
-        el.style.backgroundColor = 'transparent';
-    });
-    tileElements[index].style.backgroundColor = 'lightblue';
+    tileElements.forEach(el => el.classList.remove('tile-selected'));
+    tileElements[index].classList.add('tile-selected');
 }
 
 export function displayRevealedSets(revealed_sets_data) {
     if (!elements.revealedSetsEl) return;
 
     if (!revealed_sets_data || revealed_sets_data.length === 0) {
-        elements.revealedSetsEl.textContent = "";
+        elements.revealedSetsEl.innerHTML = "";
         return;
     }
 
-    let html = "";
+    elements.revealedSetsEl.innerHTML = '';
     revealed_sets_data.forEach(meld => {
-        const tilesString = meld.tiles.map(t => `${t}`).join(' ');
-        html += `[${tilesString}]`;
+        const group = document.createElement('span');
+        group.className = 'meld-group';
+        meld.tiles.forEach(t => {
+            group.appendChild(createTileImage(t, 'tile-img-meld'));
+        });
+        elements.revealedSetsEl.appendChild(group);
     });
-    elements.revealedSetsEl.innerHTML = html;
 }
 
 export function displayGameInfo(info) {
@@ -267,49 +313,69 @@ export function displayGameInfo(info) {
 }
 
 export function displayDiscardedTiles() {
-    const discardArea = elements.discardArea;
-    discardArea.innerHTML = '';
-    // Add a flex container for each row
-    const numTilesPerRow = 16;
-    
-    // Reverse the tiles array so newest tiles appear at top left
-    const reversedTiles = [...store.discardedTiles].reverse();
-    let currentRow;
+    // No-op: per-player discards are now rendered by displayPlayersInfo() from backend data
+}
 
-    reversedTiles.forEach((tile, index) => {
-        if (index % numTilesPerRow === 0) {
-            currentRow = document.createElement('div');
-            currentRow.style.cssText = `
-                display: flex;
-                justify-content: center;
-                margin-bottom: 1px;
-            `;
-            discardArea.appendChild(currentRow);
+function renderPlayerDiscards(container, discards) {
+    if (!container || !discards) return;
+    container.innerHTML = '';
+    discards.forEach((tile, index) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'discard-tile';
+        if (index === discards.length - 1) wrapper.classList.add('latest');
+        wrapper.appendChild(createTileImage(tile, 'tile-img-discard'));
+        container.appendChild(wrapper);
+    });
+}
+
+function renderPlayerMelds(container, sets) {
+    if (!container || !sets) return;
+    container.innerHTML = '';
+    sets.forEach(meld => {
+        const group = document.createElement('span');
+        group.className = 'meld-group';
+        meld.tiles.forEach(t => {
+            group.appendChild(createTileImage(t, 'tile-img-meld'));
+        });
+        container.appendChild(group);
+    });
+}
+
+export function displayPlayersInfo(playersInfo, currentPlayerId) {
+    if (!playersInfo) return;
+    store.playersInfo = playersInfo;
+
+    playersInfo.forEach((p, idx) => {
+        // Label with wind
+        const label = elements.playerLabels[idx];
+        if (label) {
+            const name = idx === 0 ? "You" : `Player ${idx}`;
+            label.textContent = `${name} (${p.wind || '--'})`;
         }
 
-        const tileElement = document.createElement('div');
-        tileElement.className = 'mahjong-tile';
-        tileElement.style.cssText = `
-            width: 45px;
-            height: 63px;
-            background-color: white;
-            border: 2px solid #999;
-            border-radius: 3px;
-            margin: 1px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 42px;
-            line-height: 1;
-            box-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        `;
+        // Turn indicator
+        const area = elements.playerAreas[idx];
+        if (area) area.classList.toggle('active-turn', p.player_id === currentPlayerId);
 
-        // If it's the latest discarded tile (first in reversed array), highlight it
-        if (index === 0) {
-            tileElement.style.border = '1px solid #ff6b6b';
-            tileElement.style.boxShadow = '0 0 1px rgba(255,107,107,0.5)';
+        // Discards for ALL players (from backend data)
+        const dc = elements.playerDiscards[idx];
+        if (dc) renderPlayerDiscards(dc, p.discards);
+
+        // Melds (P0 handled by existing displayRevealedSets)
+        if (idx !== 0) {
+            const mc = elements.playerMelds[idx];
+            if (mc) renderPlayerMelds(mc, p.revealed_sets);
         }
-        tileElement.textContent = tile;
-        currentRow.appendChild(tileElement);
+
+        // Hand tiles for opponents (face-down tile backs)
+        if (idx !== 0) {
+            const hc = elements.playerHandCounts[idx];
+            if (hc) {
+                hc.innerHTML = '';
+                for (let i = 0; i < p.hand_count; i++) {
+                    hc.appendChild(createTileBack());
+                }
+            }
+        }
     });
 }

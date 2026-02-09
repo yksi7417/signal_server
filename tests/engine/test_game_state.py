@@ -1426,6 +1426,58 @@ class TestGameHistoryIntegration:
         assert len(game.get_history()) > count_before
 
 
+class TestPlayersPublicInfo:
+    """Tests for get_players_public_info() method."""
+
+    def test_returns_four_players(self, game):
+        info = game.get_players_public_info()
+        assert len(info) == 4
+
+    def test_structure(self, game):
+        for p in game.get_players_public_info():
+            assert set(p.keys()) == {"player_id", "wind", "hand_count", "discards", "revealed_sets"}
+
+    def test_does_not_expose_hand_tiles(self, game):
+        for p in game.get_players_public_info():
+            assert "hand" not in p
+
+    def test_hand_count_matches(self, game):
+        for i, p in enumerate(game.get_players_public_info()):
+            assert p["hand_count"] == len(game.players[i].hand)
+
+    def test_discards_after_play(self, game):
+        """After a discard, that player's discards list is non-empty."""
+        # Control hands to prevent AI claims
+        game.players[0].hand = [
+            Tile(SUIT_WINDS, 'East'), Tile(SUIT_WINDS, 'South'), Tile(SUIT_WINDS, 'West'),
+            Tile(SUIT_WINDS, 'North'), Tile(SUIT_DRAGONS, 'Red'),
+            Tile(SUIT_DRAGONS, 'Green'), Tile(SUIT_DRAGONS, 'White'),
+            Tile(SUIT_BAMBOO, '1'), Tile(SUIT_BAMBOO, '3'), Tile(SUIT_BAMBOO, '5'),
+            Tile(SUIT_BAMBOO, '7'), Tile(SUIT_BAMBOO, '9'), Tile(SUIT_DOTS, '1'),
+        ]
+        game.wall.insert(0, Tile(SUIT_WINDS, 'East'))
+        game.players[1].hand = [Tile(SUIT_DOTS, str(i)) for i in range(1, 10)] + [Tile(SUIT_BAMBOO, '2'), Tile(SUIT_BAMBOO, '4'), Tile(SUIT_BAMBOO, '6'), Tile(SUIT_BAMBOO, '8')]
+        game.players[2].hand = [Tile(SUIT_CHARACTERS, str(i)) for i in range(1, 10)] + [Tile(SUIT_DOTS, '2'), Tile(SUIT_DOTS, '4'), Tile(SUIT_DOTS, '6'), Tile(SUIT_DOTS, '8')]
+        game.players[3].hand = [Tile(SUIT_BAMBOO, str(i)) for i in range(1, 10)] + [Tile(SUIT_CHARACTERS, '2'), Tile(SUIT_CHARACTERS, '4'), Tile(SUIT_CHARACTERS, '6'), Tile(SUIT_CHARACTERS, '8')]
+
+        game.draw_tile_for_current_player()
+        tile = game.players[0].hand[0]
+        game.discard_tile_for_current_player({"suit": tile.suit, "value": tile.value})
+        info = game.get_players_public_info()
+        assert len(info[0]["discards"]) > 0
+
+    def test_revealed_sets_after_pung(self, game):
+        """After a pung claim, revealed_sets is populated."""
+        player0 = game.players[0]
+        tile = Tile(SUIT_DOTS, '5')
+        player0.hand = [tile, tile] + [Tile(SUIT_BAMBOO, str(i)) for i in range(1, 12)]
+        game.current_player_index = 1
+        game.process_pung_claim(0, tile)
+        info = game.get_players_public_info()
+        assert len(info[0]["revealed_sets"]) == 1
+        assert info[0]["revealed_sets"][0]["type"] == "Pung"
+
+
 class TestTileChecksum:
     """Tests for the tile accounting checksum (validate_tile_accounting)."""
 

@@ -1,85 +1,150 @@
-.discard-area {
-  width: 100%;
-  min-height: 150px;
-  max-height: 150px;
-  border: 2px solid #ddd;
-  border-radius: 8px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: flex-start;
-  background-color: #f5f5f5;
-  overflow-y: auto;
-  overflow-x: hidden;
-}/* For Firefox */
-#discard-area {
-  scrollbar-width: thin;
-  scrollbar-color: #888 #f1f1f1;
+/* ── Mahjong Table Grid Layout ────────────────────────────────── */
+
+.mahjong-table {
+  display: grid;
+  grid-template-areas:
+    ".       top     ."
+    "left    center  right"
+    ".       bottom  .";
+  grid-template-columns: 200px 1fr 200px;
+  grid-template-rows: auto 1fr auto;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: 500px;
+  gap: 4px;
+  background: #0d6b2e;
+  border-radius: 12px;
+  padding: 8px;
 }
+.player-top    { grid-area: top; }
+.player-left   { grid-area: left; }
+.player-right  { grid-area: right; }
+.player-bottom { grid-area: bottom; }
+.center-info   { grid-area: center; }
+
+.player-area {
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 6px;
+  transition: box-shadow 0.3s;
+}
+
+/* Turn indicator — gold glow */
+.player-area.active-turn {
+  box-shadow: 0 0 12px 4px rgba(255,215,0,0.7);
+  border: 2px solid gold;
+}
+.player-area.active-turn .player-label {
+  background: rgba(255,215,0,0.3);
+}
+
+.player-label {
+  font-weight: bold;
+  color: #e0e0e0;
+  padding: 2px 8px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 4px;
+}
+
+/* ── Tile Image Sprites ───────────────────────────────────────── */
+
+.tile-img {
+  display: inline-block;
+  background-image: url('/static/img/tiles/tileset.png');
+  background-repeat: no-repeat;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+.tile-img-hand {
+  width: 40px; height: 53px;
+  background-size: 360px 265px; /* 9*40, 5*53 */
+}
+
+.tile-img-discard {
+  width: 28px; height: 37px;
+  background-size: 252px 185px; /* 9*28, 5*37 */
+}
+
+.tile-img-meld {
+  width: 28px; height: 37px;
+  background-size: 252px 185px; /* 9*28, 5*37 */
+}
+
+/* Per-player discard tiles */
+.player-discards { display: flex; flex-wrap: wrap; gap: 1px; min-height: 30px; }
+.discard-tile { display: inline-block; }
+.discard-tile.latest .tile-img { outline: 2px solid #ff6b6b; outline-offset: -1px; }
+
+/* Melds */
+.player-melds { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
+.meld-group { display: inline-flex; gap: 1px; background: rgba(255,255,255,0.15); border-radius: 3px; padding: 2px; }
+
+/* Opponent hand — face-down tile backs */
+.player-hand-count { display: flex; flex-wrap: wrap; gap: 1px; min-height: 26px; }
+.tile-back {
+  width: 18px; height: 24px;
+  background: linear-gradient(135deg, #1a5276, #2980b9);
+  border: 1px solid #154360;
+  border-radius: 2px;
+}
+
+/* P0 hand tile selection */
+#hand-nav { display: flex; align-items: center; gap: 4px; }
+#player-hand { display: flex; flex-wrap: wrap; gap: 2px; align-items: flex-end; flex: 1; }
+#player-hand span { cursor: pointer; display: inline-block; border-radius: 3px; }
+#player-hand span.tile-selected { outline: 3px solid #ffd700; outline-offset: 1px; }
+
+/* Tile navigation buttons (mobile) */
+.tile-nav-btn {
+  width: 36px; height: 53px;
+  font-size: 1.5em; font-weight: bold;
+  background: rgba(255,255,255,0.15);
+  color: #e0e0e0;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  touch-action: manipulation;
+}
+.tile-nav-btn:active { background: rgba(255,255,255,0.3); }
+.center-info { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #e0e0e0; }
+
+/* ── P0 Bottom Area ──────────────────────────────────────────── */
 
 #game-info-rows {
   display: flex;
-  font-size: 1.5em;
-  width: 98%;
-  max-width: 1200px;
-  margin: 1px auto;      /* centers and gives vertical spacing */
-  gap: 1px;              /* optional spacing between columns */
+  font-size: 1.2em;
+  gap: 4px;
+  margin: 4px 0;
 }
 
 #game-info,
 #remaining-tiles {
-  flex: 0 0 100px;        /* “don’t grow or shrink, always be 100px” */
-  margin-top: 1px;
+  font-weight: bold;
+  color: #e0e0e0;
 }
 
 #remaining-tiles {
   font-weight: bold;
+  color: #e0e0e0;
 }
 
 #selected-tile-display {
-  flex: 0 0 150px;        /* "don't grow or shrink, always be 100px" */
-  margin-top: 1px;
+  flex: 0 0 150px;
   font-weight: bold;
+  color: #e0e0e0;
 }
 
 #player-console {
-  flex: 1;                /* take up all remaining space */
-  margin-top: 1px;
-  color: green;
-}
-
-#game-info-group {
-  width: 98%;
-  max-width: 1200px;
-  margin: 1px auto;      /* centers and gives vertical spacing */
-  gap: 1px;              /* optional spacing between columns */
-}
-
-#game-hand-group {
-  width: 98%;
-  max-width: 1200px;
-  margin: 1px auto;      /* centers and gives vertical spacing */
-  gap: 1px;              /* optional spacing between columns */
-  border-collapse: collapse;  /* removes default cell spacing */
-  border-spacing: 0;          /* ensures no spacing between cells */
-}
-
-#game-hand-group td {
-  padding: 0;                 /* removes cell padding */
-  margin: 0;                  /* removes cell margin */
-  border: none;               /* removes cell borders */
-  vertical-align: top;        /* aligns content to top */
-}
-
-#game-hand-group td:first-child {
-  padding-right: 1px;         /* small gap between first and second column */
+  flex: 1;
+  color: #90ee90;
 }
 
 #button-group {
-  width: 98%;
-  max-width: 1200px;
-  margin: 1px auto;      /* centers and gives vertical spacing */
-  gap: 1px;              /* optional spacing between columns */
+  margin-top: 4px;
 }
 
 /* ── Timer Slider ──────────────────────────────────────────────── */

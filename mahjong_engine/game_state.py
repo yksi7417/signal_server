@@ -869,6 +869,19 @@ class GameState:
 
         return result
 
+    def get_players_public_info(self):
+        """Return publicly visible state for all players (no hidden hand tiles)."""
+        return [{
+            "player_id": p.player_id,
+            "wind": p.wind,
+            "hand_count": len(p.hand),
+            "discards": [t.unicode for t in p.discards],
+            "revealed_sets": [
+                {"type": m.meld_type.value, "tiles": [t.unicode for t in m.raw_tiles]}
+                for m in p.revealed_sets
+            ],
+        } for p in self.players]
+
     def get_state_snapshot(self):
         """Capture current game state as a serializable dict for bug reports."""
         players_snap = []

@@ -11,6 +11,7 @@ export const store = {
     selectedTileIndex: -1,
     currentHandTiles: [],
     discardedTiles: [],
+    playersInfo: [],
     INIT_HAND_SIZE: 13,
     claimType: null,
     claimableTile: null,
@@ -36,7 +37,12 @@ export const elements = {
     btnClaimYes: document.getElementById('btnClaimYes'),
     btnClaimNo: document.getElementById('btnClaimNo'),
     revealedSetsEl: document.getElementById('revealed-sets-display'),
-    discardArea: document.getElementById('discard-area')
+    // Per-player element refs for 4-player table
+    playerAreas: [0,1,2,3].map(i => document.getElementById(`player-area-${i}`)),
+    playerLabels: [0,1,2,3].map(i => document.getElementById(`player-label-${i}`)),
+    playerMelds: [0,1,2,3].map(i => document.getElementById(`player-melds-${i}`)),
+    playerDiscards: [0,1,2,3].map(i => document.getElementById(`player-discards-${i}`)),
+    playerHandCounts: [0,1,2,3].map(i => document.getElementById(`player-hand-count-${i}`)),
 };
 
 // Utility function to clear all active timeouts

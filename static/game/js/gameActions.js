@@ -2,7 +2,7 @@ import { processAiTurns } from './aiTurnHandler.js';
 import { showCelebrationScreen } from './celebrationScreen.js';
 import { enableHumanTurn, hideClaimPrompt, showClaimPrompt } from './claimsHandler.js';
 import { elements, store, clearAllTimeouts } from './gameStore.js';
-import { displayDiscardedTiles, displayGameInfo, displayHand, displayRevealedSets, selectTileByIndex } from './tileDisplay.js';
+import { displayGameInfo, displayHand, displayPlayersInfo, displayRevealedSets, selectTileByIndex } from './tileDisplay.js';
 
 function autoSelectDrawnTile(drawnTile) {
     // Find last occurrence of drawn tile in sorted hand
@@ -64,9 +64,9 @@ export function startDiscardCountdown(drawnTile) {
             // Highlight the rightmost tile in the UI
             const tileElements = document.querySelectorAll('#player-hand span');
             tileElements.forEach((el, index) => {
-                el.style.backgroundColor = 'transparent';
+                el.classList.remove('tile-selected');
                 if (index === tileElements.length - 1) {
-                    el.style.backgroundColor = 'lightblue';
+                    el.classList.add('tile-selected');
                 }
             });
             
@@ -155,6 +155,7 @@ async function loadInitialGameState() {
             store.currentGameInfo = game_info_data; // This includes winner_found: false
             displayHand(store.currentGameInfo.player_hand);
             displayGameInfo(store.currentGameInfo);
+            displayPlayersInfo(game_info_data.players_info, game_info_data.current_player_id);
             displayRevealedSets([]);
             hideClaimPrompt();
 
@@ -313,6 +314,7 @@ function updateGameStateAfterDraw(result) {
     store.currentGameInfo.remaining_tiles = result.remaining_tiles;
     displayHand(result.hand);
     displayGameInfo(store.currentGameInfo);
+    displayPlayersInfo(result.players_info, result.current_player_id);
 }
 
 export function updateGameStateAfterDiscard(result) {
@@ -330,8 +332,7 @@ export function updateGameStateAfterDiscard(result) {
     store.currentGameInfo.winner_found = result.winner_found;
     store.currentGameInfo.remaining_tiles = result.remaining_tiles;
 
-    store.discardedTiles.push(result.discarded_tile);
-    displayDiscardedTiles();
+    displayPlayersInfo(result.players_info, result.current_player_id);
 }
 
 export async function handleReset() {
@@ -347,9 +348,6 @@ export async function handleReset() {
     if (elements.selectedTileDisplayEl) {
         elements.selectedTileDisplayEl.textContent = "Selected:";
     }
-    store.discardedTiles = [];
-    displayDiscardedTiles();
-
     store.selectedTileForDiscard = null;
     displayRevealedSets([]);
     hideClaimPrompt();
