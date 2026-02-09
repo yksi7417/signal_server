@@ -333,6 +333,7 @@ export function updateGameStateAfterDiscard(result) {
     store.currentGameInfo.current_player_id = result.next_player_id;
     store.currentGameInfo.winner_found = result.winner_found;
     store.currentGameInfo.remaining_tiles = result.remaining_tiles;
+    if (result.winning_player_id !== undefined) store.currentGameInfo.winning_player_id = result.winning_player_id;
     if (result.winning_hand) store.currentGameInfo.winning_hand = result.winning_hand;
     if (result.winning_revealed_sets) store.currentGameInfo.winning_revealed_sets = result.winning_revealed_sets;
 

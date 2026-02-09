@@ -118,8 +118,12 @@ async function processSingleAiTurn() {
             throw new Error("No result from AI turn");
         }
         console.log("AI turn result:", ai_turn_result);
-        handleDiscardTileResult(ai_turn_result);
         updateGameState(ai_turn_result);
+        // Only run discard-result handler for non-win outcomes;
+        // wins are handled by handleSuccessfulAiTurn → handleGameOver
+        if (!ai_turn_result.winner_found) {
+            handleDiscardTileResult(ai_turn_result);
+        }
 
         if (ai_turn_result.success) {
             return handleSuccessfulAiTurn(ai_turn_result);
