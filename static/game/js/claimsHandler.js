@@ -390,6 +390,8 @@ async function handleClaimWinYes() {
         displayPlayersInfo(result.players_info, result.current_player_id);
         store.currentGameInfo.winner_found = result.winner_found;
         store.currentGameInfo.winning_player_id = result.winning_player_id;
+        if (result.winning_hand) store.currentGameInfo.winning_hand = result.winning_hand;
+        if (result.winning_revealed_sets) store.currentGameInfo.winning_revealed_sets = result.winning_revealed_sets;
 
         if (result.action === "win_claimed") {
             showCelebrationScreen(result.winning_player_id);

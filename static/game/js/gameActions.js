@@ -217,9 +217,11 @@ function handleSuccessfulDraw(result) {
 function handleWinAfterDraw(result) {
     // Clear any active timeouts when game ends
     clearAllTimeouts();
-    
+
     store.currentGameInfo.winner_found = true;
     store.currentGameInfo.winning_player_id = result.winning_player_id;
+    if (result.winning_hand) store.currentGameInfo.winning_hand = result.winning_hand;
+    if (result.winning_revealed_sets) store.currentGameInfo.winning_revealed_sets = result.winning_revealed_sets;
 
     if (elements.playerConsoleEl) {
         elements.playerConsoleEl.textContent = `Player ${result.winning_player_id} WINS!`;
@@ -331,6 +333,8 @@ export function updateGameStateAfterDiscard(result) {
     store.currentGameInfo.current_player_id = result.next_player_id;
     store.currentGameInfo.winner_found = result.winner_found;
     store.currentGameInfo.remaining_tiles = result.remaining_tiles;
+    if (result.winning_hand) store.currentGameInfo.winning_hand = result.winning_hand;
+    if (result.winning_revealed_sets) store.currentGameInfo.winning_revealed_sets = result.winning_revealed_sets;
 
     displayPlayersInfo(result.players_info, result.current_player_id);
 }

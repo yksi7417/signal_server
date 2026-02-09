@@ -165,7 +165,13 @@ function updateGameState(result) {
     if (result.game_ended !== undefined) {
         store.currentGameInfo.game_ended = result.game_ended;
     }
-    
+    if (result.winning_hand) {
+        store.currentGameInfo.winning_hand = result.winning_hand;
+    }
+    if (result.winning_revealed_sets) {
+        store.currentGameInfo.winning_revealed_sets = result.winning_revealed_sets;
+    }
+
     // Update the game info display to reflect changes
     displayGameInfo(store.currentGameInfo);
 }

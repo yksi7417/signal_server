@@ -63,6 +63,22 @@ def _current_pid():
     return current_game_state.players[current_game_state.current_player_index].player_id
 
 
+def _winning_hand_info():
+    """Return winning player's hand and melds for verification display."""
+    if not current_game_state.winner_found:
+        return {}
+    for p in current_game_state.players:
+        if p.player_id == current_game_state.winning_player_id:
+            return {
+                "winning_hand": [t.unicode for t in p.hand],
+                "winning_revealed_sets": [
+                    {"type": m.meld_type.value, "tiles": [t.unicode for t in m.raw_tiles]}
+                    for m in p.revealed_sets
+                ],
+            }
+    return {}
+
+
 async def index(request: web.Request) -> web.FileResponse:
     return web.FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
@@ -435,6 +451,8 @@ async def player_claims_win(request: web.Request) -> web.Response:
                 "message": f"Player {claiming_player_id} claimed Win!",
                 "hand": hand_serializable,
                 "revealed_sets": revealed_sets_serializable,
+                "winning_hand": hand_serializable,
+                "winning_revealed_sets": revealed_sets_serializable,
                 "winner_found": current_game_state.winner_found,
                 "winning_player_id": current_game_state.winning_player_id,
                 "action": "win_claimed",
@@ -657,6 +675,8 @@ async def draw_tile(request: web.Request) -> web.Response:
                     "winning_player_id": player_id,
                     "hand": hand_serializable,
                     "revealed_sets": revealed_sets_serializable,
+                    "winning_hand": hand_serializable,
+                    "winning_revealed_sets": revealed_sets_serializable,
                     "drawn_tile": drawn_tile_serializable,
                     "remaining_tiles": len(current_game_state.wall),
                     "players_info": _players_info(),
@@ -824,6 +844,8 @@ async def request_ai_turn(request: web.Request) -> web.Response:
         result["player0_revealed_sets"] = player0_revealed_sets_serializable
         result["players_info"] = _players_info()
         result["current_player_id"] = _current_pid()
+        if current_game_state.winner_found:
+            result.update(_winning_hand_info())
         try:
             print(f"AI {current_player_id} turn result:", result)
         except UnicodeEncodeError:

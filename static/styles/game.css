@@ -375,6 +375,23 @@ img.emoji {
   padding: 2rem 3rem;
   text-align: center;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  max-width: 90vw;
+}
+
+#winningHandDisplay {
+  margin: 1rem 0;
+  padding: 12px;
+  background: #f0f8f0;
+  border-radius: 8px;
+  min-height: 50px;
+}
+
+.winning-tiles-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+  margin: 4px 0;
 }
 
 .celebration-content h1 {
