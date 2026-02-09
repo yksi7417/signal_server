@@ -77,7 +77,7 @@ function addStartNewHandButton() {
     newHandButton.className = 'btn btn-primary';
     newHandButton.style.marginLeft = '10px';
     
-    newHandButton.onclick = async () => {
+    newHandButton.addEventListener('click', async () => {
         try {
             // Advance dealer rotation (dealer stays same for draw games in some variants)
             const advanceResponse = await fetch('/api/advance_dealer', {
@@ -100,8 +100,8 @@ function addStartNewHandButton() {
                 elements.playerConsoleEl.textContent = 'Error starting new hand. Please refresh the page.';
             }
         }
-    };
-    
+    });
+
     // Add the button to the UI
     if (elements.btnDrawTile && elements.btnDrawTile.parentNode) {
         elements.btnDrawTile.parentNode.appendChild(newHandButton);

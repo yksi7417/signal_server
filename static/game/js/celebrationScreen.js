@@ -42,15 +42,15 @@ export function showCelebrationScreen(player_id) {
         `;
         document.body.appendChild(overlay);
         elements.celebrationOverlay = overlay;
-        document.getElementById('btnNewGame').onclick = async () => {
+        document.getElementById('btnNewGame').addEventListener('click', async () => {
             await fetch('/api/reset_game', { method: 'POST' });
             hideCelebrationScreen();
             location.reload();
-        };
-        document.getElementById('btnCelebrationBugReport').onclick = () => {
+        });
+        document.getElementById('btnCelebrationBugReport').addEventListener('click', () => {
             hideCelebrationScreen();
             openBugReport();
-        };
+        });
     }
 
     // Update winner text

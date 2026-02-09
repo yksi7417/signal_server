@@ -72,7 +72,7 @@ export function displayHand(tiles) {
         // Add click handler for the next game button
         const nextGameBtn = document.getElementById('next-game-btn');
         if (nextGameBtn) {
-            nextGameBtn.onclick = async () => {
+            nextGameBtn.addEventListener('click', async () => {
                 try {
                     // Advance dealer rotation - assume it was a draw (no winner)
                     const advanceResponse = await fetch('/api/advance_dealer', {
@@ -148,7 +148,7 @@ export function displayHand(tiles) {
                         elements.playerConsoleEl.textContent = "Error continuing to next game. Please try again.";
                     }
                 }
-            };
+            });
         }
         return;
     }
@@ -177,7 +177,7 @@ function createTileElement(tile) {
 
     if (tileCount === 4) {
         tileEl.classList.add('self-kongable'); // Add CSS class for styling
-        tileEl.onclick = async () => {
+        tileEl.addEventListener('click', async () => {
             if (store.currentGameInfo.winner_found) return;
             // Hidden Kong can usually be declared on player's turn, often after drawing.
             // We assume it's the player's turn if this handler is active.
@@ -223,10 +223,10 @@ function createTileElement(tile) {
                     }
                 }
             }
-        };
+        });
     } else {
         // Default click handler for discarding
-        tileEl.onclick = () => handleTileClick(tile, tileEl);
+        tileEl.addEventListener('click', () => handleTileClick(tile, tileEl));
     }
     return tileEl;
 }

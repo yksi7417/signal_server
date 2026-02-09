@@ -8,38 +8,38 @@ import { selectTileByIndex } from './js/tileDisplay.js';
 // Initialize button event listeners
 function initializeEventListeners() {
     if (elements.btnReset) {
-        elements.btnReset.onclick = handleReset;
+        elements.btnReset.addEventListener('click', handleReset);
     }
 
     if (elements.btnDrawTile) {
-        elements.btnDrawTile.onclick = handleDrawTile;
+        elements.btnDrawTile.addEventListener('click', handleDrawTile);
     }
 
     if (elements.btnDiscardTile) {
-        elements.btnDiscardTile.onclick = handleDiscardTile;
+        elements.btnDiscardTile.addEventListener('click', handleDiscardTile);
     }
 
     if (elements.btnClaimYes) {
-        elements.btnClaimYes.onclick = handleClaimYes;
+        elements.btnClaimYes.addEventListener('click', handleClaimYes);
     }
 
     if (elements.btnClaimNo) {
-        elements.btnClaimNo.onclick = handleClaimNo;
+        elements.btnClaimNo.addEventListener('click', handleClaimNo);
     }
 
     const btnBugReport = document.getElementById('btnBugReport');
     if (btnBugReport) {
-        btnBugReport.onclick = openBugReport;
+        btnBugReport.addEventListener('click', openBugReport);
     }
 
     // Mobile tile navigation buttons
     const btnTileLeft = document.getElementById('btnTileLeft');
     const btnTileRight = document.getElementById('btnTileRight');
     if (btnTileLeft) {
-        btnTileLeft.onclick = () => navigateTile(-1);
+        btnTileLeft.addEventListener('click', () => navigateTile(-1));
     }
     if (btnTileRight) {
-        btnTileRight.onclick = () => navigateTile(1);
+        btnTileRight.addEventListener('click', () => navigateTile(1));
     }
 }
 
@@ -99,11 +99,11 @@ document.addEventListener('keydown', (event) => {
 
         // Priority 1: If a claim prompt is active, trigger the Yes button
         if (yesButton && !yesButton.disabled) {
-            yesButton.click();
+            handleClaimYes();
         }
         // Priority 2: If discard is enabled and a tile is selected, discard it
         else if (discardButton && !discardButton.disabled && store.selectedTileForDiscard) {
-            discardButton.click();
+            handleDiscardTile();
         } else if (elements.playerConsoleEl) {
             elements.playerConsoleEl.textContent = "Select a tile to discard first, or wait for your turn.";
         }
