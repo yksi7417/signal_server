@@ -20,10 +20,8 @@ export async function processAiTurns() {
 
         while (next_player_is_ai && !store.currentGameInfo.winner_found && !store.currentGameInfo.game_ended) {
             try {
+                await new Promise(resolve => setTimeout(resolve, 500));
                 next_player_is_ai = await processSingleAiTurn();
-                if (next_player_is_ai && !store.currentGameInfo.winner_found && !store.currentGameInfo.game_ended) {
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                }
             } catch (error) {
                 console.error("Error during AI turn processing:", error);
                 break;
