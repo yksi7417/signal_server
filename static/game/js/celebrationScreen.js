@@ -76,9 +76,10 @@ export function showCelebrationScreen(player_id) {
     }
 
     if (hand && hand.length > 0) {
+        const sorted = [...hand].sort((a, b) => a.localeCompare(b));
         const handRow = document.createElement('div');
         handRow.className = 'winning-tiles-row';
-        hand.forEach(t => handRow.appendChild(createCelebrationTile(t)));
+        sorted.forEach(t => handRow.appendChild(createCelebrationTile(t)));
         handDisplay.appendChild(handRow);
     }
 
