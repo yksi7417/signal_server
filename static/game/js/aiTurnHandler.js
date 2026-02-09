@@ -113,7 +113,15 @@ async function processSingleAiTurn() {
 
     try {
         const response = await fetch('/api/request_ai_turn', { method: 'POST' });
-        const ai_turn_result = await response.json();
+        let ai_turn_result;
+        try {
+            ai_turn_result = await response.json();
+        } catch (parseErr) {
+            console.error("Failed to parse AI turn response:", parseErr);
+            // Server returned non-JSON (e.g. 500 HTML error)
+            handleFailedAiTurn({ error: "Server error during AI turn." });
+            return false;
+        }
         if (!ai_turn_result) {
             throw new Error("No result from AI turn");
         }

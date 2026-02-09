@@ -103,8 +103,9 @@ export async function handleDrawTile() {
     } catch (error) {
         console.error("Error calling draw_tile API:", error);
         if (elements.playerConsoleEl) {
-            elements.playerConsoleEl.textContent = "Exception drawing tile: " + error;
+            elements.playerConsoleEl.textContent = "Error drawing tile. Click Draw Tile to retry.";
         }
+        if (elements.btnDrawTile) elements.btnDrawTile.disabled = false;
     }
 }
 
@@ -166,10 +167,21 @@ async function loadInitialGameState() {
                 if (btnDiscardTile) btnDiscardTile.disabled = true;            } else if (store.currentGameInfo.current_player_id !== 0) {
                 processAiTurns();            } else { // Player 0's turn and no winner
                 if (elements.playerConsoleEl) elements.playerConsoleEl.textContent = "Game loaded. Auto-drawing tile...";
+                if (elements.btnDrawTile) elements.btnDrawTile.disabled = false;
+                if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = true;
                 // Auto-draw instead of waiting for manual draw
                 setTimeout(async () => {
                     console.log("Starting auto-draw for player turn...");
-                    await handleDrawTile();
+                    try {
+                        await handleDrawTile();
+                    } catch (err) {
+                        console.error("Auto-draw failed:", err);
+                        // Ensure draw button is enabled so user can retry manually
+                        if (elements.btnDrawTile) elements.btnDrawTile.disabled = false;
+                        if (elements.playerConsoleEl) {
+                            elements.playerConsoleEl.textContent = "Auto-draw failed. Click Draw Tile to start.";
+                        }
+                    }
                 }, 100); // Small delay to ensure UI is ready
             }
         } else {
@@ -289,6 +301,8 @@ function handleDrawError(result) {
         elements.playerConsoleEl.textContent =
             result && result.message ? result.message : "Error drawing tile.";
     }
+    // Re-enable draw button so user can retry
+    if (elements.btnDrawTile) elements.btnDrawTile.disabled = false;
 }
 
 export function handleDiscardTileResult(result) {

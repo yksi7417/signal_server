@@ -875,53 +875,62 @@ async def discard_tile(request: web.Request) -> web.Response:
 
 async def request_ai_turn(request: web.Request) -> web.Response:
     global current_game_state
-    if current_game_state.pending_claim_player_id is not None:
+    try:
+        if current_game_state.pending_claim_player_id is not None:
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": "Human claim pending. AI turn cannot run yet.",
+                }
+            )
+
+        current_player_id = current_game_state.players[current_game_state.current_player_index].player_id
+
+        current_player_agent_type = type(current_game_state.players[current_game_state.current_player_index].agent)
+
+        if current_player_agent_type == AIPlayerAgent:
+            result = current_game_state.run_ai_turn()
+
+            result["winner_found"] = current_game_state.winner_found
+            result["remaining_tiles"] = len(current_game_state.wall)
+
+            player0_hand_serializable = []
+            if current_game_state.players:
+                player0 = current_game_state.players[0]
+                player0_hand_serializable = [tile.unicode for tile in player0.hand]
+            result["player0_hand"] = player0_hand_serializable
+
+            player0_revealed_sets_serializable = []
+            if current_game_state.players:
+                player0 = current_game_state.players[0]
+                player0_revealed_sets_serializable = [
+                    {"type": meld.meld_type.value, "tiles": [t.unicode for t in meld.raw_tiles]}
+                    for meld in player0.revealed_sets
+                ]
+            result["player0_revealed_sets"] = player0_revealed_sets_serializable
+            result["players_info"] = _players_info()
+            result["current_player_id"] = _current_pid()
+            if current_game_state.winner_found:
+                result.update(_winning_hand_info())
+            try:
+                print(f"AI {current_player_id} turn result:", result)
+            except UnicodeEncodeError:
+                print(f"AI {current_player_id} turn result: [Unicode result data]")
+            return web.json_response(result)
+        else:
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": f"Player {current_player_id} is not an AI player.",
+                }
+            )
+    except Exception as e:
+        import traceback
+        print(f"Error in request_ai_turn: {e}")
+        print(f"Traceback: {traceback.format_exc()}")
         return web.json_response(
-            {
-                "success": False,
-                "error": "Human claim pending. AI turn cannot run yet.",
-            }
-        )
-
-    current_player_id = current_game_state.players[current_game_state.current_player_index].player_id
-
-    current_player_agent_type = type(current_game_state.players[current_game_state.current_player_index].agent)
-
-    if current_player_agent_type == AIPlayerAgent:
-        result = current_game_state.run_ai_turn()
-
-        result["winner_found"] = current_game_state.winner_found
-        result["remaining_tiles"] = len(current_game_state.wall)
-
-        player0_hand_serializable = []
-        if current_game_state.players:
-            player0 = current_game_state.players[0]
-            player0_hand_serializable = [tile.unicode for tile in player0.hand]
-        result["player0_hand"] = player0_hand_serializable
-
-        player0_revealed_sets_serializable = []
-        if current_game_state.players:
-            player0 = current_game_state.players[0]
-            player0_revealed_sets_serializable = [
-                {"type": meld.meld_type.value, "tiles": [t.unicode for t in meld.raw_tiles]}
-                for meld in player0.revealed_sets
-            ]
-        result["player0_revealed_sets"] = player0_revealed_sets_serializable
-        result["players_info"] = _players_info()
-        result["current_player_id"] = _current_pid()
-        if current_game_state.winner_found:
-            result.update(_winning_hand_info())
-        try:
-            print(f"AI {current_player_id} turn result:", result)
-        except UnicodeEncodeError:
-            print(f"AI {current_player_id} turn result: [Unicode result data]")
-        return web.json_response(result)
-    else:
-        return web.json_response(
-            {
-                "success": False,
-                "error": f"Player {current_player_id} is not an AI player.",
-            }
+            {"success": False, "error": f"AI turn error: {str(e)}"},
+            status=200  # Return 200 so frontend can parse JSON
         )
 
 
