@@ -16,7 +16,6 @@
       <div id="player-area-2" class="player-area player-top">
         <div class="player-label" id="player-label-2">Player 2</div>
         <div class="player-melds" id="player-melds-2"></div>
-        <div class="player-discards" id="player-discards-2"></div>
         <div class="player-hand-count" id="player-hand-count-2"></div>
       </div>
 
@@ -24,21 +23,27 @@
       <div id="player-area-3" class="player-area player-left">
         <div class="player-label" id="player-label-3">Player 3</div>
         <div class="player-melds" id="player-melds-3"></div>
-        <div class="player-discards" id="player-discards-3"></div>
         <div class="player-hand-count" id="player-hand-count-3"></div>
       </div>
 
-      <!-- Center -->
+      <!-- Center: game info + all discards -->
       <div id="center-info" class="center-info">
-        <div id="remaining-tiles">Tiles: --</div>
-        <div id="game-info"></div>
+        <div id="center-status">
+          <span id="remaining-tiles">Tiles: --</span>
+          <span id="game-info"></span>
+        </div>
+        <div id="center-discards">
+          <div class="center-discard-row"><span class="discard-label">P2</span><div class="player-discards" id="player-discards-2"></div></div>
+          <div class="center-discard-row"><span class="discard-label">P3</span><div class="player-discards" id="player-discards-3"></div></div>
+          <div class="center-discard-row"><span class="discard-label">P1</span><div class="player-discards" id="player-discards-1"></div></div>
+          <div class="center-discard-row"><span class="discard-label">You</span><div class="player-discards" id="player-discards-0"></div></div>
+        </div>
       </div>
 
       <!-- Right: P1 -->
       <div id="player-area-1" class="player-area player-right">
         <div class="player-label" id="player-label-1">Player 1</div>
         <div class="player-melds" id="player-melds-1"></div>
-        <div class="player-discards" id="player-discards-1"></div>
         <div class="player-hand-count" id="player-hand-count-1"></div>
       </div>
 
@@ -48,7 +53,6 @@
         <div class="player-melds" id="player-melds-0">
           <span id="revealed-sets-display"></span>
         </div>
-        <div class="player-discards" id="player-discards-0"></div>
         <div id="game-info-rows">
           <div id="selected-tile-display">Selected: </div>
           <div id="player-console"></div>

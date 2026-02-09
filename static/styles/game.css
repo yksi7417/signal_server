@@ -110,7 +110,25 @@
   touch-action: manipulation;
 }
 .tile-nav-btn:active { background: rgba(255,255,255,0.3); }
-.center-info { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #e0e0e0; }
+/* Center area: game info + all discards */
+.center-info {
+  display: flex; flex-direction: column; align-items: stretch;
+  justify-content: flex-start; color: #e0e0e0; padding: 6px;
+}
+#center-status {
+  display: flex; gap: 12px; justify-content: center;
+  font-weight: bold; margin-bottom: 6px;
+}
+#center-discards {
+  display: flex; flex-direction: column; gap: 3px; flex: 1;
+}
+.center-discard-row {
+  display: flex; align-items: flex-start; gap: 4px;
+}
+.discard-label {
+  font-size: 0.75em; color: #aaa; min-width: 24px;
+  padding-top: 4px; flex-shrink: 0;
+}
 
 /* ── P0 Bottom Area ──────────────────────────────────────────── */
 
