@@ -57,8 +57,16 @@ html, body {
 }
 
 /* ── Tile Image Sprites ───────────────────────────────────────── */
+/* CSS custom properties control tile dimensions; media queries override them.
+   JS sets --col/--row per tile; CSS computes background-position via calc(). */
+
+:root {
+  --htw: 40; --hth: 53;  /* hand tile width/height */
+  --stw: 28; --sth: 37;  /* small tile (discard/meld) width/height */
+}
 
 .tile-img {
+  --col: 0; --row: 0;
   display: inline-block;
   background-image: url('/static/img/tiles/tileset.png');
   background-repeat: no-repeat;
@@ -67,18 +75,16 @@ html, body {
 }
 
 .tile-img-hand {
-  width: 40px; height: 53px;
-  background-size: 360px 265px; /* 9*40, 5*53 */
+  width: calc(var(--htw) * 1px); height: calc(var(--hth) * 1px);
+  background-size: calc(var(--htw) * 9px) calc(var(--hth) * 5px);
+  background-position: calc(var(--col) * var(--htw) * -1px) calc(var(--row) * var(--hth) * -1px);
 }
 
-.tile-img-discard {
-  width: 28px; height: 37px;
-  background-size: 252px 185px; /* 9*28, 5*37 */
-}
-
+.tile-img-discard,
 .tile-img-meld {
-  width: 28px; height: 37px;
-  background-size: 252px 185px; /* 9*28, 5*37 */
+  width: calc(var(--stw) * 1px); height: calc(var(--sth) * 1px);
+  background-size: calc(var(--stw) * 9px) calc(var(--sth) * 5px);
+  background-position: calc(var(--col) * var(--stw) * -1px) calc(var(--row) * var(--sth) * -1px);
 }
 
 /* Per-player discard tiles */
@@ -101,13 +107,13 @@ html, body {
 
 /* P0 hand tile selection */
 #hand-nav { display: flex; align-items: center; gap: 4px; }
-#player-hand { display: flex; flex-wrap: wrap; gap: 2px; align-items: flex-end; flex: 1; }
+#player-hand { display: flex; flex-wrap: nowrap; gap: 2px; align-items: flex-end; flex: 1; overflow-x: auto; }
 #player-hand span { cursor: pointer; display: inline-block; border-radius: 3px; }
 #player-hand span.tile-selected { outline: 3px solid #ffd700; outline-offset: 1px; }
 
 /* Tile navigation buttons (mobile) */
 .tile-nav-btn {
-  width: 36px; height: 53px;
+  width: 36px; height: calc(var(--hth) * 1px);
   font-size: 1.5em; font-weight: bold;
   background: rgba(255,255,255,0.15);
   color: #e0e0e0;
@@ -429,9 +435,12 @@ img.emoji {
 
 /* ── Mobile Responsive ─────────────────────────────────────────── */
 
-@media (max-width: 768px) {
+/* Landscape phones & small tablets */
+@media (max-width: 1024px) {
+  :root { --htw: 30; --hth: 40; --stw: 20; --sth: 27; }
+
   .mahjong-table {
-    grid-template-columns: 70px 1fr 70px;
+    grid-template-columns: 80px 1fr 80px;
     gap: 1px;
     padding: 2px;
   }
@@ -439,21 +448,8 @@ img.emoji {
   .player-area { padding: 3px; }
   .player-label { font-size: 0.7em; padding: 1px 4px; margin-bottom: 2px; }
 
-  /* Smaller tiles on mobile */
-  .tile-img-hand {
-    width: 30px; height: 40px;
-    background-size: 270px 200px; /* 9*30, 5*40 */
-  }
-
-  .tile-img-discard,
-  .tile-img-meld {
-    width: 20px; height: 27px;
-    background-size: 180px 135px; /* 9*20, 5*27 */
-  }
-
   .tile-back { width: 14px; height: 19px; }
-
-  .tile-nav-btn { width: 28px; height: 40px; font-size: 1.2em; }
+  .tile-nav-btn { width: 28px; font-size: 1.2em; }
 
   #player-hand { gap: 1px; }
   #player-hand span.tile-selected { outline-width: 2px; outline-offset: 0px; }
@@ -481,33 +477,47 @@ img.emoji {
   .timer-slider-group { font-size: 0.75em; margin-left: 6px; gap: 3px; }
   #discardTimerSlider { width: 60px; }
 
-  /* Celebration overlay - smaller on mobile */
   .celebration-content { padding: 1rem 1.5rem; }
   .celebration-content h1 { font-size: 1.5rem; }
   .celebration-content h2 { font-size: 1rem; margin-bottom: 1rem; }
 }
 
+/* Portrait phones */
 @media (max-width: 480px) {
-  .mahjong-table {
-    grid-template-columns: 50px 1fr 50px;
-  }
+  :root { --htw: 24; --hth: 32; --stw: 16; --sth: 21; }
 
+  .mahjong-table { grid-template-columns: 50px 1fr 50px; }
   .player-label { font-size: 0.6em; }
-
-  .tile-img-hand {
-    width: 24px; height: 32px;
-    background-size: 216px 160px; /* 9*24, 5*32 */
-  }
-
-  .tile-img-discard,
-  .tile-img-meld {
-    width: 16px; height: 21px;
-    background-size: 144px 105px; /* 9*16, 5*21 */
-  }
-
   .tile-back { width: 11px; height: 15px; }
-  .tile-nav-btn { width: 24px; height: 32px; font-size: 1em; }
+  .tile-nav-btn { width: 24px; font-size: 1em; }
 
   #button-group button { padding: 3px 5px; font-size: 0.7em; }
-  .timer-slider-group { display: none; } /* Hide timer on very small screens */
+  .timer-slider-group { display: none; }
+}
+
+/* Landscape phones with short viewport */
+@media (max-height: 500px) {
+  :root { --htw: 28; --hth: 37; --stw: 18; --sth: 24; }
+
+  .mahjong-table {
+    grid-template-columns: 70px 1fr 70px;
+    gap: 1px; padding: 2px;
+  }
+
+  .player-area { padding: 2px; }
+  .player-label { font-size: 0.65em; padding: 1px 3px; margin-bottom: 1px; }
+  .tile-back { width: 12px; height: 16px; }
+  .tile-nav-btn { width: 24px; font-size: 1em; }
+  .player-hand-count { gap: 0; min-height: 18px; }
+  .player-melds { margin-bottom: 1px; }
+
+  #game-info-rows { font-size: 0.75em; gap: 1px; margin: 1px 0; }
+  #selected-tile-display { flex: 0 0 80px; }
+  #button-group { margin-top: 1px; }
+  #button-group button { padding: 3px 6px; font-size: 0.75em; }
+
+  .center-info { padding: 2px; }
+  #center-status { font-size: 0.75em; gap: 4px; margin-bottom: 2px; }
+  .discard-label { font-size: 0.6em; min-width: 16px; }
+  .timer-slider-group { display: none; }
 }

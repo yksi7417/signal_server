@@ -20,12 +20,6 @@ for (let i = 0; i <= 8; i++) UNICODE_TO_TILE_ID[0x1F010 + i] = i;
 // Dots 1-9: U+1F019-U+1F021 → 18-26
 for (let i = 0; i <= 8; i++) UNICODE_TO_TILE_ID[0x1F019 + i] = 18 + i;
 
-const TILE_SIZES = {
-    'tile-img-hand':    [40, 53],
-    'tile-img-discard': [28, 37],
-    'tile-img-meld':    [28, 37],
-};
-
 function unicodeToTileId(tile) {
     if (!tile) return -1;
     const cp = tile.codePointAt(0);
@@ -39,8 +33,8 @@ function createTileImage(tile, sizeClass = 'tile-img-discard') {
     if (tileId >= 0) {
         const col = tileId % 9;
         const row = Math.floor(tileId / 9);
-        const [w, h] = TILE_SIZES[sizeClass] || [28, 37];
-        el.style.backgroundPosition = `${-col * w}px ${-row * h}px`;
+        el.style.setProperty('--col', col);
+        el.style.setProperty('--row', row);
     }
     return el;
 }

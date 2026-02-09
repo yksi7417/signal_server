@@ -18,7 +18,8 @@ function createCelebrationTile(tile) {
     if (tileId >= 0) {
         const col = tileId % 9;
         const row = Math.floor(tileId / 9);
-        el.style.backgroundPosition = `${-col * 28}px ${-row * 37}px`;
+        el.style.setProperty('--col', col);
+        el.style.setProperty('--row', row);
     }
     return el;
 }
