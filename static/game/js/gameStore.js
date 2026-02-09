@@ -10,6 +10,7 @@ export const store = {
     selectedTileForDiscard: null,
     selectedTileIndex: -1,
     currentHandTiles: [],
+    addKongTiles: [],
     discardedTiles: [],
     playersInfo: [],
     INIT_HAND_SIZE: 13,

@@ -121,6 +121,8 @@ button, .tile-nav-btn, #player-hand span, .meld-group {
 #player-hand { display: flex; flex-wrap: nowrap; gap: 2px; align-items: flex-end; flex: 1; overflow-x: auto; }
 #player-hand span { cursor: pointer; display: inline-block; border-radius: 3px; }
 #player-hand span.tile-selected { outline: 3px solid #ffd700; outline-offset: 1px; }
+#player-hand span.self-kongable { outline: 2px dashed #ff6600; outline-offset: 1px; }
+#player-hand span.add-kongable { outline: 2px dashed #00cc66; outline-offset: 1px; }
 
 /* Tile navigation buttons (mobile) */
 .tile-nav-btn {

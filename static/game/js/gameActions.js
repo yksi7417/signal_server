@@ -314,12 +314,15 @@ function updateGameStateAfterDraw(result) {
     store.currentGameInfo.winner_found = result.winner_found;
     store.currentGameInfo.winning_player_id = result.winning_player_id;
     store.currentGameInfo.remaining_tiles = result.remaining_tiles;
+    store.addKongTiles = result.add_kong_tiles || [];
     displayHand(result.hand);
+    if (result.revealed_sets) displayRevealedSets(result.revealed_sets);
     displayGameInfo(store.currentGameInfo);
     displayPlayersInfo(result.players_info, result.current_player_id);
 }
 
 export function updateGameStateAfterDiscard(result) {
+    store.addKongTiles = []; // Clear add-kong after discard
     displayHand(result.updated_hand);
     if (elements.playerConsoleEl) {
         elements.playerConsoleEl.textContent =

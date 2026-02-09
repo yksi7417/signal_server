@@ -652,6 +652,53 @@ async def player_declares_hidden_kong(request: web.Request) -> web.Response:
     return web.json_response(response)
 
 
+async def player_declares_add_kong(request: web.Request) -> web.Response:
+    global current_game_state
+    from mahjong_engine.tile import TileFactory
+
+    data = await request.json()
+    tile_info_raw = data.get("tile_info", {})
+
+    if isinstance(tile_info_raw, str):
+        tile_obj = TileFactory.from_unicode(tile_info_raw)
+        if not tile_obj:
+            return web.json_response({"success": False, "error": "Invalid tile_info for add Kong."})
+        tile_info = {"suit": tile_obj.suit, "value": tile_obj.value}
+    else:
+        tile_info = tile_info_raw
+
+    if not current_game_state.players:
+        return web.json_response({"success": False, "error": "Game not initialized."})
+
+    if current_game_state.current_player_index != 0:
+        return web.json_response({"success": False, "error": "Not your turn."})
+
+    player_id = current_game_state.players[0].player_id
+
+    result_dict = current_game_state.process_add_kong(player_id, tile_info)
+
+    if result_dict.get("success"):
+        player = current_game_state.players[player_id]
+        hand_serializable = [t.unicode for t in player.hand]
+        revealed_sets_serializable = [
+            {"type": meld.meld_type.value, "tiles": [t.unicode for t in meld.raw_tiles], "revealed": meld.revealed}
+            for meld in player.revealed_sets
+        ]
+        return web.json_response({
+            "success": True,
+            "message": result_dict.get("message"),
+            "hand": hand_serializable,
+            "revealed_sets": revealed_sets_serializable,
+            "drawn_tile": result_dict.get("drawn_tile"),
+            "winner_found": current_game_state.winner_found,
+            "winning_player_id": current_game_state.winning_player_id,
+            "players_info": _players_info(),
+            "current_player_id": _current_pid(),
+        })
+    else:
+        return web.json_response({"success": False, "error": result_dict.get("error")})
+
+
 async def draw_tile(request: web.Request) -> web.Response:
     global current_game_state
 
@@ -689,11 +736,23 @@ async def draw_tile(request: web.Request) -> web.Response:
             }
             return web.json_response(resp)
 
+        # Check for add-kong candidates (tile in hand matching exposed pung)
+        from mahjong_engine.hand_validator import can_add_to_exposed_kong
+        player = current_game_state.players[player_id]
+        add_kong_candidates = can_add_to_exposed_kong(player.hand, player.revealed_sets)
+        add_kong_tiles = [t.unicode for t in add_kong_candidates]
+
+        revealed_sets_serializable = [
+            {"type": meld.meld_type.value, "tiles": [t.unicode for t in meld.raw_tiles], "revealed": meld.revealed}
+            for meld in player.revealed_sets
+        ]
+
         return web.json_response(
             {
                 "success": True,
                 "drawn_tile": drawn_tile_serializable,
                 "hand": hand_serializable,
+                "revealed_sets": revealed_sets_serializable,
                 "player_id": player_id,
                 "winner_found": False,
                 "remaining_tiles": len(current_game_state.wall),
@@ -703,6 +762,7 @@ async def draw_tile(request: web.Request) -> web.Response:
                 "claimable_tile": drawn_tile_serializable
                 if current_game_state.claim_type_pending == "SELF_DRAW_WIN"
                 else None,
+                "add_kong_tiles": add_kong_tiles,
                 "players_info": _players_info(),
                 "current_player_id": _current_pid(),
             }
@@ -1185,6 +1245,7 @@ app.router.add_post("/api/player_claims_chow", player_claims_chow)
 app.router.add_post("/api/player_claims_win", player_claims_win)
 app.router.add_post("/api/player_claims_kong", player_claims_kong)
 app.router.add_post("/api/player_declares_hidden_kong", player_declares_hidden_kong)
+app.router.add_post("/api/player_declares_add_kong", player_declares_add_kong)
 app.router.add_post("/api/draw_tile", draw_tile)
 app.router.add_post("/api/discard_tile", discard_tile)
 app.router.add_post("/api/request_ai_turn", request_ai_turn)

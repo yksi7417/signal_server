@@ -166,6 +166,53 @@ export function displayHand(tiles) {
     });
 }
 
+async function handleKongClick(tile, kongType) {
+    if (store.currentGameInfo.winner_found) return;
+
+    const label = kongType === 'hidden' ? 'hidden Kong' : 'add Kong (promote Pung)';
+    const endpoint = kongType === 'hidden'
+        ? '/api/player_declares_hidden_kong'
+        : '/api/player_declares_add_kong';
+
+    if (confirm(`Declare ${label} with ${tile}?`)) {
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tile_info: tile })
+            });
+            const result = await response.json();
+            if (result && result.success) {
+                store.addKongTiles = []; // Clear after kong
+                displayHand(result.hand);
+                displayRevealedSets(result.revealed_sets);
+                if (elements.playerConsoleEl) {
+                    elements.playerConsoleEl.textContent = result.message;
+                }
+                if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = false;
+                if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
+
+                if (result.drawn_tile && elements.playerConsoleEl) {
+                    elements.playerConsoleEl.textContent += ` Replacement tile drawn: ${result.drawn_tile}`;
+                }
+                if (result.winner_found) {
+                    store.currentGameInfo.winner_found = true;
+                    store.currentGameInfo.winning_player_id = result.winning_player_id;
+                }
+            } else if (result && result.error) {
+                if (elements.playerConsoleEl) {
+                    elements.playerConsoleEl.textContent = `Error declaring ${label}: ${result.error}`;
+                }
+            }
+        } catch (error) {
+            console.error(`Error declaring ${label}:`, error);
+            if (elements.playerConsoleEl) {
+                elements.playerConsoleEl.textContent = `Unexpected error declaring ${label}.`;
+            }
+        }
+    }
+}
+
 function createTileElement(tile) {
     const tileEl = document.createElement('span');
     tileEl.dataset.tile = tile;
@@ -175,55 +222,15 @@ function createTileElement(tile) {
     // Count occurrences of this tile in the hand
     const tileCount = store.currentHandTiles.filter(t => t === tile).length;
 
+    // Check if tile can be added to an exposed pung (add kong)
+    const isAddKongable = store.addKongTiles && store.addKongTiles.includes(tile);
+
     if (tileCount === 4) {
-        tileEl.classList.add('self-kongable'); // Add CSS class for styling
-        tileEl.addEventListener('click', async () => {
-            if (store.currentGameInfo.winner_found) return;
-            // Hidden Kong can usually be declared on player's turn, often after drawing.
-            // We assume it's the player's turn if this handler is active.
-            // Add additional checks if isPlayerTurn is available and relevant here.
-
-            if (confirm(`Declare a hidden Kong with ${tile}?`)) {
-                const tileData = tile;
-                try {
-                    const response = await fetch('/api/player_declares_hidden_kong', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tile_info: tileData })
-                    });
-                    const result = await response.json();
-                    if (result && result.success) {
-                        displayHand(result.hand);
-                        displayRevealedSets(result.revealed_sets);
-                        if (elements.playerConsoleEl) {
-                            elements.playerConsoleEl.textContent = result.message;
-                        }
-                        // After successful Kong, player usually needs to discard.
-                        // The backend should ideally dictate button states if a replacement tile was drawn.
-                        if (elements.btnDiscardTile) elements.btnDiscardTile.disabled = false;
-                        if (elements.btnDrawTile) elements.btnDrawTile.disabled = true;
-
-                        if (result.drawn_tile && elements.playerConsoleEl) {
-                            elements.playerConsoleEl.textContent += ` Replacement tile drawn: ${result.drawn_tile}`;
-                        }
-
-                    } else if (result && result.error) {
-                        if (elements.playerConsoleEl) {
-                            elements.playerConsoleEl.textContent = "Error declaring Hidden Kong: " + result.error;
-                        }
-                    } else {
-                        if (elements.playerConsoleEl) {
-                            elements.playerConsoleEl.textContent = "Failed to declare Hidden Kong. Unknown error.";
-                        }
-                    }
-                } catch (error) {
-                    console.error("EEL call failed for Hidden Kong:", error);
-                    if (elements.playerConsoleEl) {
-                        elements.playerConsoleEl.textContent = "An unexpected error occurred while declaring Hidden Kong.";
-                    }
-                }
-            }
-        });
+        tileEl.classList.add('self-kongable');
+        tileEl.addEventListener('click', () => handleKongClick(tile, 'hidden'));
+    } else if (isAddKongable) {
+        tileEl.classList.add('add-kongable');
+        tileEl.addEventListener('click', () => handleKongClick(tile, 'add'));
     } else {
         // Default click handler for discarding
         tileEl.addEventListener('click', () => handleTileClick(tile, tileEl));

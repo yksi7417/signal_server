@@ -251,6 +251,87 @@ class TestMethodRobustness:
         assert isinstance(result["error"], str)
 
 
+class TestAddKong:
+    """Tests for add kong (promote exposed pung to kong)."""
+
+    def test_add_kong_success(self):
+        """Player with exposed Pung and matching tile in hand can add kong."""
+        game = GameState()
+        player = game.players[0]
+        game.current_player_index = 0
+
+        # Set up: give player an exposed Pung of Dots-1
+        from mahjong_engine.tile import Tile
+        from mahjong_engine.constants import SUIT_DOTS
+        pung_tile = Tile(SUIT_DOTS, '1')
+        pung = Pung(pung_tile, revealed=True, claimed_from=1)
+        player.revealed_sets = [pung]
+
+        # Put matching tile in hand (14 tiles: 13 hand + 1 drawn)
+        player.hand = [pung_tile] + [Tile(SUIT_DOTS, str(v)) for v in range(2, 10)]
+        # Pad to 11 tiles (14 total - 3 in pung = 11 in hand normally,
+        # but after draw we have 11 + drawn = could be any valid count)
+        # Simplify: just need the pung tile in hand
+        player.hand = [pung_tile, Tile(SUIT_DOTS, '2'), Tile(SUIT_DOTS, '3')]
+
+        result = game.process_add_kong(0, {"suit": SUIT_DOTS, "value": "1"})
+        assert result["success"] is True
+        assert "Added Kong" in result["message"]
+        # Pung should now be Kong in revealed_sets
+        assert player.revealed_sets[0].meld_type.value == "Kong"
+        assert len(player.revealed_sets[0].raw_tiles) == 4
+
+    def test_add_kong_no_pung(self):
+        """Cannot add kong if no exposed pung of that tile."""
+        game = GameState()
+        player = game.players[0]
+        game.current_player_index = 0
+
+        from mahjong_engine.tile import Tile
+        from mahjong_engine.constants import SUIT_DOTS
+        tile = Tile(SUIT_DOTS, '1')
+        player.hand = [tile]
+        player.revealed_sets = []
+
+        result = game.process_add_kong(0, {"suit": SUIT_DOTS, "value": "1"})
+        assert result["success"] is False
+        assert "No exposed Pung" in result["error"]
+
+    def test_add_kong_wrong_turn(self):
+        """Cannot add kong on another player's turn."""
+        game = GameState()
+        game.current_player_index = 1  # Not player 0's turn
+
+        result = game.process_add_kong(0, {"suit": "Dots", "value": "1"})
+        assert result["success"] is False
+        assert "Not your turn" in result["error"]
+
+    def test_can_add_to_exposed_kong_validator(self):
+        """hand_validator.can_add_to_exposed_kong finds matching tiles."""
+        from mahjong_engine.hand_validator import can_add_to_exposed_kong
+        from mahjong_engine.tile import Tile
+        from mahjong_engine.constants import SUIT_DOTS, SUIT_BAMBOO
+
+        pung_tile = Tile(SUIT_DOTS, '5')
+        pung = Pung(pung_tile, revealed=True, claimed_from=2)
+        hand = [pung_tile, Tile(SUIT_BAMBOO, '3')]
+        result = can_add_to_exposed_kong(hand, [pung])
+        assert len(result) == 1
+        assert result[0] == pung_tile
+
+    def test_can_add_to_exposed_kong_hidden_pung_excluded(self):
+        """Hidden pungs (revealed=False) should not be candidates for add kong."""
+        from mahjong_engine.hand_validator import can_add_to_exposed_kong
+        from mahjong_engine.tile import Tile
+        from mahjong_engine.constants import SUIT_DOTS
+
+        pung_tile = Tile(SUIT_DOTS, '5')
+        pung = Pung(pung_tile, revealed=False, claimed_from=0)
+        hand = [pung_tile]
+        result = can_add_to_exposed_kong(hand, [pung])
+        assert len(result) == 0
+
+
 def test_game_state_initialization(game):
     assert len(game.players) == NUM_PLAYERS
     expected_wall_size = (sum(len(values) for _, values in TILE_CATEGORIES_FOR_GENERATION) * NUM_COPIES_PER_TILE) - (NUM_PLAYERS * INIT_HAND_SIZE)

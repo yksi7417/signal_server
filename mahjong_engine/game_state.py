@@ -11,6 +11,7 @@ from .action_log import ActionLog
 from .game_history import GameHistory
 from .game_session import get_dealer_rotation_state, assign_player_winds_globally, advance_dealer_rotation, get_current_dealer_info, set_dealer_rotation_state
 from .hand_validator import (
+    can_add_to_exposed_kong,
     can_form_chow_with_discard,
     can_form_kong_with_discard,
     can_form_pung_with_discard,
@@ -708,6 +709,73 @@ class GameState:
         self.draw_tile_for_current_player()
 
         return True
+
+    def process_add_kong(self, player_id, tile_info):
+        """
+        Promotes an exposed Pung to a Kong by adding a matching tile from hand.
+        Also known as "small kong" or "add kong".
+        """
+        player = self.players[player_id]
+
+        if self.current_player_index != player_id:
+            return {"success": False,
+                    "error": "Not your turn to declare an add Kong."}
+
+        from .tile import TileFactory
+        try:
+            kong_tile_obj = TileFactory.get_tile(tile_info['suit'], tile_info['value'])
+        except Exception as e:
+            return {"success": False,
+                    "error": f"Invalid tile data for add Kong: {e}"}
+
+        # Check tile is in hand
+        if kong_tile_obj not in player.hand:
+            return {"success": False,
+                    "error": f"Tile {kong_tile_obj} not in hand."}
+
+        # Find the matching exposed Pung in revealed_sets
+        pung_index = None
+        for i, meld in enumerate(player.revealed_sets):
+            if (meld.meld_type.value == "Pung" and
+                    meld.revealed and meld.key_tile == kong_tile_obj):
+                pung_index = i
+                break
+
+        if pung_index is None:
+            return {"success": False,
+                    "error": f"No exposed Pung of {kong_tile_obj} found."}
+
+        # Remove tile from hand
+        player.hand.remove(kong_tile_obj)
+
+        # Replace the Pung with a Kong in revealed_sets
+        old_pung = player.revealed_sets[pung_index]
+        new_kong = Kong(
+            tile=kong_tile_obj,
+            revealed=True,
+            claimed_from=old_pung.claimed_from)
+        player.revealed_sets[pung_index] = new_kong
+
+        self.action_log.record("add_kong", player_id=player_id, tile=kong_tile_obj)
+        self.validate_tile_accounting()
+        self.action_log.record_state_snapshot(self.get_state_snapshot())
+
+        # Draw replacement tile
+        replacement_tile = self.draw_tile_for_current_player()
+        drawn_tile_serializable = replacement_tile.unicode if replacement_tile else None
+
+        message = f"Added Kong with {kong_tile_obj}. Replacement tile drawn: {drawn_tile_serializable or 'None'}. Your turn to discard."
+
+        if self.winner_found and self.winning_player_id == player_id:
+            message = f"Added Kong with {kong_tile_obj}. Drew {drawn_tile_serializable or 'None'}. Player {player_id} WINS by self-draw after Kong!"
+        elif replacement_tile is None:
+            message = f"Added Kong with {kong_tile_obj}. Wall empty, no replacement tile drawn."
+
+        return {
+            "success": True,
+            "message": message,
+            "drawn_tile": drawn_tile_serializable
+        }
 
     def check_and_handle_self_kong(self, player):
         """Check if player can form Kong with their own tiles and handle it."""

@@ -253,6 +253,32 @@ def can_form_self_kong(hand):
     return [tile for tile, count in tile_counts.items() if count >= 4]
 
 
+def can_add_to_exposed_kong(hand, revealed_sets):
+    """
+    Checks if any tile in hand matches an exposed Pung in revealed_sets,
+    allowing promotion to Kong ("add kong" / "small kong").
+    Returns a list of tiles that can be added to exposed pungs.
+    """
+    if not hand or not revealed_sets:
+        return []
+
+    # Find all exposed pungs
+    pung_tiles = set()
+    for meld in revealed_sets:
+        if meld.meld_type == MeldType.PUNG and meld.revealed:
+            pung_tiles.add(meld.key_tile)
+
+    # Find tiles in hand that match an exposed pung
+    result = []
+    seen = set()
+    for tile in hand:
+        if tile in pung_tiles and tile not in seen:
+            result.append(tile)
+            seen.add(tile)
+
+    return result
+
+
 def can_form_chow_with_discard(hand, discarded_tile, discarder_position, claimer_position):
     """
     Checks if a player's hand can form a Chow (sequence of 3 consecutive tiles
