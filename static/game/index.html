@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Mahjong Game</title>
   <link rel="stylesheet" href="/static/styles/game.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -80,20 +81,19 @@
 
     <script type="module" src="/static/game/main.js"></script>
 
-    <!-- Voice Chat Section from index.html -->
-    <h2>👥 Connected Peers</h2>
-
-    <div style="display: flex; align-items: center; gap: 16px;">
-      <label for="clientIdInput">Your Name:</label>
-      <input id="clientIdInput" value="" />
-      <button id="startButton">init...</button>
-      <label id="serverLocation"></label>
+    <!-- Voice Chat Section (hidden during game) -->
+    <div id="voice-section" style="display:none;">
+      <h2>Connected Peers</h2>
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <label for="clientIdInput">Your Name:</label>
+        <input id="clientIdInput" value="" />
+        <button id="startButton">init...</button>
+        <label id="serverLocation"></label>
+      </div>
+      <ul id="peerList"></ul>
+      <label for="logArea">Logs:</label><br>
+      <textarea id="logArea" readonly></textarea>
     </div>
-
-    <ul id="peerList"></ul>
-
-    <label for="logArea">Logs:</label><br>
-    <textarea id="logArea" readonly></textarea>
 
     <audio id="ding" src="/static/audio/dingdong.mp3" preload="auto"></audio>
 
