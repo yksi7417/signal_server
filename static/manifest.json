@@ -1,0 +1,27 @@
+{
+    "name": "Mahjong Game",
+    "short_name": "Mahjong",
+    "description": "Hong Kong-style Mahjong with AI opponents",
+    "start_url": "/game",
+    "display": "standalone",
+    "orientation": "landscape",
+    "background_color": "#0a5a25",
+    "theme_color": "#0d6b2e",
+    "icons": [
+        {
+            "src": "/static/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/static/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "/static/icons/icon-180.png",
+            "sizes": "180x180",
+            "type": "image/png"
+        }
+    ]
+}

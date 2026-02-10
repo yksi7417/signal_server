@@ -1,23 +1,22 @@
-[tool.flake8]
-ignore = ["E501", "W291", "W293", "E302", "E303", "E231", "E701"]
-max-line-length = 120
-
-[tool.black]
+[tool.ruff]
 line-length = 120
-skip-string-normalization = true
+target-version = "py312"
 
-[tool.isort]
-line_length = 120
-multi_line_output = 3
-include_trailing_comma = true
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
 
-[tool.pylint.messages_control]
-disable = [
-    "line-too-long",
-    "trailing-whitespace",
-    "bad-whitespace",
-    "missing-final-newline"
-]
+[tool.ruff.lint.isort]
+known-first-party = ["mahjong_engine"]
+
+[tool.coverage.run]
+source = ["mahjong_engine", "app"]
+omit = ["tests/*", ".venv/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+fail_under = 0
 
 [tool.pytest.ini_options]
 markers = [

@@ -3,6 +3,8 @@ import { handleClaimNo, handleClaimYes } from './js/claimsHandler.js';
 import { handleDiscardTile, handleDrawTile, handleReset } from './js/gameActions.js';
 import { elements, store } from './js/gameStore.js';
 import { selectTileByIndex } from './js/tileDisplay.js';
+import { initAuth, loginWithApple, playAsGuest } from './js/auth.js';
+import { showStats } from './js/statsScreen.js';
 
 
 // Initialize button event listeners
@@ -30,6 +32,23 @@ function initializeEventListeners() {
     const btnBugReport = document.getElementById('btnBugReport');
     if (btnBugReport) {
         btnBugReport.addEventListener('click', openBugReport);
+    }
+
+    const btnStats = document.getElementById('btnStats');
+    if (btnStats) {
+        btnStats.addEventListener('click', showStats);
+    }
+
+    // Login overlay buttons
+    const btnPlayAsGuest = document.getElementById('btnPlayAsGuest');
+    if (btnPlayAsGuest) {
+        btnPlayAsGuest.addEventListener('click', playAsGuest);
+    }
+
+    // Apple Sign In button (via Apple JS SDK)
+    const appleBtn = document.getElementById('appleid-signin');
+    if (appleBtn) {
+        appleBtn.addEventListener('click', loginWithApple);
     }
 
     // Mobile tile navigation buttons
@@ -122,9 +141,22 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
-window.onload = () => {
+window.onload = async () => {
     initializeEventListeners();
     initializeTimerSlider();
+
+    // Check auth — shows login overlay if no session
+    await initAuth();
+
     handleReset();
     initializeGame();
+
+    // Register service worker for PWA
+    if ('serviceWorker' in navigator) {
+        try {
+            await navigator.serviceWorker.register('/static/sw.js');
+        } catch (e) {
+            console.warn('SW registration failed:', e);
+        }
+    }
 };

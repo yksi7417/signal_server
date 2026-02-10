@@ -23,7 +23,8 @@ export const store = {
     discardTimeoutId: null,
     discardCountdownId: null, // For visual countdown display
     CLAIM_TIMEOUT_MS: 30000, // 30 seconds for claim decisions (configurable for debugging)
-    DISCARD_TIMEOUT_MS: 30000 // 30 seconds for discard actions (configurable via slider)
+    DISCARD_TIMEOUT_MS: 30000, // 30 seconds for discard actions (configurable via slider)
+    currentUser: null // Set by auth.js after login
 };
 
 // DOM element references

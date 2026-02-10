@@ -4,6 +4,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mahjong">
+  <link rel="manifest" href="/static/manifest.json">
+  <link rel="apple-touch-icon" href="/static/icons/icon-180.png">
   <title>Mahjong Game</title>
   <link rel="stylesheet" href="/static/styles/game.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,6 +17,16 @@
 </head>
 
 <body>
+    <!-- Login overlay -->
+    <div id="loginOverlay" class="login-overlay" style="display:none;">
+      <div class="login-content">
+        <h1>Mahjong</h1>
+        <p>Sign in to track your stats and appear on the leaderboard.</p>
+        <div id="appleid-signin" data-color="white" data-border="true" data-type="sign-in"></div>
+        <button id="btnPlayAsGuest" class="guest-btn">Play as Guest</button>
+      </div>
+    </div>
+
     <div id="mahjong-table" class="mahjong-table">
       <!-- Top: P2 -->
       <div id="player-area-2" class="player-area player-top">
@@ -70,6 +85,7 @@
           <button id="btnClaimNo" disabled>No</button>
           <button id="reset" disabled>Reset</button>
           <button id="btnBugReport">Report Bug</button>
+          <button id="btnStats">Stats</button>
           <span class="timer-slider-group">
             <label for="discardTimerSlider">Auto-discard:</label>
             <input type="range" id="discardTimerSlider" min="5" max="120" value="30" step="5">
@@ -97,6 +113,7 @@
 
     <audio id="ding" src="/static/audio/dingdong.mp3" preload="auto"></audio>
 
+    <script type="text/javascript" src="https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js" crossorigin="anonymous"></script>
     <script src="https://unpkg.com/twemoji@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
     <script src="/static/scripts/Vosklet.js" async defer></script>
     <script type="module" src="/static/scripts/voice.js"></script>

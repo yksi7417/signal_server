@@ -24,6 +24,8 @@ from mahjong_engine.game_session import (
     get_current_dealer_info,
 )
 from mahjong_engine.livekit_service import LiveKitService
+from mahjong_engine.database import Database
+from mahjong_engine.auth import AuthService
 
 
 BASE_DIR = os.path.dirname(__file__)
@@ -51,6 +53,10 @@ ws_room_tracker = WebSocketRoomTracker()
 
 # LiveKit video chat service
 livekit_service = LiveKitService()
+
+# Database and auth services
+db = Database()
+auth_service = AuthService(database=db)
 
 clients = {}
 
@@ -442,6 +448,15 @@ async def player_claims_win(request: web.Request) -> web.Response:
         success = current_game_state.process_win_claim(claiming_player_id, claimed_tile)
 
         if success:
+            # Record stats for authenticated user
+            user = request.get("user")
+            if user:
+                faan_val = current_game_state.winning_faan or 0
+                try:
+                    await db.record_match(user["user_id"], None, "win", faan=faan_val)
+                except Exception as e:
+                    logger.error("Failed to record win stats: %s", e)
+
             player = current_game_state.players[claiming_player_id]
             hand_serializable = [t.unicode for t in player.hand]
             revealed_sets_serializable = [
@@ -713,6 +728,15 @@ async def draw_tile(request: web.Request) -> web.Response:
         hand_serializable = [t.unicode for t in current_player_hand]
 
         if current_game_state.winner_found and current_game_state.winning_player_id == player_id:
+            # Human self-draw win — record win for authenticated user
+            user = request.get("user")
+            if user and player_id == 0:
+                faan_val = current_game_state.winning_faan or 0
+                try:
+                    await db.record_match(user["user_id"], None, "win", faan=faan_val)
+                except Exception as e:
+                    logger.error("Failed to record self-draw win stats: %s", e)
+
             hand_serializable = [t.unicode for t in current_game_state.players[player_id].hand]
             revealed_sets_serializable = [
                 {"type": meld.meld_type.value, "tiles": [t.unicode for t in meld.raw_tiles]}
@@ -768,6 +792,14 @@ async def draw_tile(request: web.Request) -> web.Response:
             }
         )
     else:
+        # Record draw for authenticated user
+        user = request.get("user")
+        if user:
+            try:
+                await db.record_match(user["user_id"], None, "draw")
+            except Exception as e:
+                logger.error("Failed to record draw stats: %s", e)
+
         current_player_hand = current_game_state.players[current_game_state.current_player_index].hand
         hand_serializable = [t.unicode for t in current_player_hand]
         return web.json_response(
@@ -912,6 +944,13 @@ async def request_ai_turn(request: web.Request) -> web.Response:
             result["current_player_id"] = _current_pid()
             if current_game_state.winner_found:
                 result.update(_winning_hand_info())
+                # AI won — record loss for authenticated human player
+                user = request.get("user")
+                if user:
+                    try:
+                        await db.record_match(user["user_id"], None, "loss")
+                    except Exception as e:
+                        logger.error("Failed to record loss stats: %s", e)
             try:
                 print(f"AI {current_player_id} turn result:", result)
             except UnicodeEncodeError:
@@ -1229,6 +1268,114 @@ async def report_bug(request: web.Request) -> web.Response:
     return web.json_response(response)
 
 
+# --- Database startup/cleanup ---
+
+async def startup_db(app):
+    await db.initialize()
+    logger.info("Database initialized")
+
+
+async def cleanup_db(app):
+    await db.close()
+    logger.info("Database closed")
+
+
+# --- Auth endpoints ---
+
+async def auth_apple(request: web.Request) -> web.Response:
+    """Sign in with Apple — validate identity token and return session."""
+    data = await request.json()
+    identity_token = data.get("identity_token")
+    display_name = data.get("display_name")
+
+    if not identity_token:
+        return web.json_response(
+            {"success": False, "error": "identity_token is required."}, status=400
+        )
+
+    try:
+        result = await auth_service.authenticate_apple(identity_token, display_name)
+        return web.json_response({"success": True, **result})
+    except ValueError as e:
+        return web.json_response(
+            {"success": False, "error": str(e)}, status=401
+        )
+    except Exception as e:
+        logger.error("SIWA auth error: %s", e)
+        return web.json_response(
+            {"success": False, "error": "Authentication failed."}, status=500
+        )
+
+
+async def auth_logout(request: web.Request) -> web.Response:
+    """Invalidate session token."""
+    token = request.headers.get("Authorization", "").replace("Bearer ", "")
+    if token:
+        auth_service.invalidate_session(token)
+    return web.json_response({"success": True})
+
+
+async def auth_me(request: web.Request) -> web.Response:
+    """Get current authenticated user info + stats."""
+    user = request.get("user")
+    if not user:
+        return web.json_response({"success": False, "error": "Not authenticated."}, status=401)
+
+    user_data = await db.get_user_by_id(user["user_id"])
+    stats = await db.get_user_stats(user["user_id"])
+
+    return web.json_response({
+        "success": True,
+        "user": {
+            "id": user_data["id"],
+            "display_name": user_data["display_name"],
+            "email": user_data.get("email"),
+        } if user_data else None,
+        "stats": stats,
+    })
+
+
+# --- User stats & leaderboard endpoints ---
+
+async def user_profile(request: web.Request) -> web.Response:
+    """Get authenticated user's profile and stats."""
+    user = request.get("user")
+    if not user:
+        return web.json_response({"success": False, "error": "Not authenticated."}, status=401)
+
+    stats = await db.get_user_stats(user["user_id"])
+    return web.json_response({"success": True, "stats": stats})
+
+
+async def user_history(request: web.Request) -> web.Response:
+    """Get authenticated user's match history."""
+    user = request.get("user")
+    if not user:
+        return web.json_response({"success": False, "error": "Not authenticated."}, status=401)
+
+    history = await db.get_match_history(user["user_id"])
+    return web.json_response({"success": True, "history": history})
+
+
+async def leaderboard(request: web.Request) -> web.Response:
+    """Get top players leaderboard (public, no auth required)."""
+    board = await db.get_leaderboard()
+    return web.json_response({"success": True, "leaderboard": board})
+
+
+# --- Middlewares ---
+
+@web.middleware
+async def auth_middleware(request: web.Request, handler):
+    """Permissive auth middleware — attaches user if valid token present, never blocks."""
+    token = request.headers.get("Authorization", "").replace("Bearer ", "")
+    if token:
+        session = auth_service.validate_session(token)
+        if session:
+            request["user"] = session
+    return await handler(request)
+
+
 @web.middleware
 async def security_headers(request: web.Request, handler):
     response = await handler(request)
@@ -1236,11 +1383,18 @@ async def security_headers(request: web.Request, handler):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
     response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
-    response.headers.setdefault("Cross-Origin-Embedder-Policy", "require-corp")
+    # Relax COEP for /game route to allow Apple JS SDK and other cross-origin resources
+    if request.path in ("/game", "/"):
+        response.headers.setdefault("Cross-Origin-Embedder-Policy", "credentialless")
+    else:
+        response.headers.setdefault("Cross-Origin-Embedder-Policy", "require-corp")
     return response
 
 
-app = web.Application(middlewares=[security_headers])
+app = web.Application(middlewares=[auth_middleware, security_headers])
+
+app.on_startup.append(startup_db)
+app.on_cleanup.append(cleanup_db)
 
 app.router.add_get("/", index)
 app.router.add_get("/game", game)
@@ -1271,6 +1425,12 @@ app.router.add_get("/api/sessions", list_sessions)
 app.router.add_get("/api/sessions/{session_id}", get_session)
 app.router.add_post("/api/livekit/token", livekit_token)
 app.router.add_get("/api/livekit/config", livekit_config)
+app.router.add_post("/api/auth/apple", auth_apple)
+app.router.add_post("/api/auth/logout", auth_logout)
+app.router.add_get("/api/auth/me", auth_me)
+app.router.add_get("/api/user/profile", user_profile)
+app.router.add_get("/api/user/history", user_history)
+app.router.add_get("/api/leaderboard", leaderboard)
 app.router.add_get("/voice.html", voice_handler)
 app.router.add_get("/voice_command.html", voice_command_handler)
 app.router.add_get("/ws", websocket_handler)

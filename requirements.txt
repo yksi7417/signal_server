@@ -14,6 +14,12 @@ numpy>=2.0.0
 livekit-api>=1.1.0
 livekit>=1.0.25
 
+# Database (async SQLite)
+aiosqlite>=0.20.0
+
+# Authentication (Sign in with Apple JWT verification)
+PyJWT[crypto]>=2.9.0
+
 # GitHub integration
 PyGithub>=2.8.0
 requests>=2.32.0
@@ -21,7 +27,11 @@ requests>=2.32.0
 # Testing
 pytest>=8.3.0
 pytest-timeout>=2.3.0
+pytest-cov>=6.0.0
 psutil>=6.0.0
+
+# Linting
+ruff>=0.9.0
 
 # Direct dependencies (auto-installed with above, but pinned for reproducibility)
 aiohappyeyeballs>=2.6.0
