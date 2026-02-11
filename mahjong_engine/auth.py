@@ -11,6 +11,8 @@ import time
 import jwt
 import requests
 
+from mahjong_engine.database import sanitize_display_name
+
 logger = logging.getLogger(__name__)
 
 APPLE_JWKS_URL = "https://appleid.apple.com/auth/keys"
@@ -96,6 +98,7 @@ class AuthService:
         apple_sub = payload["sub"]
         email = payload.get("email")
         name = display_name or email or f"Player_{apple_sub[:8]}"
+        name = sanitize_display_name(name)
 
         user = await self.database.upsert_user(apple_sub, name, email=email)
         token = self.create_session(user["id"])
@@ -105,7 +108,6 @@ class AuthService:
             "user": {
                 "id": user["id"],
                 "display_name": user["display_name"],
-                "email": user.get("email"),
             },
         }
 

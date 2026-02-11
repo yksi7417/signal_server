@@ -547,6 +547,25 @@ fly volumes create mahjong_data --region iad --size 1 -a signal-server-eo-7uq
 fly deploy -a signal-server-eo-7uq
 ```
 
+### Database backups
+
+The server automatically creates a SQLite backup on every startup (deploy). Backups are stored in `/app/data/backups/` and the last 7 are kept. You can also trigger a manual backup:
+
+```bash
+# Manual backup via admin endpoint (from fly ssh or local)
+fly ssh console -a signal-server-eo-7uq -C "curl -s http://localhost:8080/api/admin/backup"
+```
+
+For hardware-level protection, fly.io automatically takes daily volume snapshots:
+
+```bash
+# List volume snapshots (fly.io takes these automatically)
+fly volumes snapshots list -a signal-server-eo-7uq
+
+# Restore from a snapshot if needed
+fly volumes create mahjong_data --snapshot-id <snap_id> --region iad --size 1 -a signal-server-eo-7uq
+```
+
 ---
 
 ## Quick Reference: File Locations

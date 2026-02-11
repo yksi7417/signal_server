@@ -3,9 +3,17 @@
 Uses aiosqlite for async access, compatible with aiohttp's event loop.
 Database file is stored in data/mahjong.db (volume-mounted on fly.dev).
 """
+import logging
 import os
+from datetime import datetime
 
 import aiosqlite
+
+logger = logging.getLogger(__name__)
+
+VALID_RESULTS = ("win", "loss", "draw")
+MAX_DISPLAY_NAME_LENGTH = 50
+MAX_BACKUPS = 7
 
 DEFAULT_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "mahjong.db")
 
@@ -41,6 +49,16 @@ CREATE TABLE IF NOT EXISTS match_history (
 """
 
 
+def sanitize_display_name(name):
+    """Strip whitespace and truncate display_name to MAX_DISPLAY_NAME_LENGTH chars.
+
+    Raises ValueError if name is empty after stripping.
+    """
+    if not name or not name.strip():
+        raise ValueError("display_name must not be empty")
+    return name.strip()[:MAX_DISPLAY_NAME_LENGTH]
+
+
 class Database:
     """Async SQLite database for user accounts, stats, and match history."""
 
@@ -49,13 +67,18 @@ class Database:
         self.db = None
 
     async def initialize(self):
-        """Create data directory, connect to DB, and create tables."""
+        """Create data directory, connect to DB, enable WAL mode, and create tables."""
         db_dir = os.path.dirname(self.db_path)
         if db_dir and not os.path.exists(db_dir):
             os.makedirs(db_dir, exist_ok=True)
 
         self.db = await aiosqlite.connect(self.db_path)
         self.db.row_factory = aiosqlite.Row
+
+        # WAL mode: prevents corruption from unclean shutdowns, allows concurrent reads
+        await self.db.execute("PRAGMA journal_mode=WAL")
+        await self.db.execute("PRAGMA foreign_keys=ON")
+
         await self.db.executescript(SCHEMA_SQL)
         await self.db.commit()
 
@@ -65,8 +88,42 @@ class Database:
             await self.db.close()
             self.db = None
 
+    async def backup(self):
+        """Create a timestamped backup using SQLite online backup API.
+
+        Backups are stored in a 'backups' subdirectory next to the database file.
+        Only the last MAX_BACKUPS copies are kept.
+
+        Returns the backup file path, or None for in-memory databases.
+        """
+        if self.db_path == ":memory:":
+            return None
+
+        backup_dir = os.path.join(os.path.dirname(self.db_path), "backups")
+        os.makedirs(backup_dir, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = os.path.join(backup_dir, f"mahjong_{timestamp}.db")
+
+        async with aiosqlite.connect(backup_path) as backup_db:
+            await self.db.backup(backup_db)
+
+        logger.info("Database backed up to %s", backup_path)
+
+        # Prune old backups, keep last MAX_BACKUPS
+        backups = sorted(
+            [f for f in os.listdir(backup_dir) if f.startswith("mahjong_") and f.endswith(".db")]
+        )
+        while len(backups) > MAX_BACKUPS:
+            old = backups.pop(0)
+            os.remove(os.path.join(backup_dir, old))
+            logger.info("Pruned old backup: %s", old)
+
+        return backup_path
+
     async def upsert_user(self, apple_sub, display_name, email=None):
         """Create or update a user by Apple subject ID. Returns user dict."""
+        display_name = sanitize_display_name(display_name)
+
         await self.db.execute(
             """INSERT INTO users (apple_sub, display_name, email)
                VALUES (?, ?, ?)
@@ -107,7 +164,13 @@ class Database:
             session_id: Game session identifier.
             result: One of 'win', 'loss', 'draw'.
             faan: Faan scored (for wins).
+
+        Raises:
+            ValueError: If result is not a valid value.
         """
+        if result not in VALID_RESULTS:
+            raise ValueError(f"Invalid result '{result}', must be one of {VALID_RESULTS}")
+
         await self.db.execute(
             """INSERT INTO match_history (user_id, session_id, result, faan_scored)
                VALUES (?, ?, ?, ?)""",
@@ -115,18 +178,17 @@ class Database:
         )
 
         # Update aggregate stats
-        stat_col = {"win": "games_won", "loss": "games_lost", "draw": "games_drawn"}.get(result)
-        if stat_col:
-            await self.db.execute(
-                f"""UPDATE user_stats SET
-                        games_played = games_played + 1,
-                        {stat_col} = {stat_col} + 1,
-                        highest_faan = MAX(highest_faan, ?),
-                        total_faan = total_faan + ?,
-                        updated_at = datetime('now')
-                    WHERE user_id = ?""",
-                (faan, faan, user_id),
-            )
+        stat_col = {"win": "games_won", "loss": "games_lost", "draw": "games_drawn"}[result]
+        await self.db.execute(
+            f"""UPDATE user_stats SET
+                    games_played = games_played + 1,
+                    {stat_col} = {stat_col} + 1,
+                    highest_faan = MAX(highest_faan, ?),
+                    total_faan = total_faan + ?,
+                    updated_at = datetime('now')
+                WHERE user_id = ?""",
+            (faan, faan, user_id),
+        )
         await self.db.commit()
 
     async def get_user_stats(self, user_id):

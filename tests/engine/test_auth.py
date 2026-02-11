@@ -1,6 +1,7 @@
 """Tests for the Sign in with Apple authentication service."""
 import asyncio
 import time
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -97,3 +98,51 @@ class TestAuthServiceInit:
         svc = AuthService(database=db, client_id="com.example", team_id="TEAM123")
         assert svc.client_id == "com.example"
         assert svc.team_id == "TEAM123"
+
+
+class TestAuthenticateAppleResponse:
+    """Test that authenticate_apple response does not leak email."""
+
+    def test_no_email_in_response(self, auth):
+        """authenticate_apple should not include email in the returned user dict."""
+        mock_payload = {
+            "sub": "apple_test_001",
+            "email": "secret@example.com",
+        }
+        with patch.object(auth, "verify_apple_token", new_callable=AsyncMock, return_value=mock_payload):
+            result = _run(auth.authenticate_apple("fake_token", display_name="TestUser"))
+
+        assert "email" not in result["user"]
+        assert result["user"]["display_name"] == "TestUser"
+        assert result["user"]["id"] is not None
+        assert "session_token" in result
+
+    def test_email_still_stored_in_db(self, auth, db):
+        """Email should be stored in the DB even though it's not in the response."""
+        mock_payload = {
+            "sub": "apple_test_002",
+            "email": "stored@example.com",
+        }
+        with patch.object(auth, "verify_apple_token", new_callable=AsyncMock, return_value=mock_payload):
+            result = _run(auth.authenticate_apple("fake_token", display_name="DBUser"))
+
+        user = _run(db.get_user_by_id(result["user"]["id"]))
+        assert user["email"] == "stored@example.com"
+
+    def test_display_name_sanitized(self, auth):
+        """display_name should be stripped and truncated."""
+        mock_payload = {"sub": "apple_test_003"}
+        long_name = "  " + "X" * 100 + "  "
+        with patch.object(auth, "verify_apple_token", new_callable=AsyncMock, return_value=mock_payload):
+            result = _run(auth.authenticate_apple("fake_token", display_name=long_name))
+
+        assert len(result["user"]["display_name"]) == 50
+        assert not result["user"]["display_name"].startswith(" ")
+
+    def test_fallback_name_when_no_display_name(self, auth):
+        """Should fall back to email or Player_ prefix."""
+        mock_payload = {"sub": "apple_test_004", "email": "fallback@example.com"}
+        with patch.object(auth, "verify_apple_token", new_callable=AsyncMock, return_value=mock_payload):
+            result = _run(auth.authenticate_apple("fake_token"))
+
+        assert result["user"]["display_name"] == "fallback@example.com"

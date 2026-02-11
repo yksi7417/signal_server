@@ -1,6 +1,9 @@
-import os
 import json
 import logging
+import os
+import time
+from collections import defaultdict
+
 import aiohttp_cors
 from aiohttp import web, WSMsgType
 
@@ -11,21 +14,21 @@ except ImportError:
     GITHUB_AVAILABLE = False
     print("Warning: PyGithub not installed. GitHub issue creation will be disabled.")
 
+from mahjong_engine.auth import AuthService
 from mahjong_engine.bug_report import BugReport
+from mahjong_engine.chat_protocol import handle_chat_message, handle_chat_history, handle_chat_typing
+from mahjong_engine.database import Database
+from mahjong_engine.game_session import (
+    GameSession,
+    advance_dealer_rotation,
+    get_current_dealer_info,
+    reset_dealer_rotation_state,
+)
 from mahjong_engine.game_state import GameState
+from mahjong_engine.livekit_service import LiveKitService
 from mahjong_engine.player_agent import AIPlayerAgent
 from mahjong_engine.room_manager import RoomManager
 from mahjong_engine.ws_room_tracker import WebSocketRoomTracker
-from mahjong_engine.chat_protocol import handle_chat_message, handle_chat_history, handle_chat_typing
-from mahjong_engine.game_session import (
-    GameSession,
-    reset_dealer_rotation_state,
-    advance_dealer_rotation,
-    get_current_dealer_info,
-)
-from mahjong_engine.livekit_service import LiveKitService
-from mahjong_engine.database import Database
-from mahjong_engine.auth import AuthService
 
 
 BASE_DIR = os.path.dirname(__file__)
@@ -57,6 +60,23 @@ livekit_service = LiveKitService()
 # Database and auth services
 db = Database()
 auth_service = AuthService(database=db)
+
+# Rate limiter for auth endpoints: {ip: [timestamps]}
+RATE_LIMIT_MAX = 10  # max requests per window
+RATE_LIMIT_WINDOW = 60  # seconds
+_rate_limit_store = defaultdict(list)
+
+
+def _check_rate_limit(ip):
+    """Return True if request is allowed, False if rate limited."""
+    now = time.time()
+    timestamps = _rate_limit_store[ip]
+    # Remove expired entries
+    _rate_limit_store[ip] = [t for t in timestamps if now - t < RATE_LIMIT_WINDOW]
+    if len(_rate_limit_store[ip]) >= RATE_LIMIT_MAX:
+        return False
+    _rate_limit_store[ip].append(now)
+    return True
 
 clients = {}
 
@@ -1273,6 +1293,12 @@ async def report_bug(request: web.Request) -> web.Response:
 async def startup_db(app):
     await db.initialize()
     logger.info("Database initialized")
+    try:
+        backup_path = await db.backup()
+        if backup_path:
+            logger.info("Startup backup created: %s", backup_path)
+    except Exception as e:
+        logger.warning("Startup backup failed (non-fatal): %s", e)
 
 
 async def cleanup_db(app):
@@ -1284,6 +1310,12 @@ async def cleanup_db(app):
 
 async def auth_apple(request: web.Request) -> web.Response:
     """Sign in with Apple — validate identity token and return session."""
+    ip = request.remote or "unknown"
+    if not _check_rate_limit(ip):
+        return web.json_response(
+            {"success": False, "error": "Too many requests. Try again later."}, status=429
+        )
+
     data = await request.json()
     identity_token = data.get("identity_token")
     display_name = data.get("display_name")
@@ -1329,10 +1361,23 @@ async def auth_me(request: web.Request) -> web.Response:
         "user": {
             "id": user_data["id"],
             "display_name": user_data["display_name"],
-            "email": user_data.get("email"),
         } if user_data else None,
         "stats": stats,
     })
+
+
+# --- Admin endpoints ---
+
+async def admin_backup(request: web.Request) -> web.Response:
+    """Trigger a database backup. Intended for admin use (fly ssh)."""
+    try:
+        backup_path = await db.backup()
+        return web.json_response({"success": True, "backup_path": backup_path})
+    except Exception as e:
+        logger.error("Manual backup failed: %s", e)
+        return web.json_response(
+            {"success": False, "error": str(e)}, status=500
+        )
 
 
 # --- User stats & leaderboard endpoints ---
@@ -1425,6 +1470,7 @@ app.router.add_get("/api/sessions", list_sessions)
 app.router.add_get("/api/sessions/{session_id}", get_session)
 app.router.add_post("/api/livekit/token", livekit_token)
 app.router.add_get("/api/livekit/config", livekit_config)
+app.router.add_get("/api/admin/backup", admin_backup)
 app.router.add_post("/api/auth/apple", auth_apple)
 app.router.add_post("/api/auth/logout", auth_logout)
 app.router.add_get("/api/auth/me", auth_me)
