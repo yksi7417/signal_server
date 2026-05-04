@@ -1,0 +1,4 @@
+module MahjongPlusXPackageTests {
+    header "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.build/MahjongPlusXPackageTests-Swift.h"
+    requires objc
+}

@@ -1,0 +1,35 @@
+{
+  "": {
+    "swift-dependencies": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/master.swiftdeps"
+  },
+  "/Users/anthony.ai.assistant/dvlp/signal_server/Sources/Engine/Dragon.swift": {
+    "dependencies": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Dragon.d",
+    "object": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Dragon.swift.o",
+    "swiftmodule": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Dragon~partial.swiftmodule",
+    "swift-dependencies": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Dragon.swiftdeps"
+  },
+  "/Users/anthony.ai.assistant/dvlp/signal_server/Sources/Engine/Suit.swift": {
+    "dependencies": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Suit.d",
+    "object": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Suit.swift.o",
+    "swiftmodule": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Suit~partial.swiftmodule",
+    "swift-dependencies": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Suit.swiftdeps"
+  },
+  "/Users/anthony.ai.assistant/dvlp/signal_server/Sources/Engine/Tile.swift": {
+    "dependencies": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Tile.d",
+    "object": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Tile.swift.o",
+    "swiftmodule": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Tile~partial.swiftmodule",
+    "swift-dependencies": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Tile.swiftdeps"
+  },
+  "/Users/anthony.ai.assistant/dvlp/signal_server/Sources/Engine/TileSet.swift": {
+    "dependencies": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/TileSet.d",
+    "object": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/TileSet.swift.o",
+    "swiftmodule": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/TileSet~partial.swiftmodule",
+    "swift-dependencies": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/TileSet.swiftdeps"
+  },
+  "/Users/anthony.ai.assistant/dvlp/signal_server/Sources/Engine/Wind.swift": {
+    "dependencies": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Wind.d",
+    "object": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Wind.swift.o",
+    "swiftmodule": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Wind~partial.swiftmodule",
+    "swift-dependencies": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Wind.swiftdeps"
+  }
+}

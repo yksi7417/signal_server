@@ -1,0 +1,11 @@
+{
+  "": {
+    "swift-dependencies": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.build/master.swiftdeps"
+  },
+  "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.derived/runner.swift": {
+    "dependencies": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.build/runner.d",
+    "object": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.build/runner.swift.o",
+    "swiftmodule": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.build/runner~partial.swiftmodule",
+    "swift-dependencies": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.build/runner.swiftdeps"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "": {
+    "swift-dependencies": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/master.swiftdeps"
+  },
+  "/Users/anthony.ai.assistant/dvlp/signal_server/Tests/EngineTests/TileSetTests.swift": {
+    "dependencies": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/TileSetTests.d",
+    "object": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/TileSetTests.swift.o",
+    "swiftmodule": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/TileSetTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/TileSetTests.swiftdeps"
+  },
+  "/Users/anthony.ai.assistant/dvlp/signal_server/Tests/EngineTests/TileTests.swift": {
+    "dependencies": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/TileTests.d",
+    "object": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/TileTests.swift.o",
+    "swiftmodule": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/TileTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/TileTests.swiftdeps"
+  }
+}

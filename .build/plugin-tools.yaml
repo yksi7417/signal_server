@@ -1,0 +1,112 @@
+client:
+  name: basic
+  file-system: device-agnostic
+tools: {}
+targets:
+  "Engine-arm64-apple-macosx16.0-debug.module": ["<Engine-arm64-apple-macosx16.0-debug.module>"]
+  "EngineTests-arm64-apple-macosx16.0-debug.module": ["<EngineTests-arm64-apple-macosx16.0-debug.module>"]
+  "MahjongPlusXPackageTests-arm64-apple-macosx16.0-debug.module": ["<MahjongPlusXPackageTests-arm64-apple-macosx16.0-debug.module>"]
+  "MahjongPlusXPackageTests-arm64-apple-macosx16.0-debug.test": ["<MahjongPlusXPackageTests-arm64-apple-macosx16.0-debug.test>"]
+  "PackageStructure": ["<PackageStructure>"]
+  "main": ["<Engine-arm64-apple-macosx16.0-debug.module>"]
+  "test": ["<Engine-arm64-apple-macosx16.0-debug.module>","<EngineTests-arm64-apple-macosx16.0-debug.module>","<MahjongPlusXPackageTests-arm64-apple-macosx16.0-debug.test>"]
+default: "main"
+nodes:
+  "/Users/anthony.ai.assistant/dvlp/signal_server/Sources/Engine/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+  "/Users/anthony.ai.assistant/dvlp/signal_server/Tests/EngineTests/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+commands:
+  "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/anthony.ai.assistant/dvlp/signal_server/Sources/Engine/Dragon.swift","/Users/anthony.ai.assistant/dvlp/signal_server/Sources/Engine/Suit.swift","/Users/anthony.ai.assistant/dvlp/signal_server/Sources/Engine/Tile.swift","/Users/anthony.ai.assistant/dvlp/signal_server/Sources/Engine/TileSet.swift","/Users/anthony.ai.assistant/dvlp/signal_server/Sources/Engine/Wind.swift"]
+    outputs: ["/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/sources"]
+    description: "Write auxiliary file /Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/sources"
+
+  "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/anthony.ai.assistant/dvlp/signal_server/Tests/EngineTests/TileSetTests.swift","/Users/anthony.ai.assistant/dvlp/signal_server/Tests/EngineTests/TileTests.swift"]
+    outputs: ["/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/sources"]
+    description: "Write auxiliary file /Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/sources"
+
+  "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.derived/runner.swift"]
+    outputs: ["/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.build/sources"]
+    description: "Write auxiliary file /Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.build/sources"
+
+  "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.derived/runner.swift":
+    tool: test-entry-point-tool
+    inputs: []
+    outputs: ["/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.derived/runner.swift"]
+
+  "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.product/Objects.LinkFileList":
+    tool: write-auxiliary-file
+    inputs: ["<link-file-list>","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Dragon.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Suit.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Tile.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/TileSet.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Wind.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/TileSetTests.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/TileTests.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.build/runner.swift.o"]
+    outputs: ["/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.product/Objects.LinkFileList"]
+    description: "Write auxiliary file /Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.product/Objects.LinkFileList"
+
+  "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt":
+    tool: write-auxiliary-file
+    inputs: ["<swift-get-version>","/Library/Developer/CommandLineTools/usr/bin/swiftc"]
+    outputs: ["/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"]
+    always-out-of-date: "true"
+    description: "Write auxiliary file /Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+
+  "<Engine-arm64-apple-macosx16.0-debug.module>":
+    tool: phony
+    inputs: ["/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Dragon.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Suit.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Tile.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/TileSet.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Wind.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Modules/Engine.swiftmodule"]
+    outputs: ["<Engine-arm64-apple-macosx16.0-debug.module>"]
+
+  "<EngineTests-arm64-apple-macosx16.0-debug.module>":
+    tool: phony
+    inputs: ["/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/TileSetTests.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/TileTests.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Modules/EngineTests.swiftmodule"]
+    outputs: ["<EngineTests-arm64-apple-macosx16.0-debug.module>"]
+
+  "<MahjongPlusXPackageTests-arm64-apple-macosx16.0-debug.module>":
+    tool: phony
+    inputs: ["/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.build/runner.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Modules/MahjongPlusXPackageTests.swiftmodule"]
+    outputs: ["<MahjongPlusXPackageTests-arm64-apple-macosx16.0-debug.module>"]
+
+  "<MahjongPlusXPackageTests-arm64-apple-macosx16.0-debug.test>":
+    tool: phony
+    inputs: ["/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.xctest/Contents/MacOS/MahjongPlusXPackageTests"]
+    outputs: ["<MahjongPlusXPackageTests-arm64-apple-macosx16.0-debug.test>"]
+
+  "C.Engine-arm64-apple-macosx16.0-debug.module":
+    tool: shell
+    inputs: ["/Users/anthony.ai.assistant/dvlp/signal_server/Sources/Engine/Dragon.swift","/Users/anthony.ai.assistant/dvlp/signal_server/Sources/Engine/Suit.swift","/Users/anthony.ai.assistant/dvlp/signal_server/Sources/Engine/Tile.swift","/Users/anthony.ai.assistant/dvlp/signal_server/Sources/Engine/TileSet.swift","/Users/anthony.ai.assistant/dvlp/signal_server/Sources/Engine/Wind.swift","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/sources"]
+    outputs: ["/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Dragon.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Suit.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Tile.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/TileSet.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Wind.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Modules/Engine.swiftmodule"]
+    description: "Compiling Swift Module 'Engine' (5 sources)"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-module-name","Engine","-emit-dependencies","-emit-module","-emit-module-path","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Modules/Engine.swiftmodule","-output-file-map","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/output-file-map.json","-parse-as-library","-incremental","-c","@/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/sources","-I","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx14.0","-enable-batch-mode","-index-store-path","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-j8","-DSWIFT_PACKAGE","-DDEBUG","-module-cache-path","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-parse-as-library","-emit-objc-header","-emit-objc-header-path","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Engine-Swift.h","-swift-version","6","-F","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xcc","-isysroot","-Xcc","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-Xcc","-fPIC","-Xcc","-g","-package-name","signal_server"]
+
+  "C.EngineTests-arm64-apple-macosx16.0-debug.module":
+    tool: shell
+    inputs: ["/Users/anthony.ai.assistant/dvlp/signal_server/Tests/EngineTests/TileSetTests.swift","/Users/anthony.ai.assistant/dvlp/signal_server/Tests/EngineTests/TileTests.swift","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Modules/Engine.swiftmodule","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/sources"]
+    outputs: ["/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/TileSetTests.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/TileTests.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Modules/EngineTests.swiftmodule"]
+    description: "Compiling Swift Module 'EngineTests' (2 sources)"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-module-name","EngineTests","-emit-dependencies","-emit-module","-emit-module-path","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Modules/EngineTests.swiftmodule","-output-file-map","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/output-file-map.json","-parse-as-library","-incremental","-c","@/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/sources","-I","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx14.0","-enable-batch-mode","-index-store-path","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-Xfrontend","-enable-cross-import-overlays","-j8","-DSWIFT_PACKAGE","-DDEBUG","-module-cache-path","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-parse-as-library","-swift-version","6","-F","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xcc","-isysroot","-Xcc","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-Xcc","-fPIC","-Xcc","-g","-package-name","signal_server"]
+
+  "C.MahjongPlusXPackageTests-arm64-apple-macosx16.0-debug.module":
+    tool: shell
+    inputs: ["/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.derived/runner.swift","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Modules/EngineTests.swiftmodule","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.build/sources"]
+    outputs: ["/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.build/runner.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Modules/MahjongPlusXPackageTests.swiftmodule"]
+    description: "Compiling Swift Module 'MahjongPlusXPackageTests' (1 sources)"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-module-name","MahjongPlusXPackageTests","-emit-dependencies","-emit-module","-emit-module-path","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Modules/MahjongPlusXPackageTests.swiftmodule","-output-file-map","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.build/output-file-map.json","-parse-as-library","-incremental","-c","@/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.build/sources","-I","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx14.0","-enable-batch-mode","-index-store-path","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-Xfrontend","-enable-cross-import-overlays","-j8","-DSWIFT_PACKAGE","-DDEBUG","-module-cache-path","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-parse-as-library","-emit-objc-header","-emit-objc-header-path","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.build/MahjongPlusXPackageTests-Swift.h","-F","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xcc","-isysroot","-Xcc","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-Xcc","-fPIC","-Xcc","-g","-package-name","signal_server"]
+
+  "C.MahjongPlusXPackageTests-arm64-apple-macosx16.0-debug.test":
+    tool: shell
+    inputs: ["/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Dragon.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Suit.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Tile.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/TileSet.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Wind.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/TileSetTests.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/EngineTests.build/TileTests.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.build/runner.swift.o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.product/Objects.LinkFileList"]
+    outputs: ["/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.xctest/Contents/MacOS/MahjongPlusXPackageTests"]
+    description: "Linking ./.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.xctest/Contents/MacOS/MahjongPlusXPackageTests"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-L","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug","-o","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.xctest/Contents/MacOS/MahjongPlusXPackageTests","-module-name","MahjongPlusXPackageTests","-Xlinker","-no_warn_duplicate_libraries","-Xlinker","-bundle","-Xlinker","-rpath","-Xlinker","@loader_path/../../../","@/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/MahjongPlusXPackageTests.product/Objects.LinkFileList","-target","arm64-apple-macosx14.0","-Xlinker","-add_ast_path","-Xlinker","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Modules/Engine.swiftmodule","-Xlinker","-add_ast_path","-Xlinker","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Modules/EngineTests.swiftmodule","-Xlinker","-add_ast_path","-Xlinker","/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Modules/MahjongPlusXPackageTests.swiftmodule","-F","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xlinker","-rpath","-Xlinker","/Library/Developer/CommandLineTools/Library/Developer/Frameworks"]
+
+  "PackageStructure":
+    tool: package-structure-tool
+    inputs: ["/Users/anthony.ai.assistant/dvlp/signal_server/Sources/Engine/","/Users/anthony.ai.assistant/dvlp/signal_server/Tests/EngineTests/","/Users/anthony.ai.assistant/dvlp/signal_server/Package.swift","/Users/anthony.ai.assistant/dvlp/signal_server/Package.resolved"]
+    outputs: ["<PackageStructure>"]
+    description: "Planning build"
+    allow-missing-inputs: true
+
