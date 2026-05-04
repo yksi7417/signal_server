@@ -196,3 +196,7 @@ DerivedData/
 Package.resolved
 *.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
 
+# xcodegen-generated artifacts (regenerate via `xcodegen generate`)
+MahjongPlusX.xcodeproj/
+App/Resources/Info.plist
+
