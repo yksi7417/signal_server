@@ -1,7 +1,0 @@
-aiortc
-websockets
-webrtcvad
-pywhispercpp
-llama-cpp-python        #conda install -c conda-forge llama-cpp-python
-resampy
-numpy
