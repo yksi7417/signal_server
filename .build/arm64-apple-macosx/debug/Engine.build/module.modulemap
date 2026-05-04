@@ -1,4 +1,0 @@
-module Engine {
-    header "/Users/anthony.ai.assistant/dvlp/signal_server/.build/arm64-apple-macosx/debug/Engine.build/Engine-Swift.h"
-    requires objc
-}
