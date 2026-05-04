@@ -4,14 +4,19 @@ const config: CapacitorConfig = {
   appId: 'com.mahjong.game',
   appName: 'Mahjong',
   webDir: 'static',
-  // Server mode: iOS app loads from deployed server (instant updates, no resubmission)
+  // Server mode (uncomment for production: loads from deployed server for instant updates)
+  // server: {
+  //   url: 'https://signal-server-eo-7uq.fly.dev',
+  //   cleartext: false,
+  // },
+  // Allow API calls to the production server from local Capacitor mode
   server: {
-    url: 'https://signal-server-eo-7uq.fly.dev',
-    cleartext: false,
+    allowNavigation: ['signal-server-eo-7uq.fly.dev'],
   },
   ios: {
     scheme: 'Mahjong',
     contentInset: 'always',
+    allowsLinkPreview: false,
   },
   plugins: {
     SplashScreen: {

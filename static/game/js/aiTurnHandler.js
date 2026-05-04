@@ -1,5 +1,6 @@
 import { showCelebrationScreen } from './celebrationScreen.js';
 import { hideClaimPrompt, showClaimPrompt } from './claimsHandler.js';
+import { apiUrl } from './config.js';
 import { handleDiscardTileResult } from './gameActions.js';
 import { elements, store } from './gameStore.js';
 import { displayGameInfo, displayHand, displayPlayersInfo, displayRevealedSets } from './tileDisplay.js';
@@ -80,7 +81,7 @@ function addStartNewHandButton() {
     newHandButton.addEventListener('click', async () => {
         try {
             // Advance dealer rotation (dealer stays same for draw games in some variants)
-            const advanceResponse = await fetch('/api/advance_dealer', {
+            const advanceResponse = await fetch(apiUrl('/api/advance_dealer'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ dealer_won: false }) // Draw = dealer didn't win
@@ -88,7 +89,7 @@ function addStartNewHandButton() {
             
             if (advanceResponse.ok) {
                 // Start new game
-                const newGameResponse = await fetch('/api/start_new_game', { method: 'POST' });
+                const newGameResponse = await fetch(apiUrl('/api/start_new_game'), { method: 'POST' });
                 const gameData = await newGameResponse.json();
                 
                 // Update the UI with new game data
@@ -112,7 +113,7 @@ async function processSingleAiTurn() {
     updateUIForAiTurn();
 
     try {
-        const response = await fetch('/api/request_ai_turn', { method: 'POST' });
+        const response = await fetch(apiUrl('/api/request_ai_turn'), { method: 'POST' });
         let ai_turn_result;
         try {
             ai_turn_result = await response.json();

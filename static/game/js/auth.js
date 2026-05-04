@@ -1,10 +1,12 @@
 // Authentication module — Sign in with Apple + Guest mode
 import { store } from './gameStore.js';
+import { apiUrl } from './config.js';
 
 const SESSION_KEY = 'sessionToken';
 
 /**
  * Fetch wrapper that adds Authorization header when a session exists.
+ * Automatically prepends API_BASE for Capacitor compatibility.
  */
 export async function apiFetch(url, opts = {}) {
     const headers = { ...opts.headers };
@@ -12,7 +14,7 @@ export async function apiFetch(url, opts = {}) {
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
     }
-    return fetch(url, { ...opts, headers });
+    return fetch(apiUrl(url), { ...opts, headers });
 }
 
 /**
@@ -52,7 +54,7 @@ export async function loginWithApple() {
             ? `${data.user.name.firstName || ''} ${data.user.name.lastName || ''}`.trim()
             : null;
 
-        const resp = await fetch('/api/auth/apple', {
+        const resp = await fetch(apiUrl('/api/auth/apple'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -92,7 +94,7 @@ export async function logout() {
     const token = localStorage.getItem(SESSION_KEY);
     if (token) {
         try {
-            await fetch('/api/auth/logout', {
+            await fetch(apiUrl('/api/auth/logout'), {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
             });

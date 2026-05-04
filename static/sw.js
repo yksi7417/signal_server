@@ -1,29 +1,38 @@
 // Service Worker for Mahjong PWA
 // Cache-first for static assets, network-first for API calls
+// Paths are relative to service worker scope
 
-const CACHE_NAME = 'mahjong-v1';
+const CACHE_NAME = 'mahjong-v2';
+
+// Detect if running in Capacitor (local) mode vs server mode
+// In Capacitor, web root = static/, so paths don't have /static/ prefix
+const isCapacitor = self.location.protocol === 'capacitor:' || !self.location.pathname.startsWith('/static');
+const prefix = isCapacitor ? '' : '/static';
+
 const STATIC_ASSETS = [
-    '/game',
-    '/static/styles/game.css',
-    '/static/game/main.js',
-    '/static/game/js/gameStore.js',
-    '/static/game/js/gameActions.js',
-    '/static/game/js/tileDisplay.js',
-    '/static/game/js/claimsHandler.js',
-    '/static/game/js/aiTurnHandler.js',
-    '/static/game/js/celebrationScreen.js',
-    '/static/game/js/bugReport.js',
-    '/static/game/js/auth.js',
-    '/static/game/js/statsScreen.js',
-    '/static/img/tiles/tileset.png',
-    '/static/audio/dingdong.mp3',
-    '/static/manifest.json',
+    `${prefix}/game/index.html`,
+    `${prefix}/styles/game.css`,
+    `${prefix}/game/main.js`,
+    `${prefix}/game/js/gameStore.js`,
+    `${prefix}/game/js/gameActions.js`,
+    `${prefix}/game/js/tileDisplay.js`,
+    `${prefix}/game/js/claimsHandler.js`,
+    `${prefix}/game/js/aiTurnHandler.js`,
+    `${prefix}/game/js/celebrationScreen.js`,
+    `${prefix}/game/js/bugReport.js`,
+    `${prefix}/game/js/auth.js`,
+    `${prefix}/game/js/statsScreen.js`,
+    `${prefix}/img/tiles/tileset.png`,
+    `${prefix}/audio/dingdong.mp3`,
+    `${prefix}/manifest.json`,
 ];
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(STATIC_ASSETS);
+            return cache.addAll(STATIC_ASSETS).catch(err => {
+                console.warn('SW: Failed to cache some assets:', err);
+            });
         })
     );
     self.skipWaiting();

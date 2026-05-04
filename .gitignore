@@ -177,3 +177,15 @@ cython_debug/
 .env
 .claude/settings.local.json
 bug_reports/
+
+# Node / Capacitor
+node_modules/
+package-lock.json
+
+# iOS (Capacitor-generated)
+ios/App/Pods/
+ios/App/App/public/
+ios/App/build/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+DerivedData/

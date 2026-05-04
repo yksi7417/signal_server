@@ -1,6 +1,7 @@
 import { processAiTurns } from './aiTurnHandler.js';
 import { showCelebrationScreen } from './celebrationScreen.js';
 import { enableHumanTurn, hideClaimPrompt, showClaimPrompt } from './claimsHandler.js';
+import { apiUrl } from './config.js';
 import { elements, store, clearAllTimeouts } from './gameStore.js';
 import { displayGameInfo, displayHand, displayPlayersInfo, displayRevealedSets, selectTileByIndex } from './tileDisplay.js';
 
@@ -97,7 +98,7 @@ export async function handleDrawTile() {
     }
 
     try {
-        const response = await fetch('/api/draw_tile', { method: 'POST' });
+        const response = await fetch(apiUrl('/api/draw_tile'), { method: 'POST' });
         const result = await response.json();
         handleDrawTileResult(result);
     } catch (error) {
@@ -125,7 +126,7 @@ export async function handleDiscardTile(pointerEvent) {
             throw new Error("No tile selected for discard.");
 
         const tile = store.selectedTileForDiscard
-        const response = await fetch('/api/discard_tile', {
+        const response = await fetch(apiUrl('/api/discard_tile'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tile_to_discard: tile })
@@ -149,7 +150,7 @@ async function loadInitialGameState() {
     clearAllTimeouts();
     
     try {
-        const response = await fetch('/api/start_new_game', { method: 'POST' });
+        const response = await fetch(apiUrl('/api/start_new_game'), { method: 'POST' });
         const game_info_data = await response.json();
         if (game_info_data) {
             console.log("Received game state:", game_info_data);
@@ -361,7 +362,7 @@ export async function handleReset() {
     // Clear all active timeouts when resetting
     clearAllTimeouts();
     
-    await fetch('/api/reset_game', { method: 'POST' });
+    await fetch(apiUrl('/api/reset_game'), { method: 'POST' });
     console.log("Game reset on backend. Reloading initial state...");
     loadInitialGameState();
     if (elements.playerConsoleEl) {

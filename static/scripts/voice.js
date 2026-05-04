@@ -1,7 +1,9 @@
 import { initializeAudio } from './audioManager.js';
 import { myId } from './signaling.js';
 
-const modelPath = "/static/model"
+// Use relative path for Capacitor compatibility; resolves from base href
+const isCapacitor = typeof window !== 'undefined' && (typeof window.Capacitor !== 'undefined' || (window.location && window.location.protocol === 'capacitor:'));
+const modelPath = isCapacitor ? "/model" : "/static/model";
 const modelExt  = ".tar.gz";
 const modelMap  = {
   "Chinese": "vosk-model-small-cn-0.22",

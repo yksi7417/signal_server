@@ -1,3 +1,4 @@
+import { apiUrl } from './config.js';
 import { elements, store } from './gameStore.js';
 import { openBugReport } from './bugReport.js';
 
@@ -43,7 +44,7 @@ export function showCelebrationScreen(player_id) {
         document.body.appendChild(overlay);
         elements.celebrationOverlay = overlay;
         document.getElementById('btnNewGame').addEventListener('click', async () => {
-            await fetch('/api/reset_game', { method: 'POST' });
+            await fetch(apiUrl('/api/reset_game'), { method: 'POST' });
             hideCelebrationScreen();
             location.reload();
         });

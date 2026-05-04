@@ -1,3 +1,5 @@
+import { apiUrl } from './config.js';
+
 /**
  * Bug Report UI with voice dictation.
  *
@@ -156,7 +158,7 @@ async function submitReport() {
   statusEl.style.color = '#666';
 
   try {
-    const resp = await fetch('/api/report_bug', {
+    const resp = await fetch(apiUrl('/api/report_bug'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ description }),

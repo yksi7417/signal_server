@@ -3,11 +3,11 @@
 html, body {
   margin: 0;
   padding: 0;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   overflow: hidden;
   height: 100%; width: 100%;
   background: #0a5a25;
   -webkit-tap-highlight-color: transparent;
+  /* iOS safe areas handled on .mahjong-table for better control */
 }
 
 /* iOS Safari touch responsiveness */
@@ -16,6 +16,26 @@ button, .tile-nav-btn, #player-hand span, .meld-group {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* iOS button reset — remove default rounded styling */
+button {
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255,255,255,0.15);
+  color: #e0e0e0;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+button:active {
+  background: rgba(255,255,255,0.3);
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .mahjong-table {
@@ -32,7 +52,11 @@ button, .tile-nav-btn, #player-hand span, .meld-group {
   height: 100dvh;
   gap: 2px;
   background: #0d6b2e;
-  padding: 4px;
+  /* Safe area insets for iPhone notch/Dynamic Island/home indicator */
+  padding: calc(4px + env(safe-area-inset-top, 0px))
+           calc(4px + env(safe-area-inset-right, 0px))
+           calc(4px + env(safe-area-inset-bottom, 0px))
+           calc(4px + env(safe-area-inset-left, 0px));
   box-sizing: border-box;
 }
 .player-top    { grid-area: top; }
@@ -79,10 +103,13 @@ button, .tile-nav-btn, #player-hand span, .meld-group {
 .tile-img {
   --col: 0; --row: 0;
   display: inline-block;
-  background-image: url('/static/img/tiles/tileset.png');
+  background-image: url('../img/tiles/tileset.png');
   background-repeat: no-repeat;
   border-radius: 3px;
   vertical-align: middle;
+  /* Crisp sprite rendering on Retina displays */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 .tile-img-hand {
@@ -118,7 +145,7 @@ button, .tile-nav-btn, #player-hand span, .meld-group {
 
 /* P0 hand tile selection */
 #hand-nav { display: flex; align-items: center; gap: 4px; }
-#player-hand { display: flex; flex-wrap: nowrap; gap: 2px; align-items: flex-end; flex: 1; overflow-x: auto; }
+#player-hand { display: flex; flex-wrap: nowrap; gap: 2px; align-items: flex-end; flex: 1; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 #player-hand span { cursor: pointer; display: inline-block; border-radius: 3px; }
 #player-hand span.tile-selected { outline: 3px solid #ffd700; outline-offset: 1px; }
 #player-hand span.self-kongable { outline: 2px dashed #ff6600; outline-offset: 1px; }

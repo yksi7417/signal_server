@@ -154,7 +154,9 @@ window.onload = async () => {
     // Register service worker for PWA
     if ('serviceWorker' in navigator) {
         try {
-            await navigator.serviceWorker.register('/static/sw.js');
+            const isCapacitor = typeof window.Capacitor !== 'undefined' || window.location.protocol === 'capacitor:';
+            const swPath = isCapacitor ? '/sw.js' : '/static/sw.js';
+            await navigator.serviceWorker.register(swPath);
         } catch (e) {
             console.warn('SW registration failed:', e);
         }

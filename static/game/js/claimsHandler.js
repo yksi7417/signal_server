@@ -1,5 +1,6 @@
 import { processAiTurns } from './aiTurnHandler.js';
 import { showCelebrationScreen } from './celebrationScreen.js';
+import { apiUrl } from './config.js';
 import { startDiscardCountdown } from './gameActions.js';
 import { elements, store, clearAllTimeouts } from './gameStore.js';
 import { displayHand, displayPlayersInfo, displayRevealedSets, selectTileByIndex } from './tileDisplay.js';
@@ -117,7 +118,7 @@ export async function handleClaimNo() {
 export async function handleClaimPungYes() {
     if (store.currentGameInfo.winner_found) return;
 
-    const response = await fetch('/api/player_claims_pung', {
+    const response = await fetch(apiUrl('/api/player_claims_pung'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ confirm_claim: true })
@@ -135,7 +136,7 @@ export async function handleClaimPungYes() {
 export async function handleClaimPungNo() {
     if (store.currentGameInfo.winner_found) return;
 
-    const response = await fetch('/api/player_claims_pung', {
+    const response = await fetch(apiUrl('/api/player_claims_pung'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ confirm_claim: false })
@@ -159,7 +160,7 @@ export async function handleClaimPungNo() {
 export async function handleClaimChowYes() {
     if (store.currentGameInfo.winner_found) return;
 
-    const response = await fetch('/api/player_claims_chow', {
+    const response = await fetch(apiUrl('/api/player_claims_chow'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ confirm_claim: true })
@@ -177,7 +178,7 @@ export async function handleClaimChowYes() {
 export async function handleClaimChowNo() {
     if (store.currentGameInfo.winner_found) return;
 
-    const response = await fetch('/api/player_claims_chow', {
+    const response = await fetch(apiUrl('/api/player_claims_chow'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ confirm_claim: false })
@@ -201,7 +202,7 @@ export async function handleClaimChowNo() {
 export async function handleClaimKongYes() {
     if (store.currentGameInfo.winner_found) return;
 
-    const response = await fetch('/api/player_claims_kong', {
+    const response = await fetch(apiUrl('/api/player_claims_kong'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ confirm_claim: true })
@@ -219,7 +220,7 @@ export async function handleClaimKongYes() {
 export async function handleClaimKongNo() {
     if (store.currentGameInfo.winner_found) return;
 
-    const response = await fetch('/api/player_claims_kong', {
+    const response = await fetch(apiUrl('/api/player_claims_kong'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ confirm_claim: false })
@@ -372,7 +373,7 @@ function updateGameInfoAfterDecline(result) {
 async function handleClaimWinYes() {
     if (store.currentGameInfo.winner_found) return;
 
-    const response = await fetch('/api/player_claims_win', {
+    const response = await fetch(apiUrl('/api/player_claims_win'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ confirm_claim: true })
@@ -411,7 +412,7 @@ async function handleClaimWinYes() {
 async function handleClaimWinNo() {
     if (store.currentGameInfo.winner_found) return;
 
-    const response = await fetch('/api/player_claims_win', {
+    const response = await fetch(apiUrl('/api/player_claims_win'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ confirm_claim: false })

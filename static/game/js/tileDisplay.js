@@ -1,3 +1,4 @@
+import { apiUrl } from './config.js';
 import { elements, store, clearAllTimeouts } from './gameStore.js';
 
 function sortTiles(tiles) {
@@ -75,7 +76,7 @@ export function displayHand(tiles) {
             nextGameBtn.addEventListener('click', async () => {
                 try {
                     // Advance dealer rotation - assume it was a draw (no winner)
-                    const advanceResponse = await fetch('/api/advance_dealer', {
+                    const advanceResponse = await fetch(apiUrl('/api/advance_dealer'), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ dealer_won: false })
@@ -83,7 +84,7 @@ export function displayHand(tiles) {
                     
                     if (advanceResponse.ok) {
                         // Start new game
-                        const newGameResponse = await fetch('/api/start_new_game', {
+                        const newGameResponse = await fetch(apiUrl('/api/start_new_game'), {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' }
                         });
@@ -176,7 +177,7 @@ async function handleKongClick(tile, kongType) {
 
     if (confirm(`Declare ${label} with ${tile}?`)) {
         try {
-            const response = await fetch(endpoint, {
+            const response = await fetch(apiUrl(endpoint), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tile_info: tile })
