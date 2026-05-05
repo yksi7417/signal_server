@@ -2,8 +2,8 @@ import SwiftUI
 import Engine
 import Observation
 
-/// Bridges the headless `Engine` to SwiftUI. Owns the Run + current HandState
-/// and drives the AI between human turns.
+/// Bridges the headless `Engine` to SwiftUI. Owns the Run, current HandState,
+/// shop offers, and unlock progression. Drives the AI between human turns.
 @Observable
 @MainActor
 final class GameViewModel {
@@ -14,9 +14,13 @@ final class GameViewModel {
     private(set) var aiThinking: Bool = false
     private(set) var lastError: String?
     private(set) var awaitingNextHand: Bool = false
+    private(set) var awaitingShop: Bool = false
+    private(set) var shop: Shop?
+    private(set) var openedPack: PackContents?
+    private(set) var openedPackChoices: Int = 0
+    private(set) var unlockStore = UnlockStore()
     private(set) var recentUnlocks: [String] = []
 
-    private var unlockStore = UnlockStore()
     private var aiTickDelay: Duration = .milliseconds(450)
 
     // MARK: - Init
@@ -27,26 +31,21 @@ final class GameViewModel {
         let state = run.startHand()
         self.run = run
         self.handState = state
-        // Kick off the AI loop in case the AI is the dealer for some reason.
         Task { await self.advanceUntilHumanInput() }
     }
 
-    // MARK: - Player intents
+    // MARK: - Player intents (gameplay)
 
-    /// Player taps the "draw" button.
     func playerDraw() {
         guard case .awaitingDraw(.player) = handState.phase else { return }
         apply(.draw(.player))
     }
 
-    /// Player taps a tile in their hand to discard it. If the player could
-    /// declare a win, prefer the win UI button (`playerDeclareWin`).
     func playerDiscard(_ tile: Tile) {
         guard case .awaitingDiscardOrWin(.player) = handState.phase else { return }
         apply(.discard(.player, tile))
     }
 
-    /// Player declares a win — either self-drawn or claim-on-discard.
     func playerDeclareWin() {
         let legal = HandEngine.legalActions(in: handState)
         if let win = legal.first(where: {
@@ -57,28 +56,179 @@ final class GameViewModel {
         }
     }
 
-    /// Player passes on a claim opportunity.
     func playerPassClaim() {
         guard case .awaitingClaim(.player, _, _) = handState.phase else { return }
         apply(.pass(.player))
     }
 
-    /// Move past the end-of-hand screen into the next hand (or end of run).
+    /// User dismisses the per-hand outcome card. Records outcome, advances run.
+    /// If run is still in progress and we have coins to spend, opens the shop.
+    /// Otherwise starts the next hand directly.
     func continueAfterHand() {
         guard awaitingNextHand else { return }
 
         let result = handResult(from: handState)
         run.recordHandOutcome(handState)
         let newlyUnlocked = unlockStore.recordHand(result: result, run: run)
-        recentUnlocks = newlyUnlocked.map { "\($0.kind.rawValue): \($0.id)" }
+        recentUnlocks = newlyUnlocked.map { displayName(for: $0) }
 
         awaitingNextHand = false
         if run.status != .inProgress {
-            // Run complete — leave state so the outcome screen can show the totals.
+            // Run ended — leave the outcome screen up; UI shows summary.
             return
         }
+        openShop()
+    }
+
+    /// Called from the run-complete screen — start a new run.
+    func startNewRun() {
+        let newSeed = UInt64.random(in: 1...UInt64.max)
+        var fresh = Run(seed: newSeed)
+        let state = fresh.startHand()
+        self.run = fresh
+        self.handState = state
+        self.recentUnlocks = []
+        self.shop = nil
+        self.openedPack = nil
+        self.awaitingNextHand = false
+        self.awaitingShop = false
+        Task { await self.advanceUntilHumanInput() }
+    }
+
+    // MARK: - Shop
+
+    private func openShop() {
+        let offer = ShopRoller.rollShop(
+            unlocked: unlockStore.pool,
+            currentTable: run.table,
+            rng: &run.rng
+        )
+        self.shop = offer
+        self.awaitingShop = true
+    }
+
+    func closeShop() {
+        guard awaitingShop else { return }
+        awaitingShop = false
+        shop = nil
+        openedPack = nil
+        // Now actually deal the next hand.
         handState = run.startHand()
         Task { await self.advanceUntilHumanInput() }
+    }
+
+    func buyCharm(_ shopCharm: ShopCharm) {
+        guard awaitingShop, var current = shop else { return }
+        guard run.coins >= shopCharm.price, run.canAddCharm else {
+            lastError = run.coins < shopCharm.price ? "Not enough coins" : "Charm slots full"
+            return
+        }
+        let added = run.addCharm(shopCharm.charm)
+        guard added else {
+            lastError = "Couldn't add charm"
+            return
+        }
+        run.coins -= shopCharm.price
+        // Remove the bought charm from the offer.
+        current.charms.removeAll(where: { $0.id == shopCharm.id })
+        self.shop = current
+        lastError = nil
+    }
+
+    func reroll() {
+        guard awaitingShop, var current = shop else { return }
+        guard run.coins >= current.rerollCost else {
+            lastError = "Not enough coins to reroll"
+            return
+        }
+        run.coins -= current.rerollCost
+        let nextRolls = current.rerollsUsed + 1
+        let fresh = ShopRoller.rollShop(
+            unlocked: unlockStore.pool,
+            currentTable: run.table,
+            rng: &run.rng,
+            rerollsUsed: nextRolls
+        )
+        self.shop = fresh
+        lastError = nil
+    }
+
+    func buyPack() {
+        guard awaitingShop, let current = shop else { return }
+        guard run.coins >= current.pack.price else {
+            lastError = "Not enough coins for pack"
+            return
+        }
+        run.coins -= current.pack.price
+        let contents = ShopRoller.openPack(
+            current.pack,
+            unlocked: unlockStore.pool,
+            currentTable: run.table,
+            rng: &run.rng
+        )
+        self.openedPack = contents
+        self.openedPackChoices = 0
+        lastError = nil
+    }
+
+    /// Pick one item from the currently-opened pack. Decrements pickCount.
+    func pickFromPack(_ kind: PackPickKind) {
+        guard var pack = openedPack else { return }
+        switch kind {
+        case .charm(let c):
+            if run.canAddCharm, run.addCharm(c) {
+                pack.charms.removeAll { $0.id == c.id }
+                openedPackChoices += 1
+            } else {
+                lastError = "Charm slots full or duplicate"
+            }
+        case .constellation(let c):
+            if run.canAddConsumable, run.addConsumable(.constellation(c)) {
+                pack.constellations.removeAll { $0.id == c.id }
+                openedPackChoices += 1
+            } else {
+                lastError = "Consumable slots full"
+            }
+        case .spell(let s):
+            if run.canAddConsumable, run.addConsumable(.spell(s)) {
+                pack.spells.removeAll { $0.id == s.id }
+                openedPackChoices += 1
+            } else {
+                lastError = "Consumable slots full"
+            }
+        }
+        if openedPackChoices >= pack.pickCount {
+            // Done picking; close the pack.
+            self.openedPack = nil
+            self.openedPackChoices = 0
+        } else {
+            self.openedPack = pack
+        }
+    }
+
+    func skipPack() {
+        openedPack = nil
+        openedPackChoices = 0
+    }
+
+    enum PackPickKind {
+        case charm(Charm)
+        case constellation(Constellation)
+        case spell(Spell)
+    }
+
+    // MARK: - Consumables (in-hand use)
+
+    func useConsumable(id: String) {
+        // For MVP, use is restricted to between-hand state. In-hand spells
+        // require deeper engine wiring (Phase 9 polish).
+        guard awaitingShop || awaitingNextHand else {
+            lastError = "Spells/constellations are between-hand only for now"
+            return
+        }
+        if run.useConsumable(id: id) {
+            lastError = nil
+        }
     }
 
     // MARK: - Computed view helpers
@@ -89,28 +239,24 @@ final class GameViewModel {
             return false
         })
     }
-
     var isPlayersTurn: Bool { handState.currentSeat == .player }
-
     var isAwaitingPlayerClaim: Bool {
         if case .awaitingClaim(.player, _, _) = handState.phase { return true }
         return false
     }
-
     var isAwaitingPlayerDraw: Bool {
         if case .awaitingDraw(.player) = handState.phase { return true }
         return false
     }
-
     var isAwaitingPlayerDiscard: Bool {
         if case .awaitingDiscardOrWin(.player) = handState.phase { return true }
         return false
     }
-
     var pendingClaimTile: Tile? {
         if case .awaitingClaim(.player, let tile, _) = handState.phase { return tile }
         return nil
     }
+    var runEnded: Bool { run.status != .inProgress }
 
     // MARK: - Result extraction
 
@@ -121,7 +267,6 @@ final class GameViewModel {
         if case .win(let seat, let faanScore, _) = state.outcome, seat == .player {
             won = true
             score = faanScore.faan
-            // Pick the highest-faan pattern as the "primary" for unlock keying.
             for reason in faanScore.reasons {
                 for p in Pattern.allCases where p.chinese == reason.label {
                     primaryPattern = p
@@ -134,8 +279,19 @@ final class GameViewModel {
             primaryPattern: primaryPattern,
             score: score,
             discardsThisHand: discards,
-            spellsUsedThisHand: 0   // Spells UI not wired yet — Phase 9 polish
+            spellsUsedThisHand: 0
         )
+    }
+
+    private func displayName(for unlock: Unlock) -> String {
+        switch unlock.kind {
+        case .charm:
+            return CharmCatalog.starter.first(where: { $0.id == unlock.id })?.name ?? unlock.id
+        case .constellation:
+            return ConstellationCatalog.starter.first(where: { $0.id == unlock.id })?.name ?? unlock.id
+        case .spell:
+            return SpellCatalog.starter.first(where: { $0.id == unlock.id })?.name ?? unlock.id
+        }
     }
 
     // MARK: - Internal driver
@@ -156,7 +312,6 @@ final class GameViewModel {
     }
 
     private func advanceUntilHumanInput() async {
-        // Loop applying AI actions until it's the player's turn or the hand ends.
         while handState.phase != .ended {
             guard let seat = handState.currentSeat else { break }
             if seat == .player { return }

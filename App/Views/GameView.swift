@@ -23,6 +23,11 @@ struct GameView: View {
                     coins: vm.run.coins,
                     bossModifier: vm.handState.config.bossModifier
                 )
+                ActiveInventoryView(
+                    charms: vm.run.charms,
+                    consumables: vm.run.consumables,
+                    onUseConsumable: { id in vm.useConsumable(id: id) }
+                )
                 Divider().background(Theme.gold.opacity(0.4))
 
                 opponentRow
@@ -45,6 +50,8 @@ struct GameView: View {
         }
         .overlay(alignment: .top) { errorBanner }
         .overlay { handEndedOverlay }
+        .overlay { shopOverlay }
+        .overlay { runCompleteOverlay }
     }
 
     // MARK: - Opponent
@@ -176,6 +183,49 @@ struct GameView: View {
                 HandOutcomeCard(state: vm.handState, recentUnlocks: vm.recentUnlocks) {
                     vm.continueAfterHand()
                 }
+            }
+            .transition(.opacity)
+        }
+    }
+
+    @ViewBuilder
+    private var shopOverlay: some View {
+        if vm.awaitingShop, let shop = vm.shop {
+            ZStack {
+                Color.black.opacity(0.55).ignoresSafeArea()
+                if let pack = vm.openedPack {
+                    PackPickerView(
+                        pack: pack,
+                        alreadyPicked: vm.openedPackChoices,
+                        onPickCharm: { c in vm.pickFromPack(.charm(c)) },
+                        onPickConstellation: { c in vm.pickFromPack(.constellation(c)) },
+                        onPickSpell: { s in vm.pickFromPack(.spell(s)) },
+                        onSkip: { vm.skipPack() }
+                    )
+                } else {
+                    ShopView(
+                        shop: shop,
+                        coins: vm.run.coins,
+                        canAddCharm: vm.run.canAddCharm,
+                        onBuyCharm: { offer in vm.buyCharm(offer) },
+                        onBuyPack: { vm.buyPack() },
+                        onReroll: { vm.reroll() },
+                        onSkip: { vm.closeShop() }
+                    )
+                }
+            }
+            .transition(.opacity)
+        }
+    }
+
+    @ViewBuilder
+    private var runCompleteOverlay: some View {
+        if vm.runEnded && !vm.awaitingNextHand {
+            ZStack {
+                Color.black.opacity(0.65).ignoresSafeArea()
+                RunCompleteView(run: vm.run, onStartNew: {
+                    vm.startNewRun()
+                })
             }
             .transition(.opacity)
         }
