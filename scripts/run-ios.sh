@@ -5,9 +5,18 @@ set -euo pipefail
 
 SIM_NAME="${SIM_NAME:-iPhone 16e}"
 SIM_OS="${SIM_OS:-26.2}"
-BUNDLE_ID="com.mahjongplusx.app"
 
-echo "→ Regenerating Xcode project"
+# Source build-time config (DEVELOPMENT_TEAM, BUNDLE_ID, MARKETING_VERSION,
+# BUILD_NUMBER) so xcodegen can substitute them into project.yml.
+if [ -f Project.env ]; then
+  set -a
+  # shellcheck source=../Project.env
+  source Project.env
+  set +a
+fi
+BUNDLE_ID="${BUNDLE_ID:-com.mahjongplusx.app}"
+
+echo "→ Regenerating Xcode project (bundle=$BUNDLE_ID, build=${BUILD_NUMBER:-?})"
 xcodegen generate >/dev/null
 
 echo "→ Building for $SIM_NAME (iOS $SIM_OS)"

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- TestFlight + App Store distribution. -->
+    <key>method</key>
+    <string>app-store-connect</string>
+
+    <!-- Required for App Store Connect destination signing. -->
+    <key>destination</key>
+    <string>upload</string>
+
+    <!-- Use the team configured in Project.env / DEVELOPMENT_TEAM env var. -->
+    <key>signingStyle</key>
+    <string>automatic</string>
+
+    <!-- Symbol upload helps App Store Connect render symbolicated crash logs. -->
+    <key>uploadSymbols</key>
+    <true/>
+
+    <!-- Strip Swift symbols for smaller binary uploaded to App Store. -->
+    <key>stripSwiftSymbols</key>
+    <true/>
+
+    <!-- Manage app version automatically (lets App Store Connect handle the
+         CFBundleVersion + CFBundleShortVersionString sanity checks). -->
+    <key>manageAppVersionAndBuildNumber</key>
+    <false/>
+</dict>
+</plist>

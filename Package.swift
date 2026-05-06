@@ -7,6 +7,7 @@ let package = Package(
     products: [
         .library(name: "Engine", targets: ["Engine"]),
         .executable(name: "mahjong-plusx-sim", targets: ["MahjongPlusXSim"]),
+        .executable(name: "icon-gen", targets: ["IconGen"]),
     ],
     targets: [
         .target(name: "Engine"),
@@ -14,6 +15,7 @@ let package = Package(
             name: "MahjongPlusXSim",
             dependencies: ["Engine"]
         ),
+        .executableTarget(name: "IconGen"),
         .testTarget(name: "EngineTests", dependencies: ["Engine"]),
     ]
 )
