@@ -46,4 +46,22 @@ public struct Wall: Hashable, Codable, Sendable {
         }
         return out
     }
+
+    /// Tiles still in the wall (have not been drawn yet). Each tile carries
+    /// its absolute position in the original wall via the offset; callers
+    /// usually only care about the tile values.
+    public var undrawn: ArraySlice<Tile> {
+        tiles[drawIndex..<tiles.count]
+    }
+
+    /// Replace one undrawn tile. `relativeIndex` is into `undrawn` (0 = next-to-draw).
+    /// Returns the tile that was removed, or nil if `relativeIndex` is out of range.
+    @discardableResult
+    public mutating func swapUndrawn(relativeIndex: Int, with replacement: Tile) -> Tile? {
+        let absoluteIndex = drawIndex + relativeIndex
+        guard tiles.indices.contains(absoluteIndex) else { return nil }
+        let displaced = tiles[absoluteIndex]
+        tiles[absoluteIndex] = replacement
+        return displaced
+    }
 }

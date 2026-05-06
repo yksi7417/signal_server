@@ -20,6 +20,8 @@ struct ContentView: View {
 
 private struct HomeView: View {
     let onStart: () -> Void
+    @AppStorage("hasSeenTutorialIntro") private var hasSeenTutorialIntro: Bool = false
+    @State private var showingTutorial: Bool = false
 
     var body: some View {
         ZStack {
@@ -35,7 +37,7 @@ private struct HomeView: View {
                         .foregroundStyle(Theme.goldDeep.opacity(0.85))
                 }
                 Spacer()
-                Button(action: onStart) {
+                Button(action: handleStart) {
                     Text("Start a Run")
                         .font(.system(size: 18, weight: .semibold, design: .rounded))
                         .padding(.horizontal, 36)
@@ -49,6 +51,14 @@ private struct HomeView: View {
                 }
                 .buttonStyle(.plain)
 
+                Button(action: { showingTutorial = true }) {
+                    Text("How to play")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Theme.goldDeep.opacity(0.8))
+                        .underline()
+                }
+                .buttonStyle(.plain)
+
                 Text("MVP — Tables 1 & 2")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(Theme.shadow)
@@ -56,7 +66,30 @@ private struct HomeView: View {
             }
             .padding()
         }
+        .overlay {
+            if showingTutorial {
+                ZStack {
+                    Color.black.opacity(0.55).ignoresSafeArea()
+                    TutorialIntroCard {
+                        showingTutorial = false
+                        hasSeenTutorialIntro = true
+                    }
+                }
+                .transition(.opacity)
+            }
+        }
+        .onAppear {
+            if !hasSeenTutorialIntro {
+                showingTutorial = true
+            }
+        }
         .navigationBarHidden(true)
+    }
+
+    private func handleStart() {
+        // Auto-mark tutorial seen if user dives in without reading.
+        hasSeenTutorialIntro = true
+        onStart()
     }
 }
 

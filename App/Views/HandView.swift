@@ -28,17 +28,29 @@ struct HandView: View {
     }
 }
 
-/// AI hand — face-down tiles. Bonus tiles still show face up since they're
-/// publicly known once set aside.
+/// AI hand. Face-down by default; if `revealedTiles` is provided (Crystal
+/// Lens charm active) the tiles render face up with a soft glow. Bonus
+/// tiles always show face up since they're publicly known once set aside.
 struct OpponentHandView: View {
     let concealedCount: Int
     let bonus: [Tile]
+    var revealedTiles: [Tile]? = nil
 
     var body: some View {
         VStack(spacing: 4) {
             HStack(spacing: 4) {
-                ForEach(0..<concealedCount, id: \.self) { _ in
-                    TileView(tile: .joker, size: CGSize(width: 36, height: 50), faceUp: false)
+                if let revealed = revealedTiles {
+                    ForEach(Array(revealed.enumerated()), id: \.offset) { _, tile in
+                        TileView(tile: tile, size: CGSize(width: 36, height: 50))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Theme.plum.opacity(0.55), lineWidth: 1.5)
+                            )
+                    }
+                } else {
+                    ForEach(0..<concealedCount, id: \.self) { _ in
+                        TileView(tile: .joker, size: CGSize(width: 36, height: 50), faceUp: false)
+                    }
                 }
             }
             if !bonus.isEmpty {

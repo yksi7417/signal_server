@@ -54,4 +54,15 @@ public enum CharmEffect: Codable, Sendable, Hashable {
     case skipCharlestonBonus(amount: Int)
     /// Multiplier applied on the first hand of the next Table after a sweep.
     case nextTableSweepMult(factor: Double)
+    /// UI-only: reveal the opponent's concealed hand. No scoring effect;
+    /// the iOS layer reads `Run.charms` and renders accordingly.
+    case revealOpponentHand
+}
+
+extension Charm {
+    /// True if this charm has the reveal-opponent-hand effect ("Crystal Lens").
+    public var revealsOpponentHand: Bool {
+        if case .revealOpponentHand = effect { return true }
+        return false
+    }
 }

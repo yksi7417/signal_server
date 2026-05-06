@@ -21,18 +21,67 @@ final class GameViewModel {
     private(set) var unlockStore = UnlockStore()
     private(set) var recentUnlocks: [String] = []
 
+    /// In-progress tile-swap spell: nil unless the player tapped a Swap
+    /// consumable. Tracks which hand tile is selected (if any).
+    private(set) var pendingSwap: PendingSwap?
+
     private var aiTickDelay: Duration = .milliseconds(450)
 
     // MARK: - Init
 
-    init(seed: UInt64? = nil) {
+    init(seed: UInt64? = nil, tutorial: Bool = true) {
         let resolvedSeed = seed ?? UInt64.random(in: 1...UInt64.max)
-        var run = Run(seed: resolvedSeed)
+        var run = Run(seed: resolvedSeed, tutorial: tutorial)
         let state = run.startHand()
         self.run = run
         self.handState = state
         Task { await self.advanceUntilHumanInput() }
     }
+
+    // MARK: - Tile-swap spell flow
+
+    struct PendingSwap: Equatable {
+        var consumableId: String
+        var selectedHandTile: Tile?
+    }
+
+    /// Player tapped a Swap consumable. Enters tile-pick mode.
+    func beginTileSwap(consumableId: String) {
+        guard run.consumables.contains(where: { $0.id == consumableId }) else { return }
+        pendingSwap = PendingSwap(consumableId: consumableId, selectedHandTile: nil)
+    }
+
+    /// Cancel an in-flight swap (e.g. user tapped the X).
+    func cancelTileSwap() {
+        pendingSwap = nil
+    }
+
+    /// During the swap flow, tapping a hand tile selects it as the source.
+    func swapPickHandTile(_ tile: Tile) {
+        guard pendingSwap != nil else { return }
+        pendingSwap?.selectedHandTile = tile
+    }
+
+    /// During the swap flow, tapping a wall tile commits the swap.
+    func swapCommit(wallRelativeIndex: Int) {
+        guard let pending = pendingSwap, let handTile = pending.selectedHandTile else { return }
+        let ok = run.applySwap(
+            handTile: handTile,
+            wallRelativeIndex: wallRelativeIndex,
+            seat: .player,
+            in: &handState
+        )
+        if !ok {
+            lastError = "Couldn't swap that tile"
+        }
+        pendingSwap = nil
+    }
+
+    /// Returns the array of undrawn wall tiles for the swap picker UI.
+    var wallUndrawn: [Tile] { Array(handState.wall.undrawn) }
+
+    /// Whether to render the AI's hand face up.
+    var revealOpponentHand: Bool { run.revealsOpponentHand }
 
     // MARK: - Player intents (gameplay)
 
@@ -81,9 +130,9 @@ final class GameViewModel {
     }
 
     /// Called from the run-complete screen — start a new run.
-    func startNewRun() {
+    func startNewRun(tutorial: Bool = true) {
         let newSeed = UInt64.random(in: 1...UInt64.max)
-        var fresh = Run(seed: newSeed)
+        var fresh = Run(seed: newSeed, tutorial: tutorial)
         let state = fresh.startHand()
         self.run = fresh
         self.handState = state
@@ -92,6 +141,7 @@ final class GameViewModel {
         self.openedPack = nil
         self.awaitingNextHand = false
         self.awaitingShop = false
+        self.pendingSwap = nil
         Task { await self.advanceUntilHumanInput() }
     }
 
@@ -220,8 +270,14 @@ final class GameViewModel {
     // MARK: - Consumables (in-hand use)
 
     func useConsumable(id: String) {
-        // For MVP, use is restricted to between-hand state. In-hand spells
-        // require deeper engine wiring (Phase 9 polish).
+        // Tile Swap is the only mid-hand spell wired through the engine today;
+        // route it into the swap-picker flow regardless of phase.
+        if let consumable = run.consumables.first(where: { $0.id == id }),
+           case .spell(let s) = consumable, s.effect == .swapWithWall {
+            beginTileSwap(consumableId: id)
+            return
+        }
+        // Other spells / constellations: between-hand only for now.
         guard awaitingShop || awaitingNextHand else {
             lastError = "Spells/constellations are between-hand only for now"
             return

@@ -110,6 +110,13 @@ public enum CharmCatalog {
             description: "Sweep a Table: ×3 mult on next Table's first hand.",
             effect: .nextTableSweepMult(factor: 3.0)
         ),
+        // 16. Crystal Lens — tutorial / x-ray utility charm.
+        Charm(
+            id: "crystal_lens", name: "Crystal Lens",
+            rarity: .legendary,
+            description: "See your opponent's concealed tiles.",
+            effect: .revealOpponentHand
+        ),
     ]
 
     /// Lookup by id.

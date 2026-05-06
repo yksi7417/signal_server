@@ -49,9 +49,28 @@ struct GameView: View {
             }
         }
         .overlay(alignment: .top) { errorBanner }
+        .overlay { swapPickerOverlay }
         .overlay { handEndedOverlay }
         .overlay { shopOverlay }
         .overlay { runCompleteOverlay }
+    }
+
+    @ViewBuilder
+    private var swapPickerOverlay: some View {
+        if let pending = vm.pendingSwap {
+            ZStack {
+                Color.black.opacity(0.55).ignoresSafeArea()
+                TileSwapPickerView(
+                    pending: pending,
+                    hand: vm.handState.hand(for: .player).concealed,
+                    wall: vm.wallUndrawn,
+                    onPickHandTile: { vm.swapPickHandTile($0) },
+                    onPickWallTile: { vm.swapCommit(wallRelativeIndex: $0) },
+                    onCancel: { vm.cancelTileSwap() }
+                )
+            }
+            .transition(.opacity)
+        }
     }
 
     // MARK: - Opponent
@@ -62,13 +81,24 @@ struct GameView: View {
                 Text("AI · \(vm.handState.hand(for: .ai).concealed.count) tiles")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(Theme.goldDeep)
+                if vm.revealOpponentHand {
+                    Text("👁 Crystal Lens")
+                        .font(.system(size: 10, weight: .medium))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule().fill(Theme.plum.opacity(0.18))
+                        )
+                        .foregroundStyle(Theme.plum)
+                }
                 if vm.aiThinking {
                     ProgressView().controlSize(.mini)
                 }
             }
             OpponentHandView(
                 concealedCount: vm.handState.hand(for: .ai).concealed.count,
-                bonus: vm.handState.hand(for: .ai).bonus
+                bonus: vm.handState.hand(for: .ai).bonus,
+                revealedTiles: vm.revealOpponentHand ? vm.handState.hand(for: .ai).concealed : nil
             )
         }
     }
@@ -98,9 +128,14 @@ struct GameView: View {
 
             HandView(
                 tiles: vm.handState.hand(for: .player).concealed,
-                selectable: vm.isAwaitingPlayerDiscard,
+                selectable: vm.isAwaitingPlayerDiscard || vm.pendingSwap != nil,
+                selectedTile: vm.pendingSwap?.selectedHandTile,
                 onTap: { tile in
-                    vm.playerDiscard(tile)
+                    if vm.pendingSwap != nil {
+                        vm.swapPickHandTile(tile)
+                    } else {
+                        vm.playerDiscard(tile)
+                    }
                 }
             )
             .padding(.horizontal, 8)

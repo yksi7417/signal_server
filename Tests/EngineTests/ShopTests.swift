@@ -86,8 +86,9 @@ struct BoosterPackTests {
 @Suite("Charm catalog")
 struct CharmCatalogTests {
 
-    @Test func hasFifteenStarterCharms() {
-        #expect(CharmCatalog.starter.count == 15)
+    @Test func starterCharmCount() {
+        // 15 design-doc charms + Crystal Lens (tutorial x-ray utility).
+        #expect(CharmCatalog.starter.count == 16)
     }
 
     @Test func eachCharmHasUniqueId() {

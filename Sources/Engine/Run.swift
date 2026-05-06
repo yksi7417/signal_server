@@ -43,7 +43,7 @@ public struct Run: Codable, Sendable {
         case failed      // boss loss path (post-MVP)
     }
 
-    public init(seed: UInt64) {
+    public init(seed: UInt64, tutorial: Bool = false) {
         self.seed = seed
         self.rng = SeededRandomNumberGenerator(seed: seed)
         self.status = .inProgress
@@ -57,6 +57,68 @@ public struct Run: Codable, Sendable {
         self.stats = RunStats()
         self.currentTable = TableProgress()
         self.pendingNextHandMult = 1.0
+
+        if tutorial {
+            applyTutorialPreGrants()
+        }
+    }
+
+    /// Pre-grant a learner-friendly starting kit:
+    /// - Crystal Lens charm (x-ray opponent's hand for the whole run)
+    /// - 2× The Swap consumable (swap any hand tile with any undrawn tile)
+    private mutating func applyTutorialPreGrants() {
+        if let lens = CharmCatalog.charm(id: "crystal_lens") {
+            _ = addCharm(lens)
+        }
+        if let swap = SpellCatalog.spell(id: "the_swap") {
+            // Two copies in the consumable slot (max 2).
+            _ = addConsumable(.spell(swap))
+            _ = addConsumable(.spell(swap))
+        }
+    }
+
+    /// True if any active charm has the reveal-opponent-hand effect.
+    public var revealsOpponentHand: Bool {
+        charms.contains(where: { $0.revealsOpponentHand })
+    }
+
+    // MARK: - Spell-driven mutations on a live hand
+
+    /// Apply The Swap consumable: replace `handTile` (in `seat`'s concealed
+    /// hand) with `wallTile` (an undrawn tile from `state.wall`).
+    /// Returns true if the swap happened. Removes one matching consumable
+    /// from the run's slot on success.
+    @discardableResult
+    public mutating func applySwap(
+        handTile: Tile,
+        wallRelativeIndex: Int,
+        seat: Seat,
+        in state: inout HandState
+    ) -> Bool {
+        // Find the consumable.
+        guard let consumableIdx = consumables.firstIndex(where: {
+            if case .spell(let s) = $0, s.effect == .swapWithWall { return true }
+            return false
+        }) else { return false }
+
+        // Hand tile must exist.
+        let handIdx = state.hands[seat.rawValue].concealed.firstIndex(of: handTile)
+        guard let handIdx else { return false }
+
+        // Wall index must be valid.
+        guard let displaced = state.wall.swapUndrawn(
+            relativeIndex: wallRelativeIndex,
+            with: handTile
+        ) else { return false }
+
+        // Mutate hand.
+        state.hands[seat.rawValue].concealed[handIdx] = displaced
+        state.hands[seat.rawValue].concealed.sort()
+
+        // Consume the spell.
+        consumables.remove(at: consumableIdx)
+        stats.spellsUsed += 1
+        return true
     }
 
     /// Build a `HandConfig` for the run's current position. Re-rolls the boss

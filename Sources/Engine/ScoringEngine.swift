@@ -162,8 +162,8 @@ public enum ScoringEngine {
                     mult += bonus
                     events.append(.init(label: "\(charm.name) +\(bonus)", multDelta: bonus))
                 }
-            case .coinsPerWin, .skipCharlestonBonus, .nextTableSweepMult:
-                break // handled by Run/CoinCalculator, not scoring
+            case .coinsPerWin, .skipCharlestonBonus, .nextTableSweepMult, .revealOpponentHand:
+                break // handled by Run/CoinCalculator or UI, not scoring
             }
         }
 
